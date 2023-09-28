@@ -12,7 +12,7 @@ on:
       - dev
 
 jobs:
-  if: false
+  if: false # TODO: Fix the docs
   deploy-docs:
     name: Deploy docs
     runs-on: ubuntu-latest
