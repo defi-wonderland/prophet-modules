@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 /* solhint-disable no-unused-import */
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
-import {Oracle, IOracle} from 'prophet-core-contracts/contracts/Oracle.sol';
+import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/Oracle.sol';
 
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';

@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
-import {IModule} from 'prophet-core-contracts/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-abi/contracts/IModule.sol';
 
 import {
   ArbitratorModule,

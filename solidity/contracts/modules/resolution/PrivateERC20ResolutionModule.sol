@@ -7,8 +7,8 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
-import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
 

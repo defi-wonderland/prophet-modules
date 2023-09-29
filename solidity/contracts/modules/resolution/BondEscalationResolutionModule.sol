@@ -5,8 +5,8 @@ pragma solidity ^0.8.19;
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
-import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
-import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
 
 import {IBondEscalationResolutionModule} from
   '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
