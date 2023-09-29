@@ -13,7 +13,6 @@ import {IBondEscalationResolutionModule} from
 
 // solhint-disable no-unused-import
 import {IResolutionModule} from '../../../interfaces/modules/resolution/IResolutionModule.sol';
-import {Module, IModule} from '../../Module.sol';
 // solhint-enable no-unused-import
 
 contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModule {

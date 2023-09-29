@@ -4,7 +4,8 @@ pragma solidity ^0.8.19;
 /* solhint-disable no-unused-import */
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
-import {Helpers} from '../utils/Helpers.sol';
+import {Oracle, IOracle} from 'prophet-core-contracts/contracts/Oracle.sol';
+
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
 import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
@@ -22,12 +23,12 @@ import {BondEscalationModule, IBondEscalationModule} from '../../contracts/modul
 import {
   BondEscalationAccounting, IBondEscalationAccounting
 } from '../../contracts/extensions/BondEscalationAccounting.sol';
-import {Oracle, IOracle} from '../../contracts/Oracle.sol';
 
 import {MockCallback} from '../mocks/MockCallback.sol';
 import {MockArbitrator} from '../mocks/MockArbitrator.sol';
 
 import {TestConstants} from '../utils/TestConstants.sol';
+import {Helpers} from '../utils/Helpers.sol';
 /* solhint-enable no-unused-import */
 
 contract IntegrationBase is DSTestPlus, TestConstants, Helpers {

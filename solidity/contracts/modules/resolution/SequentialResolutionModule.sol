@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+// solhint-disable-next-line no-unused-import
+import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import {Module, IModule} from '../../Module.sol';
 import {
   ISequentialResolutionModule,
-  IOracle,
   IResolutionModule
 } from '../../../interfaces/modules/resolution/ISequentialResolutionModule.sol';
 
