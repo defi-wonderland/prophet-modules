@@ -38,7 +38,7 @@ jobs:
         with:
           out_dir: "out"
           publish_type: "${{ matrix.publish_type }}"
-          package_name: "prophet-modules-${{ matrix.publish_type }}"
+          package_name: "@defi-wonderland/prophet-modules-${{ matrix.publish_type }}"
           destination_dir: "exported-interfaces/prophet-modules-${{ matrix.publish_type }}"
 
       - name: Publish
