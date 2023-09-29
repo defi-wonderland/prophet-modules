@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
-import {IResolutionModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/resolution/IResolutionModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
+import {IResolutionModule} from
+  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
 
 interface ISequentialResolutionModule is IOracle, IResolutionModule {
   /*///////////////////////////////////////////////////////////////

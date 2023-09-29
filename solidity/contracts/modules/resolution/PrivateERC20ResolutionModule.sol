@@ -8,7 +8,7 @@ import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet
 
 // solhint-disable-next-line no-unused-import
 import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
 

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IResolutionModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/resolution/IResolutionModule.sol';
+import {IResolutionModule} from
+  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
 
 /*
   * @title ArbitratorModule

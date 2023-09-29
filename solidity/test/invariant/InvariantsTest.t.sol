@@ -5,7 +5,7 @@ import 'forge-std/Test.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/Oracle.sol';
-import {IFinalityModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/finality/IFinalityModule.sol';
+import {IFinalityModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/finality/IFinalityModule.sol';
 
 import {HttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
 import {BondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';

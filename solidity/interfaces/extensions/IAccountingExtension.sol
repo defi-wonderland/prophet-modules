@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
 
 /*
   * @title AccountingExtension

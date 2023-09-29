@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-abi/contracts/IOracle.sol';
-import {IDisputeModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/dispute/IDisputeModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
+import {IDisputeModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/dispute/IDisputeModule.sol';
 
 import {IBondEscalationAccounting} from '../../extensions/IBondEscalationAccounting.sol';
 

@@ -5,7 +5,8 @@ import {Script, console} from 'forge-std/Script.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 import {Oracle} from '@defi-wonderland/prophet-core-contracts/Oracle.sol';
-import {IResolutionModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/resolution/IResolutionModule.sol';
+import {IResolutionModule} from
+  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
 
 import {ArbitratorModule} from '../contracts/modules/resolution/ArbitratorModule.sol';
 import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
