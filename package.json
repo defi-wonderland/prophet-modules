@@ -1,12 +1,12 @@
 {
-  "name": "prophet-core",
+  "name": "prophet-modules",
   "version": "1.0.0",
   "private": true,
   "description": "Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
-  "homepage": "https://github.com/defi-wonderland/prophet-core",
+  "homepage": "https://github.com/defi-wonderland/prophet-modules",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/defi-wonderland/prophet-core.git"
+    "url": "git+https://github.com/defi-wonderland/prophet-modules.git"
   },
   "license": "MIT",
   "author": "Wonderland",

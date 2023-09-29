@@ -1,6 +1,6 @@
-# Prophet Core
+# Prophet Modules
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/prophet-core/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/prophet-modules/blob/main/LICENSE)
 
 ⚠️ The code has not been audited yet, tread with caution.
 
@@ -13,7 +13,7 @@ Prophet presents a versatile and fully adaptable optimistic oracle solution, tra
 This project uses [Foundry](https://book.getfoundry.sh/). To build it locally, run:
 
 ```sh
-git clone git@github.com:defi-wonderland/prophet-core.git
+git clone git@github.com:defi-wonderland/prophet-modules.git
 cd
 yarn install
 yarn build
@@ -25,7 +25,7 @@ Make sure to set `OPTIMISM_RPC` environment variable before running end-to-end t
 
 | Yarn Command              | Description                                                                                                                     |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `yarn build`              | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/prophet-core-interfaces). |
+| `yarn build`              | Compile all contracts and export them as [a node package](https://www.npmjs.com/package/@defi-wonderland/prophet-modules-interfaces). |
 | `yarn docs:build`         | Generate documentation with [`forge doc`](https://book.getfoundry.sh/reference/forge/forge-doc).                                |
 | `yarn docs:run`           | Start the documentation server.                                                                                                 |
 | `yarn test`               | Run all unit and integration tests.                                                                                             |
