@@ -3,14 +3,15 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {IModule} from 'prophet-core-contracts/interfaces/IModule.sol';
+
 import {
   PrivateERC20ResolutionModule,
   IPrivateERC20ResolutionModule
 } from '../../../../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
-import {IOracle} from '../../../../interfaces/IOracle.sol';
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IModule} from '../../../../interfaces/IModule.sol';
 import {Helpers} from '../../../utils/Helpers.sol';
 
 contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {

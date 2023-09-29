@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IModule} from '../interfaces/IModule.sol';
-import {IOracle} from '../interfaces/IOracle.sol';
+import {IModule} from 'prophet-core-contracts/interfaces/IModule.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
 
 abstract contract Module is IModule {
   IOracle public immutable ORACLE;

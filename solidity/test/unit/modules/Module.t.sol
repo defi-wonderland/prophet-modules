@@ -3,7 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {Module, IModule, IOracle} from '../../../contracts/Module.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
 
 /**
  * @dev Harness to deploy the abstract contract

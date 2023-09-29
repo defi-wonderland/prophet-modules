@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IDisputeModule} from './IDisputeModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '../../IOracle.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+
+import {IDisputeModule} from './IDisputeModule.sol';
 import {IBondEscalationAccounting} from '../../extensions/IBondEscalationAccounting.sol';
 
 /**

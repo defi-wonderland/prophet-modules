@@ -4,16 +4,16 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {IModule} from 'prophet-core-contracts/interfaces/IModule.sol';
 
 import {
   RootVerificationModule,
-  IRootVerificationModule,
-  IOracle
+  IRootVerificationModule
 } from '../../../../contracts/modules/dispute/RootVerificationModule.sol';
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {ITreeVerifier} from '../../../../interfaces/ITreeVerifier.sol';
-import {IModule} from '../../../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks

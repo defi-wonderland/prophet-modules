@@ -3,13 +3,14 @@ pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+
+import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
 
 contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;

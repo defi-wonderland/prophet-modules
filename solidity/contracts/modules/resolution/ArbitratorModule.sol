@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
 import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
 import {IArbitrator, IOracle} from '../../../interfaces/IArbitrator.sol';
 
 // solhint-disable-next-line no-unused-import

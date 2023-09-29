@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IOracle} from '../interfaces/IOracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
 
 contract Oracle is IOracle {
   using EnumerableSet for EnumerableSet.Bytes32Set;

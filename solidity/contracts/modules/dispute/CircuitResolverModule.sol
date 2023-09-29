@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+
+import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
 
 contract CircuitResolverModule is Module, ICircuitResolverModule {
   constructor(IOracle _oracle) Module(_oracle) {}

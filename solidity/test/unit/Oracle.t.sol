@@ -3,19 +3,15 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {Oracle} from '../../contracts/Oracle.sol';
-
-import {
-  IOracle,
-  IRequestModule,
-  IResponseModule,
-  IDisputeModule,
-  IResolutionModule,
-  IFinalityModule
-} from '../../interfaces/IOracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+import {Oracle, IOracle} from 'prophet-core-contracts/contracts/Oracle.sol';
+import {IModule} from 'prophet-core-contracts/interfaces/IModule.sol';
 
-import {IModule} from '../../interfaces/IModule.sol';
+import {IRequestModule} from '../../interfaces/modules/request/IRequestModule.sol';
+import {IResponseModule} from '../../interfaces/modules/response/IResponseModule.sol';
+import {IDisputeModule} from '../../interfaces/modules/dispute/IDisputeModule.sol';
+import {IResolutionModule} from '../../interfaces/modules/resolution/IResolutionModule.sol';
+import {IFinalityModule} from '../../interfaces/modules/finality/IFinalityModule.sol';
 
 /**
  * @dev Harness to deploy and test Oracle

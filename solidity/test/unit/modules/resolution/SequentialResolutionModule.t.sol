@@ -3,15 +3,14 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {IOracle} from 'prophet-core-contracts/interfaces/IOracle.sol';
+import {Module, IModule} from 'prophet-core-contracts/contracts/Module.sol';
+
 import {
   SequentialResolutionModule,
-  Module,
-  IOracle,
   IResolutionModule,
   ISequentialResolutionModule
 } from '../../../../contracts/modules/resolution/SequentialResolutionModule.sol';
-
-import {IModule} from '../../../../interfaces/IModule.sol';
 
 contract ForTest_ResolutionModule is Module {
   string public name;
