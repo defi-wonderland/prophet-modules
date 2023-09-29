@@ -5,6 +5,7 @@ import {Script, console} from 'forge-std/Script.sol';
 import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
 import {Oracle} from '@defi-wonderland/prophet-core-contracts/Oracle.sol';
+import {IResolutionModule} from '@defi-wonderland/prophet-core-abi/contracts/modules/resolution/IResolutionModule.sol';
 
 import {ArbitratorModule} from '../contracts/modules/resolution/ArbitratorModule.sol';
 import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
@@ -23,8 +24,6 @@ import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/Sparse
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
-
-import {IResolutionModule} from '../interfaces/modules/resolution/IResolutionModule.sol';
 
 // solhint-disable no-console
 contract Deploy is Script {
