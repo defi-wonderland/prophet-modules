@@ -4,13 +4,17 @@ pragma solidity ^0.8.19;
 /* solhint-disable no-unused-import */
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
-import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/Oracle.sol';
-import {IDisputeModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/dispute/IDisputeModule.sol';
-import {IRequestModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/request/IRequestModule.sol';
-import {IResponseModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/response/IResponseModule.sol';
+import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+import {IDisputeModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/dispute/IDisputeModule.sol';
+import {IRequestModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/request/IRequestModule.sol';
+import {IResponseModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/response/IResponseModule.sol';
 import {IResolutionModule} from
-  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
-import {IFinalityModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/finality/IFinalityModule.sol';
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
+import {IFinalityModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
 
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 

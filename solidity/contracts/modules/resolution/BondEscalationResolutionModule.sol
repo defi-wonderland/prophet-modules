@@ -8,9 +8,9 @@ import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 // solhint-disable-next-line no-unused-import
 import {IResolutionModule} from
-  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {IBondEscalationResolutionModule} from
   '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';

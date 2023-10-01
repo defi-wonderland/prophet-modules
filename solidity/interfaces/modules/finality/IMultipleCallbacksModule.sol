@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IFinalityModule} from '@defi-wonderland/prophet-core-contracts/contracts/modules/finality/IFinalityModule.sol';
+import {IFinalityModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
 
 /**
  * @title MultipleCallbackModule

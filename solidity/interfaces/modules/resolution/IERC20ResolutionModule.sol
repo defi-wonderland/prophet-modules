@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IResolutionModule} from
-  '@defi-wonderland/prophet-core-contracts/contracts/modules/resolution/IResolutionModule.sol';
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**

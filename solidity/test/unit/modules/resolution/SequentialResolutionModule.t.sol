@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/contracts/IOracle.sol';
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 
 import {
   SequentialResolutionModule,
