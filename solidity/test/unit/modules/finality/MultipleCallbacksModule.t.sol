@@ -3,13 +3,13 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+
 import {
   MultipleCallbacksModule,
-  IOracle,
   IMultipleCallbacksModule
 } from '../../../../contracts/modules/finality/MultipleCallbacksModule.sol';
-
-import {IModule} from '../../../../interfaces/IModule.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks

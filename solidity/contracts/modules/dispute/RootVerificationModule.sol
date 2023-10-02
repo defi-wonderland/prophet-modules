@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {MerkleLib} from '../../libraries/MerkleLib.sol';
+// solhint-disable-next-line no-unused-import
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {IRootVerificationModule} from '../../../interfaces/modules/dispute/IRootVerificationModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-
-// solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {MerkleLib} from '../../libraries/MerkleLib.sol';
 
 contract RootVerificationModule is Module, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;

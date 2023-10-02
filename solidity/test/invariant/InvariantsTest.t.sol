@@ -3,7 +3,11 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {Oracle} from '../../contracts/Oracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+import {IFinalityModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
+
 import {HttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
 import {BondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
 import {BondedDisputeModule} from '../../contracts/modules/dispute/BondedDisputeModule.sol';
@@ -13,9 +17,6 @@ import {BondEscalationAccounting} from '../../contracts/extensions/BondEscalatio
 
 import {IWETH9} from '../../interfaces/external/IWETH9.sol';
 import {WETH9} from './imports/WETH9.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import {IOracle, IFinalityModule} from '../../interfaces/IOracle.sol';
 
 /**
  * @title Invariant tests

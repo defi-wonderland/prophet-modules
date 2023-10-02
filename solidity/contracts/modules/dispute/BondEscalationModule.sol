@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
-import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+
+import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
 contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule

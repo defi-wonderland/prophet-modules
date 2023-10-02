@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+
+import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
 
 contract ContractCallRequestModule is Module, IContractCallRequestModule {
   constructor(IOracle _oracle) Module(_oracle) {}

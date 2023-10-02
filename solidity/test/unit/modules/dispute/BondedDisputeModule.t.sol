@@ -4,15 +4,14 @@ pragma solidity ^0.8.19;
 import 'forge-std/Test.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 
 import {
-  BondedDisputeModule,
-  IBondedDisputeModule,
-  IOracle
+  BondedDisputeModule, IBondedDisputeModule
 } from '../../../../contracts/modules/dispute/BondedDisputeModule.sol';
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
-import {IModule} from '../../../../interfaces/IModule.sol';
 
 /**
  * @title Bonded Dispute Module Unit tests

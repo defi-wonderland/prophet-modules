@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IBondedDisputeModule} from '../../../interfaces/modules/dispute/IBondedDisputeModule.sol';
-import {IOracle} from '../../../interfaces/IOracle.sol';
-
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '../../Module.sol';
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+
+import {IBondedDisputeModule} from '../../../interfaces/modules/dispute/IBondedDisputeModule.sol';
 
 contract BondedDisputeModule is Module, IBondedDisputeModule {
   constructor(IOracle _oracle) Module(_oracle) {}

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {AccountingExtension} from './AccountingExtension.sol';
 
 import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
 import {IBondEscalationModule} from '../../interfaces/modules/dispute/IBondEscalationModule.sol';
-import {IOracle} from '../../interfaces/IOracle.sol';
 
 contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccounting {
   /// @inheritdoc IBondEscalationAccounting

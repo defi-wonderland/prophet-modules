@@ -3,17 +3,17 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {
-  BondEscalationModule,
-  IOracle,
-  IBondEscalationModule
-} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IModule} from '../../../../contracts/Module.sol';
-import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
-
-import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+
+import {
+  BondEscalationModule, IBondEscalationModule
+} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
+
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
+import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks

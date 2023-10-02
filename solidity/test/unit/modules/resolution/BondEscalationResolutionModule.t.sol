@@ -3,18 +3,18 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
-import {
-  BondEscalationResolutionModule,
-  IOracle,
-  IBondEscalationResolutionModule,
-  IERC20
-} from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
-
-import {IModule} from '../../../../contracts/Module.sol';
-
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+
+import {
+  BondEscalationResolutionModule,
+  IBondEscalationResolutionModule
+} from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 

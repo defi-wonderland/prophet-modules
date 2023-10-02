@@ -1,7 +1,6 @@
 {
-  "name": "prophet-modules",
+  "name": "@defi-wonderland/prophet-modules",
   "version": "1.0.0",
-  "private": true,
   "description": "Prophet presents a versatile and fully adaptable optimistic oracle solution, transcending the boundaries of conventional dispute resolution modules.",
   "homepage": "https://github.com/defi-wonderland/prophet-modules",
   "repository": {
@@ -39,6 +38,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
+    "@defi-wonderland/prophet-core-contracts": "0.0.0-a8dc38de",
     "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "@openzeppelin/contracts": "^4.9.3",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
