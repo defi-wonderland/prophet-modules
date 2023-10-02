@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {Script, console} from 'forge-std/Script.sol';
-import {IWETH9} from '../interfaces/external/IWETH9.sol';
 
-import {Oracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IResolutionModule} from
   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
 
@@ -28,10 +27,7 @@ import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAc
 
 // solhint-disable no-console
 contract Deploy is Script {
-  // TODO: Change the WETH address based on the network
-  IWETH9 constant WETH = IWETH9(0x4200000000000000000000000000000000000006); // Optimism Mainnet
-
-  Oracle oracle;
+  IOracle oracle = IOracle(0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923);
 
   ArbitratorModule arbitratorModule;
   BondedDisputeModule bondedDisputeModule;
@@ -60,7 +56,6 @@ contract Deploy is Script {
     vm.startBroadcast(deployer);
 
     // Deploy oracle
-    oracle = new Oracle();
     console.log('ORACLE:', address(oracle));
 
     // Deploy arbitrator module
