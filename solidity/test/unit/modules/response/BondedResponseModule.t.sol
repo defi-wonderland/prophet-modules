@@ -381,10 +381,44 @@ contract BondedResponseModule_UnitTest is Test {
 
     bondedResponseModule.finalizeRequest(_requestId, _allowedModule);
   }
+
+  /**
+   * @notice Test that the finalizing a request during a response dispute window will revert.
+   */
+  function test_revertFinalizeRequestDuringDisputeWindow(
+    bytes32 _requestId,
+    uint256 _bondSize,
+    uint256 _deadline
+  ) public {
+    vm.assume(_deadline > block.timestamp && _deadline < type(uint128).max);
+    vm.startPrank(address(oracle));
+
+    address _finalizer = makeAddr('finalizer');
+    bytes memory _data = abi.encode(accounting, token, _bondSize, _deadline, _baseDisputeWindow);
+    bondedResponseModule.forTest_setRequestData(_requestId, _data);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _finalizer)), abi.encode(false));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _finalizer)));
+
+    IOracle.Response memory _mockResponse = IOracle.Response({
+      createdAt: _deadline - 1,
+      requestId: _requestId,
+      disputeId: bytes32(''),
+      proposer: proposer,
+      response: bytes('bleh')
+    });
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId), abi.encode(_mockResponse));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, _requestId));
+
+    vm.warp(_deadline + 1);
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
+    bondedResponseModule.finalizeRequest(_requestId, _finalizer);
+  }
+
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-
   function test_moduleNameReturnsName() public {
     assertEq(bondedResponseModule.moduleName(), 'BondedResponseModule');
   }

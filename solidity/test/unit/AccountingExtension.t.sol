@@ -313,9 +313,49 @@ contract AccountingExtension_UnitTest is Test {
     module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 
+  function test_bond_revertInsufficientAllowance(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender
+  ) public {
+    // mock the module calling validation
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
+
+    // check: revert
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+
+    vm.prank(_sender);
+    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+  }
+
+  function test_bondWithCaller_revertInsufficientAllowance(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender
+  ) public {
+    // mock the module calling validation
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
+
+    // check: revert
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+
+    vm.prank(_sender);
+    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
+  }
   /**
    * @notice Test releasing an amount (which is added to the bonder balanceOf)
    */
+
   function test_releaseUpdateBalance(
     bytes32 _requestId,
     uint256 _amount,
@@ -402,5 +442,33 @@ contract AccountingExtension_UnitTest is Test {
 
     vm.prank(_sender);
     module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+  }
+
+  function test_userApprovedModules(address _user, uint8 _modulesAmount) public {
+    address[] memory _modules = new address[](_modulesAmount);
+    for (uint256 _i; _i < _modulesAmount; _i++) {
+      address _module = vm.addr(_i + 1);
+      _modules[_i] = _module;
+      vm.prank(_user);
+      module.approveModule(_module);
+    }
+
+    assertEq(_modules, module.userApprovedModules(_user));
+  }
+
+  function test_revokeModules(address _user, address _module) public {
+    vm.prank(_user);
+    module.approveModule(_module);
+
+    address[] memory _approvedModules = new address[](1);
+    _approvedModules[0] = _module;
+
+    assertEq(_approvedModules, module.userApprovedModules(_user));
+
+    vm.prank(_user);
+    module.revokeModule(_module);
+
+    address[] memory _emptyArray = new address[](0);
+    assertEq(_emptyArray, module.userApprovedModules(_user));
   }
 }

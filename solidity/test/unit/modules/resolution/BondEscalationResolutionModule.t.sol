@@ -504,7 +504,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     _setMockEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-    module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
+    module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
 
     // Test revert when deadline over
     _startTime = 1;
@@ -513,13 +513,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     uint256 _timeUntilDeadline = block.timestamp - _startTime;
     _setRequestData(_requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, timeToBreakInequality);
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-    module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
+    module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
 
     // Test revert when the dispute must be resolved
     uint256 _time = block.timestamp;
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-      IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
+      IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
     _setInequalityData(_disputeId, _inequalityStatus, _time);
 
     _startTime = uint128(block.timestamp);
@@ -533,13 +533,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     vm.warp(block.timestamp + _timeToBreakInequality);
 
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-    module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
+    module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
 
     // Test revert when status == AgainstTurnToEqualize
     vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
     _setInequalityData(_disputeId, _inequalityStatus, _time);
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
-    module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
+    module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
   }
 
   function test_pledgeAgainstEarlyReturnIfThresholdNotSurpassed(
