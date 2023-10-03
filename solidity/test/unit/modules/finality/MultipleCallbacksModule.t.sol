@@ -127,4 +127,26 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
 
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
+
+  function test_setUpMultipleTargets(bytes32 _requestId, address[] memory _targets, bytes memory _data) public {
+    vm.assume(_targets.length > 1);
+
+    // Hardcoding data (as it is not the case tested) to avoid vm.assume issues
+    bytes[] memory _targetData = new bytes[](_targets.length);
+    for (uint256 _i = 0; _i < _targets.length; _i++) {
+      _targetData[_i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
+      assumeNoPrecompiles(_targets[_i]);
+      vm.etch(_targets[_i], hex'069420');
+    }
+
+    bytes memory _requestData =
+      abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _targetData}));
+
+    vm.prank(address(oracle));
+    multipleCallbackModule.setupRequest(_requestId, _requestData);
+
+    IMultipleCallbacksModule.RequestParameters memory _storedParams =
+      multipleCallbackModule.decodeRequestData(_requestId);
+    assertEq(_storedParams.targets, _targets);
+  }
 }
