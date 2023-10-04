@@ -248,12 +248,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _token: _params.bondToken,
         _amount: _amountToRelease
       });
-      emit PledgeClaimedDisputerWon({
+      emit PledgeClaimed({
         _requestId: _requestId,
         _disputeId: _disputeId,
         _pledger: msg.sender,
         _token: _params.bondToken,
-        _pledgeReleased: _amountToRelease
+        _pledgeReleased: _amountToRelease,
+        _resolution: Resolution.DisputerWon
       });
     } else if (_escalation.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
@@ -269,12 +270,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
         _token: _params.bondToken,
         _amount: _amountToRelease
       });
-      emit PledgeClaimedDisputerLost({
+      emit PledgeClaimed({
         _requestId: _requestId,
         _disputeId: _disputeId,
         _pledger: msg.sender,
         _token: _params.bondToken,
-        _pledgeReleased: _amountToRelease
+        _pledgeReleased: _amountToRelease,
+        _resolution: Resolution.DisputerLost
       });
     } else if (_escalation.resolution == Resolution.NoResolution) {
       uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
@@ -289,12 +291,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
           _token: _params.bondToken,
           _amount: _pledgerBalanceFor
         });
-        emit PledgeClaimedNoResolution({
+        emit PledgeClaimed({
           _requestId: _requestId,
           _disputeId: _disputeId,
           _pledger: msg.sender,
           _token: _params.bondToken,
-          _pledgeReleased: _pledgerBalanceFor
+          _pledgeReleased: _pledgerBalanceFor,
+          _resolution: Resolution.NoResolution
         });
       }
 
@@ -307,12 +310,13 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
           _token: _params.bondToken,
           _amount: _pledgerBalanceAgainst
         });
-        emit PledgeClaimedNoResolution({
+        emit PledgeClaimed({
           _requestId: _requestId,
           _disputeId: _disputeId,
           _pledger: msg.sender,
           _token: _params.bondToken,
-          _pledgeReleased: _pledgerBalanceAgainst
+          _pledgeReleased: _pledgerBalanceAgainst,
+          _resolution: Resolution.NoResolution
         });
       }
     }

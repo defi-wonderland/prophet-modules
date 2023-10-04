@@ -115,28 +115,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
   );
 
-  event PledgeClaimedDisputerWon(
+  event PledgeClaimed(
     bytes32 indexed _requestId,
     bytes32 indexed _disputeId,
     address indexed _pledger,
     IERC20 _token,
-    uint256 _pledgeReleased
-  );
-
-  event PledgeClaimedDisputerLost(
-    bytes32 indexed _requestId,
-    bytes32 indexed _disputeId,
-    address indexed _pledger,
-    IERC20 _token,
-    uint256 _pledgeReleased
-  );
-
-  event PledgeClaimedNoResolution(
-    bytes32 indexed _requestId,
-    bytes32 indexed _disputeId,
-    address indexed _pledger,
-    IERC20 _token,
-    uint256 _pledgeReleased
+    uint256 _pledgeReleased,
+    IBondEscalationResolutionModule.Resolution _resolution
   );
 
   /**
@@ -1033,7 +1018,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit PledgeClaimedDisputerWon(_requestId, _disputeId, _randomPledger, token, _amountToRelease);
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _amountToRelease,
+      IBondEscalationResolutionModule.Resolution.DisputerWon
+    );
 
     vm.prank(_randomPledger);
     module.claimPledge(_requestId, _disputeId);
@@ -1081,7 +1073,14 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit PledgeClaimedDisputerLost(_requestId, _disputeId, _randomPledger, token, _amountToRelease);
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _amountToRelease,
+      IBondEscalationResolutionModule.Resolution.DisputerLost
+    );
 
     vm.prank(_randomPledger);
     module.claimPledge(_requestId, _disputeId);
@@ -1132,10 +1131,24 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
     // Events
     vm.expectEmit(true, true, true, true, address(module));
-    emit PledgeClaimedNoResolution(_requestId, _disputeId, _randomPledger, token, _userForPledge);
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _userForPledge,
+      IBondEscalationResolutionModule.Resolution.NoResolution
+    );
 
     vm.expectEmit(true, true, true, true, address(module));
-    emit PledgeClaimedNoResolution(_requestId, _disputeId, _randomPledger, token, _userAgainstPledge);
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _userAgainstPledge,
+      IBondEscalationResolutionModule.Resolution.NoResolution
+    );
 
     vm.prank(_randomPledger);
     module.claimPledge(_requestId, _disputeId);

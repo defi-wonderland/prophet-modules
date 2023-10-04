@@ -56,47 +56,15 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @param _pledger        The address of the user that claimed his pledges.
    * @param _token          The token the user claimed his pledges in.
    * @param _pledgeReleased The amount of tokens the user claimed.
+   * @param _resolution     The outcome of the resolution
    */
-  event PledgeClaimedDisputerWon(
+  event PledgeClaimed(
     bytes32 indexed _requestId,
     bytes32 indexed _disputeId,
     address indexed _pledger,
     IERC20 _token,
-    uint256 _pledgeReleased
-  );
-
-  /**
-   * @notice Emitted when a user claims his pledges after a lost dispute.
-   *
-   * @param _requestId      The ID of the request associated with the dispute.
-   * @param _disputeId      The ID of the dispute the user opposed.
-   * @param _pledger        The address of the user that claimed his pledges.
-   * @param _token          The token the user claimed his pledges in.
-   * @param _pledgeReleased The amount of tokens the user claimed.
-   */
-  event PledgeClaimedDisputerLost(
-    bytes32 indexed _requestId,
-    bytes32 indexed _disputeId,
-    address indexed _pledger,
-    IERC20 _token,
-    uint256 _pledgeReleased
-  );
-
-  /**
-   * @notice Emitted when a user claims his pledges after a dispute with no resolution.
-   *
-   * @param _requestId      The ID of the request associated with the dispute.
-   * @param _disputeId      The ID of the dispute the user supported or opposed.
-   * @param _pledger        The address of the user that claimed his pledges.
-   * @param _token          The token the user claimed his pledges in.
-   * @param _pledgeReleased The amount of tokens the user claimed.
-   */
-  event PledgeClaimedNoResolution(
-    bytes32 indexed _requestId,
-    bytes32 indexed _disputeId,
-    address indexed _pledger,
-    IERC20 _token,
-    uint256 _pledgeReleased
+    uint256 _pledgeReleased,
+    Resolution _resolution
   );
 
   /*///////////////////////////////////////////////////////////////
