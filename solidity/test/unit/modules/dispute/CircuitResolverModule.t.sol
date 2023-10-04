@@ -98,7 +98,7 @@ contract CircuitResolverModule_UnitTest is Test {
   function test_decodeRequestData_returnsCorrectData(
     bytes32 _requestId,
     address _accountingExtension,
-    address _randomtoken,
+    address _randomToken,
     uint256 _bondSize
   ) public {
     // Mock data
@@ -107,7 +107,7 @@ contract CircuitResolverModule_UnitTest is Test {
         callData: _callData,
         verifier: circuitVerifier,
         accountingExtension: IAccountingExtension(_accountingExtension),
-        bondToken: IERC20(_randomtoken),
+        bondToken: IERC20(_randomToken),
         bondSize: _bondSize
       })
     );
@@ -121,7 +121,7 @@ contract CircuitResolverModule_UnitTest is Test {
     assertEq(_params.callData, _callData, 'Mismatch: decoded calldata');
     assertEq(_params.verifier, circuitVerifier, 'Mismatch: decoded circuit verifier');
     assertEq(address(_params.accountingExtension), _accountingExtension, 'Mismatch: decoded accounting extension');
-    assertEq(address(_params.bondToken), _randomtoken, 'Mismatch: decoded token');
+    assertEq(address(_params.bondToken), _randomToken, 'Mismatch: decoded token');
     assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
 
@@ -306,7 +306,7 @@ contract CircuitResolverModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test that escalateDispute finalizs the request if the original response is correct
+   * @notice Test that escalateDispute finalizes the request if the original response is correct
    */
   function test_escalateDispute_correctResponse(uint256 _bondSize) public {
     // Mock id's (insure they are different)

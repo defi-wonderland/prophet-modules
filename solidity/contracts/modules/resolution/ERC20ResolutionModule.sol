@@ -66,7 +66,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   /// @inheritdoc IERC20ResolutionModule
   function resolveDispute(bytes32 _disputeId) external onlyOracle {
-    // 0. Check disputeId actually exists and that it isnt resolved already
+    // 0. Check disputeId actually exists and that it isn't resolved already
     IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
     if (_dispute.createdAt == 0) revert ERC20ResolutionModule_NonExistentDispute();
     if (_dispute.status != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();

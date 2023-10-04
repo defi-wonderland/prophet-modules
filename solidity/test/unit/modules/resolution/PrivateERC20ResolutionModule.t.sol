@@ -143,11 +143,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store mock request data with 40_000 committing time window
     uint256 _minVotesForQuorum = 1;
     uint256 _committingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _revealingTimeWindow = 40_000;
 
     module.forTest_setRequestData(
       _requestId,
-      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
 
     // Mock the oracle response for looking up a dispute
@@ -270,11 +270,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     uint256 _minVotesForQuorum = 1;
     uint256 _committingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _revealingTimeWindow = 40_000;
 
     module.forTest_setRequestData(
       _requestId,
-      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
 
     // Warp to invalid timestamp for commitment
@@ -325,7 +325,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     // Warp to revealing phase
     vm.warp(150_000);
 
-    // Check: is event emmited?
+    // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
     emit VoteRevealed(_voter, _disputeId, _amountOfVotes);
 
@@ -377,11 +377,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store request data
     uint256 _minVotesForQuorum = 1;
     uint256 _committingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _revealingTimeWindow = 40_000;
 
     module.forTest_setRequestData(
       _requestId,
-      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
 
     // Jump to timestamp
@@ -427,11 +427,11 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store request data
     uint256 _minVotesForQuorum = 1;
     uint256 _committingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _revealingTimeWindow = 40_000;
 
     module.forTest_setRequestData(
       _requestId,
-      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
     vm.warp(150_000);
 
@@ -468,14 +468,14 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Store request data
     uint256 _committingTimeWindow = 40_000;
-    uint256 _revealingTimewindow = 40_000;
+    uint256 _revealingTimeWindow = 40_000;
 
     module.forTest_setRequestData(
       _requestId,
-      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimewindow)
+      abi.encode(address(accounting), token, _minVotesForQuorum, _committingTimeWindow, _revealingTimeWindow)
     );
 
-    // Store escalation data with starttime 100_000 and votes 0
+    // Store escalation data with startTime 100_000 and votes 0
     module.forTest_setEscalation(
       _disputeId, IPrivateERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0})
     );
@@ -514,7 +514,7 @@ contract PrivateERC20ResolutionModule_UnitTest is Test, Helpers {
   }
 
   /**
-   * @notice Test that `resolveDispute` reverts if called during committing or reavealing time window.
+   * @notice Test that `resolveDispute` reverts if called during committing or revealing time window.
    */
   function test_revertResolveDispute_WrongPhase(bytes32 _requestId, bytes32 _disputeId, uint256 _timestamp) public {
     _timestamp = bound(_timestamp, 1, 1_000_000);

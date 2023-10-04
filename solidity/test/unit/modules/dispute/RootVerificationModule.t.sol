@@ -130,7 +130,7 @@ contract RootVerificationModule_UnitTest is Test {
   function test_decodeRequestData_returnsCorrectData(
     bytes32 _requestId,
     address _accountingExtension,
-    address _randomtoken,
+    address _randomToken,
     uint256 _bondSize
   ) public {
     // Mock data
@@ -140,7 +140,7 @@ contract RootVerificationModule_UnitTest is Test {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: IAccountingExtension(_accountingExtension),
-        bondToken: IERC20(_randomtoken),
+        bondToken: IERC20(_randomToken),
         bondSize: _bondSize
       })
     );
@@ -164,7 +164,7 @@ contract RootVerificationModule_UnitTest is Test {
     assertEq(_treeCountStored, _treeCount, 'Mismatch: decoded tree count');
     assertEq(address(_params.treeVerifier), address(treeVerifier), 'Mismatch: decoded tree verifier');
     assertEq(address(_params.accountingExtension), _accountingExtension, 'Mismatch: decoded accounting extension');
-    assertEq(address(_params.bondToken), _randomtoken, 'Mismatch: decoded token');
+    assertEq(address(_params.bondToken), _randomToken, 'Mismatch: decoded token');
     assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
 
