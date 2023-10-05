@@ -153,7 +153,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Warp to voting phase
     vm.warp(130_000);
 
-    // Check: is event emmited?
+    // Check: is event emitted?
     vm.expectEmit(true, true, true, true);
     emit VoteCast(_voter, _disputeId, _amountOfVotes);
 
@@ -176,7 +176,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     bytes32 _disputeId,
     uint256 _amountOfVotes
   ) public {
-    // Default non-existant dispute
+    // Default non-existent dispute
     IOracle.Dispute memory _mockDispute = IOracle.Dispute({
       disputer: address(0),
       responseId: bytes32(0),
@@ -190,7 +190,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
     vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
-    // Check: reverts if called with `_disputeId` of a non-existant dispute?
+    // Check: reverts if called with `_disputeId` of a non-existent dispute?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_NonExistentDispute.selector);
     module.castVote(_requestId, _disputeId, _amountOfVotes);
   }

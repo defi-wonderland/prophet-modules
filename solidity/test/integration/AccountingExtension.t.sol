@@ -43,7 +43,7 @@ contract Integration_AccountingExtension is IntegrationBase {
     vm.stopPrank();
   }
 
-  function test_withdrawERC20_insufficentFunds(
+  function test_withdrawERC20_insufficientFunds(
     uint256 _initialBalance,
     uint256 _depositAmount,
     uint256 _withdrawAmount
@@ -57,7 +57,7 @@ contract Integration_AccountingExtension is IntegrationBase {
     _accountingExtension.withdraw(usdc, _withdrawAmount);
   }
 
-  function test_withdrawETH_insufficentFunds(
+  function test_withdrawETH_insufficientFunds(
     uint256 _initialBalance,
     uint256 _depositAmount,
     uint256 _withdrawAmount

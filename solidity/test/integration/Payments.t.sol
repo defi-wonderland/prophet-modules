@@ -145,7 +145,7 @@ contract Integration_Payments is IntegrationBase {
     uint256 _proposerBalanceAfter = _accountingExtension.balanceOf(proposer, usdc);
     uint256 _disputerBalanceAfter = _accountingExtension.balanceOf(disputer, usdc);
 
-    // Check: requster gets its reward back?
+    // Check: requester gets its reward back?
     assertEq(_requesterBalanceAfter, _rewardSize);
     // Check: proposer get slashed?
     assertEq(_proposerBalanceAfter, 0);
@@ -202,7 +202,7 @@ contract Integration_Payments is IntegrationBase {
     uint256 _proposerBalanceAfter = _accountingExtension.balanceOf(proposer, weth);
     uint256 _disputerBalanceAfter = _accountingExtension.balanceOf(disputer, weth);
 
-    // Check: requster gets its reward back?
+    // Check: requester gets its reward back?
     assertEq(_requesterBalanceAfter, _rewardSize);
     // Check: proposer get slashed?
     assertEq(_proposerBalanceAfter, 0);

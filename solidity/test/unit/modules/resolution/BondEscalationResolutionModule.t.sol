@@ -165,7 +165,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
   /*
     Specs:
-      0. Should do the appropiate calls and emit the appropiate events
+      0. Should do the appropriate calls and emit the appropriate events
       1. Should revert if caller is not the dispute module
       2. Should set escalation.startTime to block.timestamp
   */
@@ -196,7 +196,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
   /*
     Specs:
-      0. Should do the appropiate calls, updates, and emit the appropiate events
+      0. Should do the appropriate calls, updates, and emit the appropriate events
       1. Should revert if dispute is not escalated (_startTime == 0)
       2. Should revert if we are in or past the deadline
       3. Should revert if the pledging phase is over and settlement is required
@@ -325,7 +325,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     //////////////////////////////////////////////////////////////////////
-    // START TEST _forPercentageDifference >= _escaledPercentageDiffAsInt
+    // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
     //////////////////////////////////////////////////////////////////////
 
     // block.timestamp < _startTime + _timeUntilDeadline
@@ -382,13 +382,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     assertEq(uint256(_timer), block.timestamp);
 
     ////////////////////////////////////////////////////////////////////
-    // END TEST _forPercentageDifference >= _escaledPercentageDiffAsInt
+    // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
     ////////////////////////////////////////////////////////////////////
 
     //----------------------------------------------------------------------//
 
     //////////////////////////////////////////////////////////////////////////
-    // START TEST _againstPercentageDifference >= _escaledPercentageDiffAsInt
+    // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
     /////////////////////////////////////////////////////////////////////////
 
     // Resetting status changed by previous test
@@ -420,7 +420,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize));
 
     ////////////////////////////////////////////////////////////////////
-    // END TEST _forPercentageDifference >= _escaledPercentageDiffAsInt
+    // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
     ////////////////////////////////////////////////////////////////////
 
     //----------------------------------------------------------------------//
@@ -463,7 +463,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
 
   /*
   Specs:
-    0. Should do the appropiate calls, updates, and emit the appropiate events
+    0. Should do the appropriate calls, updates, and emit the appropriate events
     1. Should revert if dispute is not escalated (_startTime == 0)
     2. Should revert if we are in or past the deadline
     3. Should revert if the pledging phase is over and settlement is required
@@ -595,7 +595,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     //////////////////////////////////////////////////////////////////////////
-    // START TEST _againstPercentageDifference >= _escaledPercentageDiffAsInt
+    // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
     /////////////////////////////////////////////////////////////////////////
 
     // block.timestamp < _startTime + _timeUntilDeadline
@@ -651,13 +651,13 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     assertEq(uint256(_timer), block.timestamp);
 
     ///////////////////////////////////////////////////////////////////////
-    // END TEST _againstPercentageDifference >= _escaledPercentageDiffAsInt
+    // END TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
     ///////////////////////////////////////////////////////////////////////
 
     //----------------------------------------------------------------------//
 
     //////////////////////////////////////////////////////////////////////////
-    // START TEST _forPercentageDifference >= _escaledPercentageDiffAsInt
+    // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
     /////////////////////////////////////////////////////////////////////////
 
     // Resetting status changed by previous test
@@ -689,7 +689,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
 
     ////////////////////////////////////////////////////////////////////
-    // END TEST _forPercentageDifference >= _escaledPercentageDiffAsInt
+    // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
     ////////////////////////////////////////////////////////////////////
 
     //----------------------------------------------------------------------//
@@ -737,7 +737,7 @@ contract BondEscalationResolutionModule_UnitTest is Test, Helpers {
     2. Should revert if the main deadline has not be reached and the inequality timer has not culminated - done
 
     3. After resolve, if the pledges from both sides never reached the threshold, or if the pledges of both sides end up tied
-       it should set the resolution status to NoResolution. TODO: and do the appropiate calls.
+       it should set the resolution status to NoResolution. TODO: and do the appropriate calls.
     4. After resolve, if the pledges for the disputer were more than the pledges against him, then it should
        set the resolution state to DisputerWon and call the oracle to update the status with Won. Also emit event.
     5. Same as 4 but with DisputerLost, and Lost when the pledges against the disputer were more than the pledges in favor of

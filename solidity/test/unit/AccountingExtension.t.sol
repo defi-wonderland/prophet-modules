@@ -262,7 +262,7 @@ contract AccountingExtension_UnitTest is Test {
   /**
    * @notice Test bonding reverting if balanceOf is less than the amount to bond
    */
-  function test_bondInsufBalance(
+  function test_bondInsufficientBalance(
     bytes32 _requestId,
     uint256 _amount,
     uint248 _initialBalance,
@@ -395,7 +395,7 @@ contract AccountingExtension_UnitTest is Test {
   /**
    * @notice Test releasing reverting if bondedAmountOf is less than the amount to release
    */
-  function test_releaseInsufBalance(
+  function test_releaseInsufficientBalance(
     bytes32 _requestId,
     uint256 _amount,
     uint248 _initialBalance,

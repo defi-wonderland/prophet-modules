@@ -491,7 +491,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that disputeReponse succeeds in starting the bond escalation mechanism when someone disputes
+   * @notice Tests that disputeResponse succeeds in starting the bond escalation mechanism when someone disputes
    *         the first propose before the bond escalation deadline is over.
    */
   function test_disputeResponseFirstDisputeThroughBondMechanism(bytes32 _requestId, bytes32 _responseId) public {
@@ -1309,7 +1309,7 @@ contract BondEscalationModule_UnitTest is Test {
   }
 
   /**
-   * @notice Tests that settleBondEscalation reverts if someone tries to settle a bondescalated dispute that
+   * @notice Tests that settleBondEscalation reverts if someone tries to settle a bond-escalated dispute that
    *         has the same number of pledgers.
    */
   function test_settleBondEscalationRevertIfSameNumberOfPledgers(bytes32 _requestId, bytes32 _disputeId) public {

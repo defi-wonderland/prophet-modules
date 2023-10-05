@@ -51,10 +51,10 @@ contract HandlerProphet is Test {
   bytes32 public requestId;
 
   mapping(bytes32 response => bytes32 request) public ghostResponseIdToRequestId;
-  bool public responseRequestDiscrepency;
+  bool public responseRequestDiscrepancy;
 
   mapping(bytes32 request => bool) public finalized;
-  bool public finalizedDiscrepency;
+  bool public finalizedDiscrepancy;
 
   uint256 public ghostNumberOfDispute;
   uint256 public ghostNumberOfResponse;
@@ -130,7 +130,7 @@ contract HandlerProphet is Test {
     bytes32 _responseId = oracle.proposeResponse(msg.sender, requestId, _responseData);
     // This request has already a response which is different?
     if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
-      responseRequestDiscrepency = true;
+      responseRequestDiscrepancy = true;
     }
 
     ghostResponseIdToRequestId[_responseId] = requestId;
@@ -143,7 +143,7 @@ contract HandlerProphet is Test {
 
     // This request has already a response which is different?
     if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
-      responseRequestDiscrepency = true;
+      responseRequestDiscrepancy = true;
     }
 
     ghostResponseIdToRequestId[_responseId] = requestId;
@@ -176,7 +176,7 @@ contract HandlerProphet is Test {
     if (!finalized[_requestId]) {
       finalized[_requestId] = true;
     } else {
-      finalizedDiscrepency = true;
+      finalizedDiscrepancy = true;
     }
   }
 }
