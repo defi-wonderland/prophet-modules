@@ -46,6 +46,9 @@
   - [Accounting ](content/extensions/accounting.md)
   - [Bond Escalation Accounting](content/extensions/bond_escalation_accounting.md)
 
+- [Periphery](content/periphery/README.md)
+  - [SparseMerkleTreeVerifier](content/periphery/sparse_merkle_tree_verifier.md)
+
 - [Libraries](content/libraries/README.md)
   - [MerkleLib](content/libraries/merkle_lib.md)
 
