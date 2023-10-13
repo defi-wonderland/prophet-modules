@@ -19,7 +19,7 @@
     "docs:build": "./build-docs.sh",
     "docs:run": "mdbook serve docs",
     "postinstall": "husky install",
-    "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt check",
+    "lint:check": "yarn lint:sol-tests && yarn lint:sol-logic && forge fmt --check",
     "lint:fix": "sort-package-json && forge fmt && yarn lint:sol-tests --fix && yarn lint:sol-logic --fix",
     "lint:sol-logic": "solhint 'solidity/contracts/**/*.sol' 'solidity/interfaces/**/*.sol'",
     "lint:sol-tests": "solhint -c .solhint.tests.json 'solidity/test/**/*.sol'",
@@ -38,7 +38,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/prophet-core-contracts": "0.0.0-a8dc38de",
+    "@defi-wonderland/prophet-core-contracts": "0.0.0-bb56cdd7",
     "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "@openzeppelin/contracts": "^4.9.3",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
