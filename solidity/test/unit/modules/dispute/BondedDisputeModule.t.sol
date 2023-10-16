@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
@@ -13,27 +15,28 @@ import {
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
+contract ForTest_BondedDisputeModule is BondedDisputeModule {
+  constructor(IOracle _oracle) BondedDisputeModule(_oracle) {}
+
+  function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
+    requestData[_requestId] = _data;
+  }
+}
+
 /**
  * @title Bonded Dispute Module Unit tests
  */
-contract BondedDisputeModule_UnitTest is Test {
-  using stdStorage for StdStorage;
-
+contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_BondedDisputeModule public bondedDisputeModule;
-
   // A mock accounting extension
   IAccountingExtension public accountingExtension;
-
   // A mock oracle
   IOracle public oracle;
-
   // Some unnoticeable dude
   address public dude = makeAddr('dude');
-
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
-
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
@@ -62,7 +65,9 @@ contract BondedDisputeModule_UnitTest is Test {
       status: IOracle.DisputeStatus.Active
     });
   }
+}
 
+contract BondedResponseModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
@@ -88,89 +93,18 @@ contract BondedDisputeModule_UnitTest is Test {
   }
 
   /**
-   * @notice Test if dispute escalated do nothing
+   * @notice Test that the moduleName function returns the correct name
    */
-  function test_disputeEscalated_returnCorrectStatus() public {
-    // Record sstore and sload
-    vm.prank(address(oracle));
-    vm.record();
-    bondedDisputeModule.disputeEscalated(mockId);
-    (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(bondedDisputeModule));
-
-    // Check: no storage access?
-    assertEq(_reads.length, 0);
-    assertEq(_writes.length, 0);
+  function test_moduleNameReturnsName() public {
+    assertEq(bondedDisputeModule.moduleName(), 'BondedDisputeModule');
   }
+}
 
-  /**
-   * @notice Test if dispute response returns the correct status
-   */
-  function test_disputeResponse_createBond(uint256 _bondSize) public {
-    // Mock addresses
-    IERC20 _token = IERC20(makeAddr('token'));
-    address _disputer = makeAddr('disputer');
-    address _proposer = makeAddr('proposer');
-
-    // Mock id's (insure they are different)
-    bytes32 _requestId = mockId;
-    bytes32 _responseId = bytes32(uint256(mockId) + 1);
-
-    // Mock request data
-    bytes memory _requestData = abi.encode(accountingExtension, _token, _bondSize);
-
-    // Store the mock request
-    bondedDisputeModule.forTest_setRequestData(mockId, _requestData);
-
-    // Mock and expect the call to the accounting extension, initiating the bond
-    vm.mockCall(
-      address(accountingExtension),
-      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _disputer, _requestId, _token, _bondSize),
-      abi.encode()
-    );
-
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _disputer, _requestId, _token, _bondSize)
-    );
-
-    // Test: call disputeResponse
-    vm.prank(address(oracle));
-    IOracle.Dispute memory _dispute = bondedDisputeModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
-
-    // Check: dispute is correct?
-    assertEq(_dispute.disputer, _disputer);
-    assertEq(_dispute.proposer, _proposer);
-    assertEq(_dispute.responseId, _responseId);
-    assertEq(_dispute.requestId, _requestId);
-    assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Active));
-    assertEq(_dispute.createdAt, block.timestamp);
-  }
-
-  /**
-   * @notice Test if dispute response reverts when called by caller who's not the oracle
-   */
-  function test_disputeResponse_revertWrongCaller(address _randomCaller) public {
-    vm.assume(_randomCaller != address(oracle));
-
-    // Check: revert if wrong caller
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
-
-    // Test: call disputeResponse from non-oracle address
-    vm.prank(_randomCaller);
-    bondedDisputeModule.disputeResponse(mockId, mockId, dude, dude);
-  }
-
+contract BondedResponseModule_Unit_OnDisputeStatusChange is BaseTest {
   /**
    * @notice Test if onDisputeStatusChange correctly handle proposer or disputer win
    */
-  function test_onDisputeStatusChange_correctWinnerPaid() public {
-    // Mock addresses
-    IERC20 _token = IERC20(makeAddr('token'));
-    address _disputer = makeAddr('disputer');
-    address _proposer = makeAddr('proposer');
-
-    uint256 _bondSize = 69;
-
+  function test_correctWinnerPaid(uint256 _bondSize, address _disputer, address _proposer, IERC20 _token) public {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
@@ -194,26 +128,18 @@ contract BondedDisputeModule_UnitTest is Test {
       status: IOracle.DisputeStatus.Won
     });
 
-    // mock and expect the call to pay, from¨*proposer to disputer*
-    vm.mockCall(
+    // Mock and expect the call to pay, from¨*proposer to disputer*
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize)),
       abi.encode()
     );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize))
-    );
 
-    // mock and expect the call to release, to the disputer
-    vm.mockCall(
+    // Mock and expect the call to release, to the disputer
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
       abi.encode()
-    );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize))
     );
 
     vm.prank(address(oracle));
@@ -232,26 +158,18 @@ contract BondedDisputeModule_UnitTest is Test {
       status: IOracle.DisputeStatus.Lost
     });
 
-    // mock and expect the call to pay, from *disputer to proposer*
-    vm.mockCall(
+    // Mock and expect the call to pay, from *disputer to proposer*
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.pay, (_requestId, _disputer, _proposer, _token, _bondSize)),
       abi.encode()
     );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.pay, (_requestId, _disputer, _proposer, _token, _bondSize))
-    );
 
-    // mock and expect the call to release, for the proposer
-    vm.mockCall(
+    // Mock and expect the call to release, for the proposer
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
       abi.encode()
-    );
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
     );
 
     vm.prank(address(oracle));
@@ -270,40 +188,25 @@ contract BondedDisputeModule_UnitTest is Test {
       status: IOracle.DisputeStatus.NoResolution
     });
 
-    // mock and expect the call to release, for the proposer
-    vm.mockCall(
+    // Mock and expect the call to release, for the proposer
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
       abi.encode()
     );
-    vm.mockCall(
+
+    // Mock and expect the call to release, for the disputer
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
       abi.encode()
-    );
-
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_proposer, _requestId, _token, _bondSize))
-    );
-
-    vm.expectCall(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize))
     );
 
     vm.prank(address(oracle));
     bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
-  function test_onDisputeStatusChange_statusWithNoChange() public {
-    // Mock addresses
-    IERC20 _token = IERC20(makeAddr('token'));
-    address _disputer = makeAddr('disputer');
-    address _proposer = makeAddr('proposer');
-
-    uint256 _bondSize = 69;
-
+  function test_statusWithNoChange(uint256 _bondSize, address _disputer, address _proposer, IERC20 _token) public {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
@@ -374,14 +277,7 @@ contract BondedDisputeModule_UnitTest is Test {
     bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
 
-  function test_onDisputeStatusChange_emitsEvent() public {
-    // Mock addresses
-    IERC20 _token = IERC20(makeAddr('token'));
-    address _disputer = makeAddr('disputer');
-    address _proposer = makeAddr('proposer');
-
-    uint256 _bondSize = 69;
-
+  function test_emitsEvent(uint256 _bondSize, address _disputer, address _proposer, IERC20 _token) public {
     // Mock id's (insure they are different)
     bytes32 _requestId = mockId;
     bytes32 _responseId = bytes32(uint256(mockId) + 1);
@@ -405,15 +301,15 @@ contract BondedDisputeModule_UnitTest is Test {
       status: IOracle.DisputeStatus.Won
     });
 
-    // mock and expect the call to pay, from¨*proposer to disputer*
-    vm.mockCall(
+    // Mock and expect the call to pay, from¨*proposer to disputer*
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.pay, (_requestId, _proposer, _disputer, _token, _bondSize)),
       abi.encode()
     );
 
-    // mock and expect the call to release, to the disputer
-    vm.mockCall(
+    // Mock and expect the call to release, to the disputer
+    _mockAndExpect(
       address(accountingExtension),
       abi.encodeCall(accountingExtension.release, (_disputer, _requestId, _token, _bondSize)),
       abi.encode()
@@ -430,7 +326,7 @@ contract BondedDisputeModule_UnitTest is Test {
   /**
    * @notice Test if onDisputeStatusChange reverts when called by caller who's not the oracle
    */
-  function test_onDisputeStatusChange_revertWrongCaller(address _randomCaller) public {
+  function test_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
@@ -440,22 +336,72 @@ contract BondedDisputeModule_UnitTest is Test {
     vm.prank(_randomCaller);
     bondedDisputeModule.onDisputeStatusChange(mockId, mockDispute);
   }
-
-  /**
-   * @notice Test that the moduleName function returns the correct name
-   */
-  function test_moduleNameReturnsName() public {
-    assertEq(bondedDisputeModule.moduleName(), 'BondedDisputeModule');
-  }
 }
 
+contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
+  /**
+   * @notice Test if dispute escalated do nothing
+   */
+  function test_returnCorrectStatus() public {
+    // Record sstore and sload
+    vm.prank(address(oracle));
+    vm.record();
+    bondedDisputeModule.disputeEscalated(mockId);
+    (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(bondedDisputeModule));
+
+    // Check: no storage access?
+    assertEq(_reads.length, 0);
+    assertEq(_writes.length, 0);
+  }
+
+  /**
+   * @notice Test if dispute response returns the correct status
+   */
+  function test_createBond(uint256 _bondSize, address _disputer, address _proposer, IERC20 _token) public {
+    // Mock id's (insure they are different)
+    bytes32 _requestId = mockId;
+    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+
+    // Mock request data
+    bytes memory _requestData = abi.encode(accountingExtension, _token, _bondSize);
+
+    // Store the mock request
+    bondedDisputeModule.forTest_setRequestData(mockId, _requestData);
+
+    // Mock and expect the call to the accounting extension, initiating the bond
+    _mockAndExpect(
+      address(accountingExtension),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _disputer, _requestId, _token, _bondSize),
+      abi.encode()
+    );
+
+    // Test: call disputeResponse
+    vm.prank(address(oracle));
+    IOracle.Dispute memory _dispute = bondedDisputeModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
+
+    // Check: dispute is correct?
+    assertEq(_dispute.disputer, _disputer);
+    assertEq(_dispute.proposer, _proposer);
+    assertEq(_dispute.responseId, _responseId);
+    assertEq(_dispute.requestId, _requestId);
+    assertEq(uint256(_dispute.status), uint256(IOracle.DisputeStatus.Active));
+    assertEq(_dispute.createdAt, block.timestamp);
+  }
+
+  /**
+   * @notice Test if dispute response reverts when called by caller who's not the oracle
+   */
+  function test_revertWrongCaller(address _randomCaller) public {
+    vm.assume(_randomCaller != address(oracle));
+
+    // Check: revert if wrong caller
+    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+
+    // Test: call disputeResponse from non-oracle address
+    vm.prank(_randomCaller);
+    bondedDisputeModule.disputeResponse(mockId, mockId, dude, dude);
+  }
+}
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
-contract ForTest_BondedDisputeModule is BondedDisputeModule {
-  constructor(IOracle _oracle) BondedDisputeModule(_oracle) {}
-
-  function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
-    requestData[_requestId] = _data;
-  }
-}

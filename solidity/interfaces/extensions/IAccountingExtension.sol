@@ -186,5 +186,5 @@ interface IAccountingExtension {
    * @param _user The address of the user
    * @return _approvedModules The array of all modules approved by the user
    */
-  function userApprovedModules(address _user) external view returns (address[] memory _approvedModules);
+  function approvedModules(address _user) external view returns (address[] memory _approvedModules);
 }

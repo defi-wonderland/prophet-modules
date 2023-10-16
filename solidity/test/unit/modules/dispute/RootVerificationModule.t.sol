@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
@@ -27,36 +29,27 @@ contract ForTest_RootVerificationModule is RootVerificationModule {
 }
 
 /**
- * @title HTTP Request Module Unit tests
+ * @title Root Verification Module Unit tests
  */
-contract RootVerificationModule_UnitTest is Test {
-  using stdStorage for StdStorage;
-
+contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_RootVerificationModule public rootVerificationModule;
-
   // A mock oracle
   IOracle public oracle;
-
   // A mock accounting extension
   IAccountingExtension public accountingExtension;
-
   // Some unnoticeable dude
   address public dude = makeAddr('dude');
-
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
-
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
-
   // A mock tree verifier
   ITreeVerifier public treeVerifier;
-
   // Mock addresses
-  IERC20 internal _token = IERC20(makeAddr('token'));
-  address internal _disputer = makeAddr('disputer');
-  address internal _proposer = makeAddr('proposer');
+  IERC20 public _token = IERC20(makeAddr('token'));
+  address public _disputer = makeAddr('disputer');
+  address public _proposer = makeAddr('proposer');
 
   // Mock request data
   bytes32[32] internal _treeBranches = [
@@ -95,7 +88,6 @@ contract RootVerificationModule_UnitTest is Test {
   ];
   uint256 internal _treeCount = 1;
   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
-
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
   event ResponseDisputed(bytes32 indexed _requestId, bytes32 _responseId, address _disputer, address _proposer);
@@ -123,6 +115,15 @@ contract RootVerificationModule_UnitTest is Test {
       status: IOracle.DisputeStatus.Active
     });
   }
+}
+
+contract RootVerificationModule_Unit_ModuleData is BaseTest {
+  /**
+   * @notice Test that the moduleName function returns the correct name
+   */
+  function test_moduleNameReturnsName() public {
+    assertEq(rootVerificationModule.moduleName(), 'RootVerificationModule');
+  }
 
   /**
    * @notice Test that the decodeRequestData function returns the correct values
@@ -144,17 +145,17 @@ contract RootVerificationModule_UnitTest is Test {
         bondSize: _bondSize
       })
     );
+
     // Store the mock request
     rootVerificationModule.forTest_setRequestData(_requestId, _requestData);
 
-    // Test: decode the given request data
     IRootVerificationModule.RequestParameters memory _params = rootVerificationModule.decodeRequestData(_requestId);
 
     bytes32[32] memory _treeBranchesStored;
     uint256 _treeCountStored;
     (_treeBranchesStored, _treeCountStored) = abi.decode(_params.treeData, (bytes32[32], uint256));
 
-    // Check: decoded values match original values?
+    // Check: is the request data properly stored?
     for (uint256 _i = 0; _i < _treeBranches.length; _i++) {
       assertEq(_treeBranchesStored[_i], _treeBranches[_i], 'Mismatch: decoded tree branch');
     }
@@ -167,29 +168,14 @@ contract RootVerificationModule_UnitTest is Test {
     assertEq(address(_params.bondToken), _randomToken, 'Mismatch: decoded token');
     assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
+}
 
-  /**
-   * @notice Test if dispute escalated do nothing
-   */
-  function test_disputeEscalated_returnCorrectStatus() public {
-    // Record sstore and sload
-    vm.prank(address(oracle));
-    vm.record();
-    rootVerificationModule.disputeEscalated(mockId);
-    (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(rootVerificationModule));
-
-    // Check: no storage access?
-    assertEq(_reads.length, 0);
-    assertEq(_writes.length, 0);
-  }
-
+contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute incorrect response returns the correct status
    */
-  function test_disputeResponse_disputeIncorrectResponse(uint256 _bondSize) public {
-    // Mock id's (insure they are different)
-    bytes32 _requestId = mockId;
-    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+  function test_disputeIncorrectResponse(bytes32 _requestId, bytes32 _responseId, uint256 _bondSize) public {
+    vm.assume(_requestId != _responseId);
 
     // Mock request data
     bytes memory _requestData = abi.encode(
@@ -216,23 +202,20 @@ contract RootVerificationModule_UnitTest is Test {
     });
 
     // Mock and expect the call to the oracle, getting the response
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
 
     // Mock and expect the call to the tree verifier, calculating the root
-    vm.mockCall(
+    _mockAndExpect(
       address(treeVerifier),
       abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
       abi.encode(bytes32('randomRoot2'))
     );
-    vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
 
-    // Test: call disputeResponse
     vm.prank(address(oracle));
     IOracle.Dispute memory _dispute =
       rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
 
-    // Check: dispute is correct?
+    // Check: is the dispute data properly stored?
     assertEq(_dispute.disputer, _disputer, 'Mismatch: disputer');
     assertEq(_dispute.proposer, _proposer, 'Mismatch: proposer');
     assertEq(_dispute.responseId, _responseId, 'Mismatch: responseId');
@@ -241,10 +224,8 @@ contract RootVerificationModule_UnitTest is Test {
     assertEq(_dispute.createdAt, block.timestamp, 'Mismatch: createdAt');
   }
 
-  function test_disputeResponse_emitsEvent(uint256 _bondSize) public {
-    // Mock id's (insure they are different)
-    bytes32 _requestId = mockId;
-    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+  function test_emitsEvent(bytes32 _requestId, bytes32 _responseId, uint256 _bondSize) public {
+    vm.assume(_requestId != _responseId);
 
     // Mock request data
     bytes memory _requestData = abi.encode(
@@ -271,20 +252,19 @@ contract RootVerificationModule_UnitTest is Test {
     });
 
     // Mock and expect the call to the oracle, getting the response
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
 
     // Mock and expect the call to the tree verifier, calculating the root
-    vm.mockCall(
+    _mockAndExpect(
       address(treeVerifier),
       abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
       abi.encode(bytes32('randomRoot2'))
     );
 
-    // Expect event
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(rootVerificationModule));
     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
 
-    // Test: call disputeResponse
     vm.prank(address(oracle));
     rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
   }
@@ -292,10 +272,9 @@ contract RootVerificationModule_UnitTest is Test {
   /**
    * @notice Test if dispute correct response returns the correct status
    */
-  function test_disputeResponse_disputeCorrectResponse(uint256 _bondSize) public {
-    // Mock id's (insure they are different)
-    bytes32 _requestId = mockId;
-    bytes32 _responseId = bytes32(uint256(mockId) + 1);
+  function test_disputeCorrectResponse(bytes32 _requestId, bytes32 _responseId, uint256 _bondSize) public {
+    vm.assume(_requestId != _responseId);
+
     bytes memory _encodedCorrectRoot = abi.encode(bytes32('randomRoot'));
 
     // Mock request data
@@ -323,23 +302,20 @@ contract RootVerificationModule_UnitTest is Test {
     });
 
     // Mock and expect the call to the oracle, getting the response
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponse, (_responseId)), abi.encode(_mockResponse));
 
     // Mock and expect the call to the tree verifier, calculating the root
-    vm.mockCall(
+    _mockAndExpect(
       address(treeVerifier),
       abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)),
       _encodedCorrectRoot
     );
-    vm.expectCall(address(treeVerifier), abi.encodeCall(ITreeVerifier.calculateRoot, (_treeData, _leavesToInsert)));
 
-    // Test: call disputeResponse
     vm.prank(address(oracle));
     IOracle.Dispute memory _dispute =
       rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
 
-    // Check: dispute is correct?
+    // Check: is the dispute data properly stored?
     assertEq(_dispute.disputer, _disputer, 'Mismatch: disputer');
     assertEq(_dispute.proposer, _proposer, 'Mismatch: proposer');
     assertEq(_dispute.responseId, _responseId, 'Mismatch: responseId');
@@ -351,21 +327,30 @@ contract RootVerificationModule_UnitTest is Test {
   /**
    * @notice Test if dispute response reverts when called by caller who's not the oracle
    */
-  function test_disputeResponse_revertWrongCaller(address _randomCaller) public {
+  function test_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
-    // Check: revert if wrong caller
+    // Check: revert if not called by the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
 
-    // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);
     rootVerificationModule.disputeResponse(mockId, mockId, dude, dude);
   }
+}
 
+contract RootVerificationModule_Unit_DisputeEscalated is BaseTest {
   /**
-   * @notice Test that the moduleName function returns the correct name
+   * @notice Test if dispute escalated do nothing
    */
-  function test_moduleNameReturnsName() public {
-    assertEq(rootVerificationModule.moduleName(), 'RootVerificationModule');
+  function test_returnCorrectStatus() public {
+    // Record sstore and sload
+    vm.prank(address(oracle));
+    vm.record();
+    rootVerificationModule.disputeEscalated(mockId);
+    (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(rootVerificationModule));
+
+    // Check: no storage access?
+    assertEq(_reads.length, 0);
+    assertEq(_writes.length, 0);
   }
 }

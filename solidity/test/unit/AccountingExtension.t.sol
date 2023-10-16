@@ -3,18 +3,42 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../utils/Helpers.sol';
+
 import {
   AccountingExtension,
   IAccountingExtension,
   IERC20,
   IOracle
 } from '../../contracts/extensions/AccountingExtension.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
+
+contract ForTest_AccountingExtension is AccountingExtension {
+  using EnumerableSet for EnumerableSet.AddressSet;
+
+  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
+
+  function forTest_setBalanceOf(address _user, IERC20 _token, uint256 _amount) public {
+    balanceOf[_user][_token] = _amount;
+  }
+
+  function forTest_setBondedBalanceOf(bytes32 _requestId, address _user, IERC20 _token, uint256 _amount) public {
+    bondedAmountOf[_user][_token][_requestId] = _amount;
+  }
+}
 
 /**
  * @title Accounting Extension Unit tests
  */
-contract AccountingExtension_UnitTest is Test {
-  using stdStorage for StdStorage;
+contract BaseTest is Test, Helpers {
+  // The target contract
+  ForTest_AccountingExtension public extension;
+  // A mock oracle
+  IOracle public oracle;
+  // Mock deposit token
+  IERC20 public token;
+  // Mock sender
+  address public sender = makeAddr('sender');
 
   // Events tested
   event Deposited(address indexed _depositor, IERC20 indexed _token, uint256 _amount);
@@ -24,15 +48,6 @@ contract AccountingExtension_UnitTest is Test {
   );
   event Bonded(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed _token, uint256 _amount);
   event Released(bytes32 indexed _requestId, address indexed _depositor, IERC20 indexed _token, uint256 _amount);
-
-  // The target contract
-  AccountingExtension public module;
-
-  // A mock oracle
-  IOracle public oracle;
-
-  // Mock deposit token
-  IERC20 public token;
 
   /**
    * @notice Deploy the target and mock oracle extension
@@ -44,59 +59,52 @@ contract AccountingExtension_UnitTest is Test {
     token = IERC20(makeAddr('Token'));
     vm.etch(address(token), hex'069420');
 
-    module = new AccountingExtension(oracle);
+    extension = new ForTest_AccountingExtension(oracle);
   }
+}
 
+contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
   /**
-   * @notice Test an erc20 deposit
+   * @notice Test an ERC20 deposit
    */
-  function test_depositErc20(uint256 _amount) public {
-    address _sender = makeAddr('sender');
-
-    // Mock and expect the erc20 transfer
-    vm.mockCall(
-      address(token), abi.encodeCall(IERC20.transferFrom, (_sender, address(module), _amount)), abi.encode(true)
+  function test_depositERC20(uint256 _amount) public {
+    // Mock and expect the ERC20 transfer
+    _mockAndExpect(
+      address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
     );
-    vm.expectCall(address(token), abi.encodeCall(IERC20.transferFrom, (_sender, address(module), _amount)));
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Deposited(_sender, token, _amount);
+    vm.expectEmit(true, true, true, true, address(extension));
+    emit Deposited(sender, token, _amount);
 
-    vm.prank(_sender);
-    module.deposit(token, _amount);
+    vm.prank(sender);
+    extension.deposit(token, _amount);
 
     // Check: balance of token deposit increased?
-    assertEq(module.balanceOf(_sender, token), _amount);
+    assertEq(extension.balanceOf(sender, token), _amount);
   }
 
   /**
-   * @notice Test withdrawing erc20. Should update balance and emit event
+   * @notice Test withdrawing ERC20. Should update balance and emit event
    */
-  function test_withdrawErc20(uint256 _amount, uint256 _initialBalance) public {
+  function test_withdrawERC20(uint256 _amount, uint256 _initialBalance) public {
     vm.assume(_amount > 0);
 
-    _initialBalance = bound(_initialBalance, _amount, type(uint256).max);
-
-    address _sender = makeAddr('sender');
-
     // Set the initial balance
-    stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_sender).with_key(address(token))
-      .checked_write(_initialBalance);
+    _initialBalance = bound(_initialBalance, _amount, type(uint256).max);
+    extension.forTest_setBalanceOf(sender, token, _initialBalance);
 
-    // Mock and expect the erc20 transfer
-    vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (_sender, _amount)), abi.encode(true));
-    vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (_sender, _amount)));
+    _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (sender, _amount)), abi.encode(true));
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Withdrew(_sender, token, _amount);
+    vm.expectEmit(true, true, true, true, address(extension));
+    emit Withdrew(sender, token, _amount);
 
-    vm.prank(_sender);
-    module.withdraw(token, _amount);
+    vm.prank(sender);
+    extension.withdraw(token, _amount);
 
     // Check: balance of token deposit decreased?
-    assertEq(module.balanceOf(_sender, token), _initialBalance - _amount);
+    assertEq(extension.balanceOf(sender, token), _initialBalance - _amount);
   }
 
   /**
@@ -105,20 +113,152 @@ contract AccountingExtension_UnitTest is Test {
   function test_withdrawRevert(uint256 _amount, uint256 _initialBalance) public {
     vm.assume(_amount > 0);
 
-    address _sender = makeAddr('sender');
-
-    // amount > balance
+    // Set the initial balance
     _initialBalance = bound(_initialBalance, 0, _amount - 1);
+    extension.forTest_setBalanceOf(sender, token, _initialBalance);
+
+    // Check: does it revert if balance is insufficient?
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    vm.prank(sender);
+    extension.withdraw(token, _amount);
+  }
+}
+
+contract AccountingExtension_Unit_Bond is BaseTest {
+  /**
+   * @notice Test bonding an amount (which is taken from the bonder balanceOf)
+   */
+  function test_updateBalance(
+    bytes32 _requestId,
+    uint256 _amount,
+    uint256 _initialBalance,
+    address _bonder,
+    address _sender
+  ) public {
+    _amount = bound(_amount, 0, _initialBalance);
+
+    vm.prank(_bonder);
+    extension.approveModule(_sender);
+
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
+
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Set the initial balance
-    stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_sender).with_key(address(token))
-      .checked_write(_initialBalance);
+    extension.forTest_setBalanceOf(_bonder, token, _initialBalance);
 
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(extension));
+    emit Bonded(_requestId, _bonder, token, _amount);
+
     vm.prank(_sender);
-    module.withdraw(token, _amount);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+
+    // Check: is the balanceOf decreased?
+    assertEq(extension.balanceOf(_bonder, token), _initialBalance - _amount);
+
+    // Check: is the bondedAmountOf increased?
+    assertEq(extension.bondedAmountOf(_bonder, token, _requestId), _amount);
   }
 
+  /**
+   * @notice Test bonding reverting if balanceOf is less than the amount to bond
+   */
+  function test_revertIfInsufficientBalance(
+    bytes32 _requestId,
+    uint256 _amount,
+    uint248 _initialBalance,
+    address _bonder,
+    address _sender
+  ) public {
+    _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
+
+    vm.prank(_bonder);
+    extension.approveModule(_sender);
+
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
+
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+
+    // Set the initial balance
+    extension.forTest_setBalanceOf(_bonder, token, _initialBalance);
+
+    // Check: does it revert if balance is insufficient?
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+
+    vm.prank(_sender);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+  }
+
+  /**
+   * @notice Test bonding reverting if balanceOf is less than the amount to bond
+   */
+  function test_revertIfDisallowedModuleCalling(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender
+  ) public {
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
+
+    // Check: does it revert if the module is not allowed?
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
+
+    vm.prank(_sender);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+  }
+
+  /**
+   * @notice Test bonding reverting if the module is not approved to bond the _bonder funds
+   */
+  function test_revertIfInsufficientAllowance(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _module
+  ) public {
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
+
+    // Mock and expect the module checking for a participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+
+    // Check: does it revert if the module is not approved?
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+
+    vm.prank(_module);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+  }
+
+  /**
+   * @notice Test bonding reverting if the caller is not approved to bond the _bonder funds
+   */
+  function test_withCaller_revertIfInsufficientAllowance(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender
+  ) public {
+    // mock the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
+
+    // Mock and expect the module checking for a participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+
+    // Check: does it revert if the caller is not approved?
+    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+
+    vm.prank(_sender);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
+  }
+}
+
+contract AccountingExtension_Unit_Pay is BaseTest {
   /**
    * @notice Test paying a receiver. Should update balance and emit event.
    */
@@ -132,34 +272,30 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, 0, _initialBalance);
 
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
 
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
 
     // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_payer).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
+    extension.forTest_setBondedBalanceOf(_requestId, _payer, token, _initialBalance);
 
-    // check: event
-    vm.expectEmit(true, true, true, true, address(module));
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(extension));
     emit Paid(_requestId, _receiver, _payer, token, _amount);
 
     vm.prank(_sender);
-    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
+    extension.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
 
-    // check: balance receiver
-    assertEq(module.balanceOf(_receiver, token), _amount);
+    // Check: is the receiver's balance increased?
+    assertEq(extension.balanceOf(_receiver, token), _amount);
 
-    // check: bonded balance payer
-    assertEq(module.bondedAmountOf(_payer, token, _requestId), _initialBalance - _amount);
+    // Check: is the payer's balance decreased?
+    assertEq(extension.bondedAmountOf(_payer, token, _requestId), _initialBalance - _amount);
   }
 
   /**
@@ -175,25 +311,23 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
 
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
 
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _payer)), abi.encode(true));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _receiver)), abi.encode(true));
 
     // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_payer).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
+    extension.forTest_setBondedBalanceOf(_requestId, _payer, token, _initialBalance);
 
+    // Check: does it revert if the payer has insufficient funds?
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+
     vm.prank(_sender);
-    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
+    extension.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
   }
 
   /**
@@ -209,153 +343,21 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
 
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
 
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
-    vm.prank(_sender);
-    module.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
-  }
-
-  /**
-   * @notice Test bonding an amount (which is taken from the bonder balanceOf)
-   */
-  function test_bondUpdateBalance(
-    bytes32 _requestId,
-    uint256 _amount,
-    uint256 _initialBalance,
-    address _bonder,
-    address _sender
-  ) public {
-    _amount = bound(_amount, 0, _initialBalance);
-
-    vm.prank(_bonder);
-    module.approveModule(_sender);
-
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
-
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
-
-    // Set the initial balance
-    stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_bonder).with_key(address(token))
-      .checked_write(_initialBalance);
-
-    // check: event
-    vm.expectEmit(true, true, true, true, address(module));
-    emit Bonded(_requestId, _bonder, token, _amount);
-
-    vm.prank(_sender);
-    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
-
-    // check: balance receiver
-    assertEq(module.balanceOf(_bonder, token), _initialBalance - _amount);
-
-    // check: bonded balance payer
-    assertEq(module.bondedAmountOf(_bonder, token, _requestId), _amount);
-  }
-
-  /**
-   * @notice Test bonding reverting if balanceOf is less than the amount to bond
-   */
-  function test_bondInsufficientBalance(
-    bytes32 _requestId,
-    uint256 _amount,
-    uint248 _initialBalance,
-    address _bonder,
-    address _sender
-  ) public {
-    _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
-
-    vm.prank(_bonder);
-    module.approveModule(_sender);
-
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
-
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
-
-    // Set the initial balance
-    stdstore.target(address(module)).sig('balanceOf(address,address)').with_key(_bonder).with_key(address(token))
-      .checked_write(_initialBalance);
-
-    // check: revert
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
-
-    vm.prank(_sender);
-    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
-  }
-
-  /**
-   * @notice Test bonding reverting if balanceOf is less than the amount to bond
-   */
-  function test_bondDisallowedModuleCalling(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _bonder,
-    address _sender
-  ) public {
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
-
-    // check: revert
+    // Check: does it revert if the module calling is not approved?
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
 
     vm.prank(_sender);
-    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+    extension.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
   }
+}
 
-  function test_bond_revertInsufficientAllowance(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _bonder,
-    address _sender
-  ) public {
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
-
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
-
-    // check: revert
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
-
-    vm.prank(_sender);
-    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
-  }
-
-  function test_bondWithCaller_revertInsufficientAllowance(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _bonder,
-    address _sender
-  ) public {
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
-
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
-
-    // check: revert
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
-
-    vm.prank(_sender);
-    module.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
-  }
+contract AccountingExtension_Unit_Release is BaseTest {
   /**
    * @notice Test releasing an amount (which is added to the bonder balanceOf)
    */
-
   function test_releaseUpdateBalance(
     bytes32 _requestId,
     uint256 _amount,
@@ -365,31 +367,27 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, 0, _initialBalance);
 
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
 
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_bonder).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
+    extension.forTest_setBondedBalanceOf(_requestId, _bonder, token, _initialBalance);
 
-    // check: event
-    vm.expectEmit(true, true, true, true, address(module));
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(extension));
     emit Released(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
-    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+    extension.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
 
-    // check: balance receiver
-    assertEq(module.balanceOf(_bonder, token), _amount);
+    // Check: is the balance increased?
+    assertEq(extension.balanceOf(_bonder, token), _amount);
 
-    // check: bonded balance payer
-    assertEq(module.bondedAmountOf(_bonder, token, _requestId), _initialBalance - _amount);
+    // check: is the bonded balance decreased?
+    assertEq(extension.bondedAmountOf(_bonder, token, _requestId), _initialBalance - _amount);
   }
 
   /**
@@ -404,24 +402,20 @@ contract AccountingExtension_UnitTest is Test {
   ) public {
     _amount = bound(_amount, uint256(_initialBalance) + 1, type(uint256).max);
 
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
 
-    // mock the module checking for participant
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)));
+    // Mock and expect the module checking for participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Set the initial bonded balance
-    stdstore.target(address(module)).sig('bondedAmountOf(address,address,bytes32)').with_key(_bonder).with_key(
-      address(token)
-    ).with_key(_requestId).checked_write(_initialBalance);
+    extension.forTest_setBondedBalanceOf(_requestId, _bonder, token, _initialBalance);
 
-    // check: revert
+    // Check: does it revert if calling with insufficient balance?
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
 
     vm.prank(_sender);
-    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+    extension.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
 
   /**
@@ -433,42 +427,55 @@ contract AccountingExtension_UnitTest is Test {
     address _bonder,
     address _sender
   ) public {
-    // mock the module calling validation
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)));
+    // Mock and expect the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
 
-    // check: revert
+    // Check: does it revert if the module is not approved?
     vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
 
     vm.prank(_sender);
-    module.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
+    extension.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
   }
+}
 
-  function test_userApprovedModules(address _user, uint8 _modulesAmount) public {
+contract AccountingExtension_Unit_Approvals is BaseTest {
+  /**
+   * @notice Test approving modules / callers
+   */
+  function test_approvedModules(address _user, uint8 _modulesAmount) public {
+    // Approve all modules from the array and storing them in memory
     address[] memory _modules = new address[](_modulesAmount);
     for (uint256 _i; _i < _modulesAmount; _i++) {
       address _module = vm.addr(_i + 1);
       _modules[_i] = _module;
       vm.prank(_user);
-      module.approveModule(_module);
+      extension.approveModule(_module);
     }
 
-    assertEq(_modules, module.userApprovedModules(_user));
+    // Check: does the approved modules equals the modules stored in the array?
+    assertEq(_modules, extension.approvedModules(_user));
   }
 
+  /**
+   * @notice Test revoking approvals.
+   */
   function test_revokeModules(address _user, address _module) public {
+    // Approve a module
     vm.prank(_user);
-    module.approveModule(_module);
+    extension.approveModule(_module);
 
+    // Create an array with just the approved module
     address[] memory _approvedModules = new address[](1);
     _approvedModules[0] = _module;
 
-    assertEq(_approvedModules, module.userApprovedModules(_user));
+    // Check: does the returned approved modules match?
+    assertEq(_approvedModules, extension.approvedModules(_user));
 
     vm.prank(_user);
-    module.revokeModule(_module);
+    extension.revokeModule(_module);
 
+    // Check: does it return an empty array after revoking the module?
     address[] memory _emptyArray = new address[](0);
-    assertEq(_emptyArray, module.userApprovedModules(_user));
+    assertEq(_emptyArray, extension.approvedModules(_user));
   }
 }

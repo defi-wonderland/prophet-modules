@@ -8,6 +8,11 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 contract Helpers is DSTestPlus {
+  function _mockAndExpect(address _receiver, bytes memory _calldata, bytes memory _returned) internal {
+    vm.mockCall(_receiver, _calldata, _returned);
+    vm.expectCall(_receiver, _calldata);
+  }
+
   function _getMockDispute(
     bytes32 _requestId,
     address _disputer,

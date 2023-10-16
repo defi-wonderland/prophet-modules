@@ -157,7 +157,7 @@ contract AccountingExtension is IAccountingExtension {
   }
 
   /// @inheritdoc IAccountingExtension
-  function userApprovedModules(address _user) external view returns (address[] memory _approvedModules) {
+  function approvedModules(address _user) external view returns (address[] memory _approvedModules) {
     _approvedModules = _approvals[_user].values();
   }
 }

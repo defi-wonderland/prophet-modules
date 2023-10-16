@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 
@@ -13,26 +15,30 @@ import {
 } from '../../../../contracts/modules/resolution/ArbitratorModule.sol';
 
 /**
+ * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
+ */
+contract ForTest_ArbitratorModule is ArbitratorModule {
+  constructor(IOracle _oracle) ArbitratorModule(_oracle) {}
+
+  function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
+    requestData[_requestId] = _data;
+  }
+
+  function forTest_setDisputeStatus(bytes32 _disputeId, IArbitratorModule.ArbitrationStatus _status) public {
+    _disputeData[_disputeId] = _status;
+  }
+}
+
+/**
  * @title Arbitrator Module Unit tests
  */
-contract ArbitratorModule_UnitTest is Test {
-  using stdStorage for StdStorage;
-
+contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_ArbitratorModule public arbitratorModule;
-
   // A mock oracle
   IOracle public oracle;
-
   // A mock arbitrator
   IArbitrator public arbitrator;
-
-  // Some unnoticeable dude
-  address public dude;
-
-  // 100% random sequence of bytes representing request, response, or dispute id
-  bytes32 public mockId = bytes32('69');
-
   // Create a new dummy dispute
   IOracle.Dispute public mockDispute;
 
@@ -51,21 +57,28 @@ contract ArbitratorModule_UnitTest is Test {
 
     arbitratorModule = new ForTest_ArbitratorModule(oracle);
 
-    dude = makeAddr('dude');
-
     mockDispute = IOracle.Dispute({
       createdAt: block.timestamp,
-      disputer: dude,
-      proposer: dude,
-      responseId: mockId,
-      requestId: mockId,
+      disputer: makeAddr('disputer'),
+      proposer: makeAddr('proposer'),
+      responseId: bytes32('69'),
+      requestId: bytes32('69'),
       status: IOracle.DisputeStatus.Active
     });
   }
+}
 
+contract ArbitratorModule_Unit_ModuleData is BaseTest {
+  /**
+   * @notice Test that the moduleName function returns the correct name
+   */
+  function test_moduleNameReturnsName() public {
+    assertEq(arbitratorModule.moduleName(), 'ArbitratorModule');
+  }
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
+
   function test_decodeRequestData(bytes32 _requestId, address _arbitrator) public {
     // Mock data
     bytes memory _requestData = abi.encode(address(_arbitrator));
@@ -84,7 +97,7 @@ contract ArbitratorModule_UnitTest is Test {
    * @notice Test that the status is correctly retrieved
    */
   function test_getStatus(uint256 _status, bytes32 _disputeId) public {
-    vm.assume(_status <= uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    _status = bound(_status, 0, uint256(IArbitratorModule.ArbitrationStatus.Resolved));
     IArbitratorModule.ArbitrationStatus _arbitratorStatus = IArbitratorModule.ArbitrationStatus(_status);
 
     // Store the mock dispute
@@ -93,229 +106,65 @@ contract ArbitratorModule_UnitTest is Test {
     // Check: The correct status is returned?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(_status));
   }
+}
 
-  /**
-   * @notice Test that the resolve function works as expected
-   */
-  function test_resolveDispute(bytes32 _disputeId, bytes32 _requestId, uint256 _status) public {
-    vm.assume(_status <= uint256(IOracle.DisputeStatus.Lost));
-    vm.assume(_status > uint256(IOracle.DisputeStatus.Escalated));
-    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
-
-    // Store the mock dispute
-    bytes memory _requestData = abi.encode(address(arbitrator));
-    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
-
-    // Mock and expect the dummy dispute
-    mockDispute.requestId = _requestId;
-    mockDispute.status = IOracle.DisputeStatus.Escalated;
-
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)));
-
-    // Check: the arbitrator is called?
-    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus));
-    vm.expectCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)));
-
-    // Mock the oracle function
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.mockCall(
-      address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _arbitratorStatus)), abi.encode()
-    );
-
-    // Test: resolve the dispute
-    vm.prank(address(oracle));
-    arbitratorModule.resolveDispute(_disputeId);
-
-    // Check: status is now Resolved?
-    assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
-  }
-
-  function test_resolveDisputeRevertsIfInvalidResolveStatus(
-    bytes32 _disputeId,
-    bytes32 _requestId,
-    uint256 _status
-  ) public {
-    vm.assume(_status <= uint256(IOracle.DisputeStatus.Escalated));
-    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
-
-    // Store the mock dispute
-    bytes memory _requestData = abi.encode(address(arbitrator));
-    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
-
-    // Mock and expect the dummy dispute
-    mockDispute.requestId = _requestId;
-    mockDispute.status = IOracle.DisputeStatus.Escalated;
-
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)));
-
-    // Check: the arbitrator is called?
-    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus));
-    vm.expectCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)));
-
-    // Mock the oracle function
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.mockCall(
-      address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _arbitratorStatus)), abi.encode()
-    );
-
-    vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidResolutionStatus.selector));
-
-    // Test: resolve the dispute
-    vm.prank(address(oracle));
-    arbitratorModule.resolveDispute(_disputeId);
-  }
-
-  function test_resolveDisputeEmitsEvent(bytes32 _disputeId, bytes32 _requestId, uint256 _status) public {
-    vm.assume(_status <= uint256(IOracle.DisputeStatus.Lost));
-    vm.assume(_status > uint256(IOracle.DisputeStatus.Escalated));
-    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
-
-    // Store the mock dispute
-    bytes memory _requestData = abi.encode(address(arbitrator));
-    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
-
-    // Mock and expect the dummy dispute
-    mockDispute.requestId = _requestId;
-    mockDispute.status = IOracle.DisputeStatus.Escalated;
-
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-
-    // Check: the arbitrator is called?
-    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus));
-
-    // Mock the oracle function
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-
-    vm.mockCall(
-      address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _arbitratorStatus)), abi.encode()
-    );
-
-    // Expect the event
-    vm.expectEmit(true, true, true, true, address(arbitratorModule));
-    emit DisputeResolved(_requestId, _disputeId, _arbitratorStatus);
-
-    // Test: resolve the dispute
-    vm.prank(address(oracle));
-    arbitratorModule.resolveDispute(_disputeId);
-  }
-
-  /**
-   * @notice resolve dispute reverts if the dispute status isn't Active
-   */
-  function test_resolveDisputeInvalidDisputeReverts(bytes32 _disputeId) public {
-    // Store the requestData
-    bytes memory _requestData = abi.encode(address(arbitrator));
-    arbitratorModule.forTest_setRequestData(mockId, _requestData);
-
-    // Test the 3 different invalid status (None, Won, Lost)
-    for (uint256 _status; _status < uint256(type(IOracle.DisputeStatus).max); _status++) {
-      if (IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Escalated) continue;
-      // Create a new dummy dispute
-      IOracle.Dispute memory _dispute = IOracle.Dispute({
-        createdAt: block.timestamp,
-        disputer: dude,
-        proposer: dude,
-        responseId: mockId,
-        requestId: mockId,
-        status: IOracle.DisputeStatus(_status)
-      });
-
-      // Mock and expect the dummy dispute
-      vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(_dispute));
-      vm.expectCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)));
-
-      // Check: revert?
-      vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidDisputeId.selector));
-
-      // Test: try calling resolve
-      vm.prank(address(oracle));
-      arbitratorModule.resolveDispute(_disputeId);
-    }
-  }
-
-  /**
-   * @notice Test that the resolve function reverts if the caller isn't the arbitrator
-   */
-  function test_resolveDisputeWrongSenderReverts(bytes32 _disputeId, bytes32 _requestId, address _caller) public {
-    vm.assume(_caller != address(oracle));
-
-    // Store the mock dispute
-    bytes memory _requestData = abi.encode(address(arbitrator));
-    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
-
-    // Check: revert?
-    vm.expectRevert(IModule.Module_OnlyOracle.selector);
-
-    // Test: resolve the dispute
-    vm.prank(_caller);
-    arbitratorModule.resolveDispute(_disputeId);
-  }
-
-  // Escalate
+contract ArbitratorModule_Unit_StartResolution is BaseTest {
   /**
    * @notice Test that the escalate function works as expected
    */
   function test_startResolution(bytes32 _disputeId, bytes32 _requestId) public {
     // Mock and expect the dummy dispute
     mockDispute.requestId = _requestId;
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)));
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
 
     // Store the requestData
     bytes memory _requestData = abi.encode(address(arbitrator));
     arbitratorModule.forTest_setRequestData(_requestId, _requestData);
 
     // Mock and expect the callback to the arbitrator
-    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
-    vm.expectCall(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)));
+    _mockAndExpect(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
 
-    // Test: escalate the dispute
     vm.prank(address(oracle));
     arbitratorModule.startResolution(_disputeId);
 
-    // Check: status is now Escalated?
+    // Check: is status now Escalated?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
   }
 
-  function test_startResolutionEmitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_emitsEvent(bytes32 _disputeId, bytes32 _requestId) public {
     // Mock and expect the dummy dispute
     mockDispute.requestId = _requestId;
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
 
     // Store the requestData
     bytes memory _requestData = abi.encode(address(arbitrator));
     arbitratorModule.forTest_setRequestData(_requestId, _requestData);
 
     // Mock and expect the callback to the arbitrator
-    vm.mockCall(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
+    _mockAndExpect(address(arbitrator), abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
 
-    // Expect the event
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(arbitratorModule));
     emit ResolutionStarted(_requestId, _disputeId);
 
-    // Test: escalate the dispute
     vm.prank(address(oracle));
     arbitratorModule.startResolution(_disputeId);
   }
 
-  // Revert if caller isn't the oracle
-  function test_startResolutionRevertInvalidCaller(bytes32 _disputeId) public {
-    // Check: revert?
+  function test_revertInvalidCaller(address _caller, bytes32 _disputeId) public {
+    vm.assume(_caller != address(oracle));
+
+    // Check: does it revert if the caller is not the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
 
-    // Test: escalate the dispute
-    vm.prank(dude);
+    vm.prank(_caller);
     arbitratorModule.startResolution(_disputeId);
   }
 
-  // Revert if wrong arbitrator
-  function test_startResolutionRevertIfEmptyArbitrator(bytes32 _disputeId, bytes32 _requestId) public {
+  function test_revertIfEmptyArbitrator(bytes32 _disputeId, bytes32 _requestId) public {
     // Mock and expect the dummy dispute
     mockDispute.requestId = _requestId;
-    vm.mockCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)));
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
 
     // Store the requestData
     bytes memory _requestData = abi.encode(address(0));
@@ -328,26 +177,152 @@ contract ArbitratorModule_UnitTest is Test {
     vm.prank(address(oracle));
     arbitratorModule.startResolution(_disputeId);
   }
-
-  /**
-   * @notice Test that the moduleName function returns the correct name
-   */
-  function test_moduleNameReturnsName() public {
-    assertEq(arbitratorModule.moduleName(), 'ArbitratorModule');
-  }
 }
 
-/**
- * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
- */
-contract ForTest_ArbitratorModule is ArbitratorModule {
-  constructor(IOracle _oracle) ArbitratorModule(_oracle) {}
+contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
+  /**
+   * @notice Test that the resolve function works as expected
+   */
+  function test_resolveDispute(bytes32 _disputeId, bytes32 _requestId, uint256 _status) public {
+    vm.assume(_status <= uint256(IOracle.DisputeStatus.Lost));
+    vm.assume(_status > uint256(IOracle.DisputeStatus.Escalated));
+    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
 
-  function forTest_setRequestData(bytes32 _requestId, bytes memory _data) public {
-    requestData[_requestId] = _data;
+    // Store the mock dispute
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock the dummy dispute
+    mockDispute.requestId = _requestId;
+    mockDispute.status = IOracle.DisputeStatus.Escalated;
+
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    // Mock and expect getAnswer to be called on the arbitrator
+    _mockAndExpect(
+      address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus)
+    );
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _arbitratorStatus)), abi.encode()
+    );
+
+    vm.prank(address(oracle));
+    arbitratorModule.resolveDispute(_disputeId);
+
+    // Check: is status now Resolved?
+    assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
   }
 
-  function forTest_setDisputeStatus(bytes32 _disputeId, IArbitratorModule.ArbitrationStatus _status) public {
-    _disputeData[_disputeId] = _status;
+  function test_revertsIfInvalidResolveStatus(bytes32 _disputeId, bytes32 _requestId, uint256 _status) public {
+    vm.assume(_status <= uint256(IOracle.DisputeStatus.Escalated));
+    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
+
+    // Store the mock dispute
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock the dummy dispute
+    mockDispute.requestId = _requestId;
+    mockDispute.status = IOracle.DisputeStatus.Escalated;
+
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    // Mock and expect getAnswer to be called on the arbitrator
+    _mockAndExpect(
+      address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus)
+    );
+
+    // Check: does it revert if the resolution status is invalid?
+    vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidResolutionStatus.selector));
+
+    vm.prank(address(oracle));
+    arbitratorModule.resolveDispute(_disputeId);
+  }
+
+  function test_emitsEvent(bytes32 _disputeId, bytes32 _requestId, uint256 _status) public {
+    vm.assume(_status <= uint256(IOracle.DisputeStatus.Lost));
+    vm.assume(_status > uint256(IOracle.DisputeStatus.Escalated));
+    IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
+
+    // Store the mock dispute
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Mock the dummy dispute
+    mockDispute.requestId = _requestId;
+    mockDispute.status = IOracle.DisputeStatus.Escalated;
+
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(mockDispute));
+
+    // Mock and expect getAnswer to be called on the arbitrator
+    _mockAndExpect(
+      address(arbitrator), abi.encodeCall(arbitrator.getAnswer, (_disputeId)), abi.encode(_arbitratorStatus)
+    );
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(oracle.updateDisputeStatus, (_disputeId, _arbitratorStatus)), abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(arbitratorModule));
+    emit DisputeResolved(_requestId, _disputeId, _arbitratorStatus);
+
+    vm.prank(address(oracle));
+    arbitratorModule.resolveDispute(_disputeId);
+  }
+
+  /**
+   * @notice resolve dispute reverts if the dispute status isn't Active
+   */
+  function test_revertIfInvalidDispute(bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) public {
+    // Store the requestData
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Test the 3 different invalid status (None, Won, Lost)
+    for (uint256 _status; _status < uint256(type(IOracle.DisputeStatus).max); _status++) {
+      if (IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Escalated) continue;
+      // Create a new dummy dispute
+      IOracle.Dispute memory _dispute = IOracle.Dispute({
+        createdAt: block.timestamp,
+        disputer: makeAddr('disputer'),
+        proposer: makeAddr('proposer'),
+        responseId: _responseId,
+        requestId: _requestId,
+        status: IOracle.DisputeStatus(_status)
+      });
+
+      // Mock and expect IOracle.getDispute to be called
+      _mockAndExpect(address(oracle), abi.encodeCall(oracle.getDispute, (_disputeId)), abi.encode(_dispute));
+
+      // Check: does it revert if the dispute id is invalid?
+      vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidDisputeId.selector));
+
+      vm.prank(address(oracle));
+      arbitratorModule.resolveDispute(_disputeId);
+    }
+  }
+
+  /**
+   * @notice Test that the resolve function reverts if the caller isn't the arbitrator
+   */
+  function test_revertIfWrongSender(bytes32 _disputeId, bytes32 _requestId, address _caller) public {
+    vm.assume(_caller != address(oracle));
+
+    // Store the mock dispute
+    bytes memory _requestData = abi.encode(address(arbitrator));
+    arbitratorModule.forTest_setRequestData(_requestId, _requestData);
+
+    // Check: does it revert if not called by the Oracle?
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
+
+    vm.prank(_caller);
+    arbitratorModule.resolveDispute(_disputeId);
   }
 }

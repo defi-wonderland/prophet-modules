@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
@@ -26,28 +28,22 @@ contract ForTest_HttpRequestModule is HttpRequestModule {
 /**
  * @title HTTP Request Module Unit tests
  */
-contract HttpRequestModule_UnitTest is Test {
-  // Mock data
+contract BaseTest is Test, Helpers {
+  // Mock request data
   string public constant URL = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
   IHttpRequestModule.HttpMethod public constant METHOD = IHttpRequestModule.HttpMethod.GET;
   string public constant BODY = '69420';
 
-  IERC20 public immutable TOKEN;
-
+  // Mock token
+  IERC20 public immutable TOKEN = IERC20(makeAddr('ERC20'));
   // The target contract
   ForTest_HttpRequestModule public httpRequestModule;
-
   // A mock oracle
   IOracle public oracle;
-
   // A mock accounting extension
-  IAccountingExtension public accounting;
+  IAccountingExtension public accounting = IAccountingExtension(makeAddr('accounting'));
 
   event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
-
-  constructor() {
-    TOKEN = IERC20(makeAddr('ERC20'));
-  }
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -61,21 +57,31 @@ contract HttpRequestModule_UnitTest is Test {
 
     httpRequestModule = new ForTest_HttpRequestModule(oracle);
   }
+}
+
+contract HttpRequestModule_Unit_ModuleData is BaseTest {
+  /**
+   * @notice Test that the moduleName function returns the correct name
+   */
+  function test_moduleNameReturnsName() public {
+    assertEq(httpRequestModule.moduleName(), 'HttpRequestModule');
+  }
 
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(bytes32 _requestId, uint256 _amount) public {
+  function test_decodeRequestData(bytes32 _requestId, uint256 _amount, IERC20 _token) public {
     bytes memory _requestData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: URL,
         method: METHOD,
         body: BODY,
         accountingExtension: accounting,
-        paymentToken: TOKEN,
+        paymentToken: _token,
         paymentAmount: _amount
       })
     );
+
     // Set the request data
     httpRequestModule.forTest_setRequestData(_requestId, _requestData);
 
@@ -87,24 +93,31 @@ contract HttpRequestModule_UnitTest is Test {
     assertEq(uint256(_params.method), uint256(METHOD));
     assertEq(_params.body, BODY);
     assertEq(address(_params.accountingExtension), address(accounting));
-    assertEq(address(_params.paymentToken), address(TOKEN));
+    assertEq(address(_params.paymentToken), address(_token));
     assertEq(_params.paymentAmount, _amount);
   }
+}
 
+contract HttpRequestModule_Unit_Setup is BaseTest {
   /**
    * @notice Test that the afterSetupRequest hook:
    *          - decodes the request data
    *          - gets the request from the oracle
    *          - calls the bond function on the accounting extension
    */
-  function test_afterSetupRequestTriggered(bytes32 _requestId, address _requester, uint256 _amount) public {
+  function test_afterSetupRequestTriggered(
+    bytes32 _requestId,
+    address _requester,
+    uint256 _amount,
+    IERC20 _token
+  ) public {
     bytes memory _requestData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: URL,
         method: METHOD,
         body: BODY,
         accountingExtension: accounting,
-        paymentToken: TOKEN,
+        paymentToken: _token,
         paymentAmount: _amount
       })
     );
@@ -112,27 +125,22 @@ contract HttpRequestModule_UnitTest is Test {
     IOracle.Request memory _fullRequest;
     _fullRequest.requester = _requester;
 
-    // Mock and assert ext calls
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)));
+    // Mock and expect IOracle.getRequest to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
 
-    vm.mockCall(
+    // Mock and expect IAccountingExtension.bond to be called
+    _mockAndExpect(
       address(accounting),
-      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _requester, _requestId, TOKEN, _amount),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _requester, _requestId, _token, _amount),
       abi.encode(true)
-    );
-    vm.expectCall(
-      address(accounting),
-      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _requester, _requestId, TOKEN, _amount)
     );
 
     vm.prank(address(oracle));
     httpRequestModule.setupRequest(_requestId, _requestData);
-
-    // Check: request data was set?
-    //assertEq(httpRequestModule.requestData(_requestId), _requestData);
   }
+}
 
+contract HttpRequestModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that finalizeRequest calls:
    *          - oracle get request
@@ -140,12 +148,15 @@ contract HttpRequestModule_UnitTest is Test {
    *          - accounting extension pay
    *          - accounting extension release
    */
-  function test_finalizeRequestMakesCalls(
+  function test_makesCalls(
     bytes32 _requestId,
     address _requester,
     address _proposer,
-    uint256 _amount
+    uint256 _amount,
+    IERC20 _token
   ) public {
+    _amount = bound(_amount, 0, type(uint248).max);
+
     // Use the correct accounting parameters
     bytes memory _requestData = abi.encode(
       IHttpRequestModule.RequestParameters({
@@ -153,7 +164,7 @@ contract HttpRequestModule_UnitTest is Test {
         method: METHOD,
         body: BODY,
         accountingExtension: accounting,
-        paymentToken: TOKEN,
+        paymentToken: _token,
         paymentAmount: _amount
       })
     );
@@ -168,22 +179,19 @@ contract HttpRequestModule_UnitTest is Test {
     // Set the request data
     httpRequestModule.forTest_setRequestData(_requestId, _requestData);
 
-    // Mock and assert the calls
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)));
+    // Mock and expect IOracle.getRequest to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)));
-
-    vm.etch(address(accounting), hex'069420');
-
-    vm.mockCall(
-      address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, TOKEN, _amount)),
-      abi.encode()
+    // Mock and expect IOracle.getFinalizedResponse to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse)
     );
-    vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, TOKEN, _amount))
+
+    // Mock and expect IAccountingExtension.pay to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _token, _amount)),
+      abi.encode()
     );
 
     vm.startPrank(address(oracle));
@@ -193,27 +201,26 @@ contract HttpRequestModule_UnitTest is Test {
     _fullResponse.createdAt = 0;
 
     // Update mock call to return the response with createdAt = 0
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)));
-
-    vm.mockCall(
-      address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount)),
-      abi.encode(true)
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse)
     );
 
-    vm.expectCall(
-      address(accounting), abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount))
+    // Mock and expect IAccountingExtension.release to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _token, _amount)),
+      abi.encode(true)
     );
 
     httpRequestModule.finalizeRequest(_requestId, address(this));
   }
 
-  function test_finalizeRequestEmitsEvent(
+  function test_emitsEvent(
     bytes32 _requestId,
     address _requester,
     address _proposer,
-    uint256 _amount
+    uint256 _amount,
+    IERC20 _token
   ) public {
     // Use the correct accounting parameters
     bytes memory _requestData = abi.encode(
@@ -222,7 +229,7 @@ contract HttpRequestModule_UnitTest is Test {
         method: METHOD,
         body: BODY,
         accountingExtension: accounting,
-        paymentToken: TOKEN,
+        paymentToken: _token,
         paymentAmount: _amount
       })
     );
@@ -237,16 +244,18 @@ contract HttpRequestModule_UnitTest is Test {
     // Set the request data
     httpRequestModule.forTest_setRequestData(_requestId, _requestData);
 
-    // Mock and assert the calls
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
+    // Mock and expect IOracle.getRequest to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getRequest, (_requestId)), abi.encode(_fullRequest));
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+    // Mock and expect IOracle.getFinalizedResponse to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse)
+    );
 
-    vm.etch(address(accounting), hex'069420');
-
-    vm.mockCall(
+    // Mock and expect IAccountingExtension.pay to be called
+    _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, TOKEN, _amount)),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _token, _amount)),
       abi.encode()
     );
 
@@ -257,14 +266,18 @@ contract HttpRequestModule_UnitTest is Test {
     _fullResponse.createdAt = 0;
 
     // Update mock call to return the response with createdAt = 0
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse));
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.getFinalizedResponse, (_requestId)), abi.encode(_fullResponse)
+    );
 
-    vm.mockCall(
+    // Mock and expect IAccountingExtension.release to be called
+    _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, TOKEN, _amount)),
+      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _token, _amount)),
       abi.encode(true)
     );
-    // Expect the event
+
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(httpRequestModule));
     emit RequestFinalized(_requestId, address(this));
 
@@ -274,18 +287,13 @@ contract HttpRequestModule_UnitTest is Test {
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_finalizeOnlyCalledByOracle(bytes32 _requestId, address _caller) public {
+  function test_revertsIfWrongCaller(bytes32 _requestId, address _caller) public {
     vm.assume(_caller != address(oracle));
 
+    // Check: does it revert if not called by the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+
     vm.prank(_caller);
     httpRequestModule.finalizeRequest(_requestId, address(_caller));
-  }
-
-  /**
-   * @notice Test that the moduleName function returns the correct name
-   */
-  function test_moduleNameReturnsName() public {
-    assertEq(httpRequestModule.moduleName(), 'HttpRequestModule');
   }
 }

@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
@@ -11,8 +13,6 @@ import {
   ERC20ResolutionModule,
   IERC20ResolutionModule
 } from '../../../../contracts/modules/resolution/ERC20ResolutionModule.sol';
-
-import {Helpers} from '../../../utils/Helpers.sol';
 
 contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
   constructor(IOracle _oracle) ERC20ResolutionModule(_oracle) {}
@@ -30,21 +30,17 @@ contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
   }
 }
 
-contract ERC20ResolutionModule_UnitTest is Test, Helpers {
+contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_ERC20ResolutionModule public module;
-
   // A mock oracle
   IOracle public oracle;
-
   // A mock token
   IERC20 public token;
-
   // Mock EOA proposer
-  address public proposer;
-
+  address public proposer = makeAddr('proposer');
   // Mock EOA disputer
-  address public disputer;
+  address public disputer = makeAddr('disputer');
 
   // Mocking module events
   event VoteCast(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
@@ -61,12 +57,37 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     token = IERC20(makeAddr('ERC20'));
     vm.etch(address(token), hex'069420');
 
-    proposer = makeAddr('proposer');
-    disputer = makeAddr('disputer');
-
     module = new ForTest_ERC20ResolutionModule(oracle);
   }
 
+  /**
+   * @dev Helper function to cast votes.
+   */
+  function _populateVoters(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _amountOfVoters,
+    uint256 _amountOfVotes
+  ) internal returns (uint256 _totalVotesCast) {
+    for (uint256 _i = 1; _i <= _amountOfVoters;) {
+      vm.warp(120_000);
+      vm.startPrank(vm.addr(_i));
+      vm.mockCall(
+        address(token),
+        abi.encodeCall(IERC20.transferFrom, (vm.addr(_i), address(module), _amountOfVotes)),
+        abi.encode()
+      );
+      module.castVote(_requestId, _disputeId, _amountOfVotes);
+      vm.stopPrank();
+      _totalVotesCast += _amountOfVotes;
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+}
+
+contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
@@ -97,7 +118,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     assertEq(_params.minVotesForQuorum, _minVotesForQuorum);
     assertEq(_params.timeUntilDeadline, _votingTimeWindow);
   }
+}
 
+contract ERC20ResolutionModule_Unit_StartResolution is BaseTest {
   /**
    * @notice Test that the `startResolution` is correctly called and the voting phase is started
    */
@@ -118,16 +141,18 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Check: `startTime` is set to block.timestamp?
     assertEq(_startTime, block.timestamp);
   }
+}
 
+contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   /**
    * @notice Test casting votes in valid voting time window.
    */
   function test_castVote(bytes32 _requestId, bytes32 _disputeId, uint256 _amountOfVotes, address _voter) public {
-    // Store mock dispute and mock calls
+    // Store mock dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Store mock escalation data with startTime 100_000
     module.forTest_setEscalation(
@@ -144,16 +169,15 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store mock request data with 40_000 voting time window
     module.forTest_setRequestData(_requestId, abi.encode(token, _minVotesForQuorum, _votingTimeWindow));
 
-    // Mock token transfer (user must have approved token spending)
-    vm.mockCall(
+    // Mock and expect IERC20.transferFrom to be called
+    _mockAndExpect(
       address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)), abi.encode()
     );
-    vm.expectCall(address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)));
 
     // Warp to voting phase
     vm.warp(130_000);
 
-    // Check: is event emitted?
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true);
     emit VoteCast(_voter, _disputeId, _amountOfVotes);
 
@@ -171,11 +195,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   /**
    * @notice Test that `castVote` reverts if there is no dispute with the given`_disputeId`
    */
-  function test_revertCastVote_NonExistentDispute(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amountOfVotes
-  ) public {
+  function test_revertIfNonExistentDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _amountOfVotes) public {
     // Default non-existent dispute
     IOracle.Dispute memory _mockDispute = IOracle.Dispute({
       disputer: address(0),
@@ -186,9 +206,8 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
       createdAt: 0
     });
 
-    // Mock the oracle response for looking up a dispute
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Check: reverts if called with `_disputeId` of a non-existent dispute?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_NonExistentDispute.selector);
@@ -198,11 +217,12 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   /**
    * @notice Test that `castVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
-  function test_revertCastVote_NotEscalated(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
+  function test_revertIfNotEscalated(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes) public {
     // Mock the oracle response for looking up a dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Check: reverts if called with `_disputeId` of a non-escalated dispute?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_DisputeNotEscalated.selector);
@@ -212,7 +232,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   /**
    * @notice Test that `castVote` reverts if called with `_disputeId` of an already resolved dispute.
    */
-  function test_revertCastVote_AlreadyResolved(bytes32 _requestId, bytes32 _disputeId, uint256 _amountOfVotes) public {
+  function test_revertIfAlreadyResolved(bytes32 _requestId, bytes32 _disputeId, uint256 _amountOfVotes) public {
     // Mock dispute already resolved => DisputeStatus.Lost
     IOracle.Dispute memory _mockDispute = IOracle.Dispute({
       disputer: disputer,
@@ -223,9 +243,8 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
       createdAt: block.timestamp
     });
 
-    // Mock the oracle response for looking up a dispute
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Check: reverts if dispute is already resolved?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_AlreadyResolved.selector);
@@ -235,7 +254,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   /**
    * @notice Test that `castVote` reverts if called outside the voting time window.
    */
-  function test_revertCastVote_VotingPhaseOver(
+  function test_revertIfVotingPhaseOver(
     bytes32 _requestId,
     bytes32 _disputeId,
     uint256 _numberOfVotes,
@@ -245,8 +264,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Mock the oracle response for looking up a dispute
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // Mock and expect IOracle.getDispute to be called
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
     module.forTest_setEscalation(_disputeId, IERC20ResolutionModule.Escalation({startTime: 100_000, totalVotes: 0}));
 
@@ -263,7 +283,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_VotingPhaseOver.selector);
     module.castVote(_requestId, _disputeId, _numberOfVotes);
   }
+}
 
+contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that a dispute is resolved, the tokens are transferred back to the voters and the dispute status updated.
    */
@@ -271,8 +293,8 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
+    // Mock and expect IOracle.getDispute to be called
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
 
     // Store request data
     uint256 _votingTimeWindow = 40_000;
@@ -292,8 +314,7 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
 
     // Mock and expect token transfers (should happen always)
     for (uint256 _i = 1; _i <= _votersAmount;) {
-      vm.mockCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
-      vm.expectCall(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)));
+      _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
       unchecked {
         ++_i;
       }
@@ -302,8 +323,11 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // If quorum reached, check for dispute status update and event emission
     IOracle.DisputeStatus _newStatus =
       _totalVotesCast >= _minVotesForQuorum ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)), abi.encode());
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)));
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, _newStatus)), abi.encode());
+
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true);
     emit DisputeResolved(_requestId, _disputeId, _newStatus);
 
@@ -318,18 +342,14 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
   /**
    * @notice Test that `resolveDispute` reverts if called during voting phase.
    */
-  function test_revertResolveDispute_OnGoingVotePhase(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _timestamp
-  ) public {
+  function test_revertIfOnGoingVotePhase(bytes32 _requestId, bytes32 _disputeId, uint256 _timestamp) public {
     _timestamp = bound(_timestamp, 500_000, 999_999);
 
     // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     module.forTest_setEscalation(
       _disputeId,
@@ -353,7 +373,9 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId);
   }
+}
 
+contract ERC20ResolutionModule_Unit_GetVoters is BaseTest {
   /**
    * @notice Test that `getVoters` returns an array of addresses of users that have voted.
    */
@@ -361,8 +383,8 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
     // Store mock dispute and mock calls
     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-    vm.expectCall(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)));
+    // Mock and expect IOracle.getDispute to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Store request data
     uint256 _votingTimeWindow = 40_000;
@@ -382,32 +404,6 @@ contract ERC20ResolutionModule_UnitTest is Test, Helpers {
 
     for (uint256 _i = 1; _i <= _votersAmount; _i++) {
       assertEq(_votersArray[_i - 1], vm.addr(_i));
-    }
-  }
-
-  /**
-   * @dev Helper function to cast votes.
-   */
-  function _populateVoters(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amountOfVoters,
-    uint256 _amountOfVotes
-  ) internal returns (uint256 _totalVotesCast) {
-    for (uint256 _i = 1; _i <= _amountOfVoters;) {
-      vm.warp(120_000);
-      vm.startPrank(vm.addr(_i));
-      vm.mockCall(
-        address(token),
-        abi.encodeCall(IERC20.transferFrom, (vm.addr(_i), address(module), _amountOfVotes)),
-        abi.encode()
-      );
-      module.castVote(_requestId, _disputeId, _amountOfVotes);
-      vm.stopPrank();
-      _totalVotesCast += _amountOfVotes;
-      unchecked {
-        ++_i;
-      }
     }
   }
 }

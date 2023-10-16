@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
+import {Helpers} from '../../../utils/Helpers.sol';
+
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 
@@ -22,15 +24,14 @@ contract ForTest_MultipleCallbacksModule is MultipleCallbacksModule {
   }
 }
 
-contract Base is Test {
-  event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
-
+contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_MultipleCallbacksModule public multipleCallbackModule;
-
   // A mock oracle
   IOracle public oracle;
+
+  event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
+  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -46,7 +47,7 @@ contract Base is Test {
 /**
  * @title MultipleCallback Module Unit tests
  */
-contract Unit_MultipleCallbacksModule_ModuleName is Base {
+contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
@@ -55,7 +56,7 @@ contract Unit_MultipleCallbacksModule_ModuleName is Base {
   }
 }
 
-contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
+contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
   /**
    * @notice Test that finalizeRequests calls the _target.callback with the correct data
    */
@@ -63,7 +64,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     address _target = _targets[0];
     bytes calldata _data = __data[0];
 
-    assumeNoPrecompiles(_target);
+    assumeNotPrecompile(_target);
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
@@ -73,14 +74,13 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     _dataParams[0] = __data[0];
     multipleCallbackModule.forTest_setRequestData(_requestId, _targetParams, _dataParams);
 
-    vm.mockCall(_target, _data, abi.encode());
-    vm.expectCall(_target, _data, 1);
+    _mockAndExpect(_target, _data, abi.encode());
 
-    // Check: correct event emitted
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
     emit Callback(_requestId, _target, _data);
 
-    // Expect the event
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
     emit RequestFinalized(_requestId, address(oracle));
 
@@ -91,26 +91,29 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
   /**
    * @notice Test that the finalizeRequests reverts if caller is not the oracle
    */
-  function test_finalizeOnlyCalledByOracle(bytes32 _requestId, address _caller) public {
+  function test_revertsIfWrongCaller(bytes32 _requestId, address _caller) public {
     vm.assume(_caller != address(oracle));
 
+    // Check: does it revert if not called by the Oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     vm.prank(_caller);
     multipleCallbackModule.finalizeRequest(_requestId, address(_caller));
   }
 
-  function test_Revert_InvalidParameters(bytes32 _requestId, address[] memory _targets, bytes[] memory _data) public {
+  function test_revertIfInvalidParameters(bytes32 _requestId, address[] memory _targets, bytes[] memory _data) public {
     vm.assume(_targets.length != _data.length);
 
     bytes memory _requestData = abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
 
-    vm.prank(address(oracle));
+    // Check: does it revert if arrays length mismatch?
     vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_InvalidParameters.selector);
-
+    vm.prank(address(oracle));
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
+}
 
-  function test_Revert_InvalidTarget(bytes32 _requestId, address[] memory _targets, bytes memory _data) public {
+contract MultipleCallbacksModule_Unit_Setup is BaseTest {
+  function test_revertsIfInvalidTarget(bytes32 _requestId, address[] memory _targets, bytes memory _data) public {
     vm.assume(_targets.length > 1);
 
     // Hardcoding data (as it is not the case tested) to avoid vm.assume issues
@@ -122,9 +125,9 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes memory _requestData =
       abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _targetData}));
 
-    vm.prank(address(oracle));
+    // Check: does it revert if the target has no code?
     vm.expectRevert(IMultipleCallbacksModule.MultipleCallbackModule_TargetHasNoCode.selector);
-
+    vm.prank(address(oracle));
     multipleCallbackModule.setupRequest(_requestId, _requestData);
   }
 
@@ -135,7 +138,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
     bytes[] memory _targetData = new bytes[](_targets.length);
     for (uint256 _i = 0; _i < _targets.length; _i++) {
       _targetData[_i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
-      assumeNoPrecompiles(_targets[_i]);
+      assumeNotPrecompile(_targets[_i]);
       vm.etch(_targets[_i], hex'069420');
     }
 
@@ -147,6 +150,7 @@ contract Unit_MultipleCallbacksModule_FinalizeRequests is Base {
 
     IMultipleCallbacksModule.RequestParameters memory _storedParams =
       multipleCallbackModule.decodeRequestData(_requestId);
+    // Check: is the data properly stored?
     assertEq(_storedParams.targets, _targets);
   }
 }
