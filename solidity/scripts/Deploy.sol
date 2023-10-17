@@ -21,6 +21,7 @@ import {BondEscalationResolutionModule} from '../contracts/modules/resolution/Bo
 import {SequentialResolutionModule} from '../contracts/modules/resolution/SequentialResolutionModule.sol';
 import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
 import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
+import {CircuitResolverModule} from '../contracts/modules/dispute/CircuitResolverModule.sol';
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
@@ -44,6 +45,7 @@ contract Deploy is Script {
   SequentialResolutionModule sequentialResolutionModule;
   RootVerificationModule rootVerificationModule;
   SparseMerkleTreeRequestModule sparseMerkleTreeRequestModule;
+  CircuitResolverModule circuitResolverModule;
 
   AccountingExtension accountingExtension;
   BondEscalationAccounting bondEscalationAccounting;
@@ -125,5 +127,9 @@ contract Deploy is Script {
     sequentialResolutionModule = new SequentialResolutionModule(oracle);
     console.log('SEQUENTIAL_RESOLUTION_MODULE:', address(sequentialResolutionModule));
     sequentialResolutionModule.addResolutionModuleSequence(resolutionModules);
+
+    // Deploy circuit resolver module
+    circuitResolverModule = new CircuitResolverModule(oracle);
+    console.log('CIRCUIT_RESOLVER_MODULE:', address(circuitResolverModule));
   }
 }
