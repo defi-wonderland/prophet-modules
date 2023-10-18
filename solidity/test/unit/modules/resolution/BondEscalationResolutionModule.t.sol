@@ -275,8 +275,16 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
+    // Mock and expect the pledge call
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
+    vm.prank(pledgerFor);
     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
   }
 
@@ -527,8 +535,16 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
+    // Mock and expect the pledge call
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
+    vm.prank(pledgerAgainst);
     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
   }
 

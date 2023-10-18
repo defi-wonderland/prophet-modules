@@ -467,7 +467,7 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     uint256 _amount,
     uint256 _pledges,
     address _bondEscalationModule
-  ) public {
+  ) public assumeFuzzable(_bondEscalationModule) {
     vm.assume(_amount > 0);
     vm.assume(_pledges > 0);
     vm.assume(_amount < type(uint256).max / _pledges);
@@ -506,9 +506,10 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     uint256 _amount,
     uint256 _pledges,
     address _bondEscalationModule
-  ) public {
+  ) public assumeFuzzable(_bondEscalationModule) {
     vm.assume(_amount > 0);
     vm.assume(_pledges > 0);
+
     _amount = bound(_amount, 0, type(uint256).max / _pledges);
 
     bondEscalationAccounting.forTest_setEscalationResult(

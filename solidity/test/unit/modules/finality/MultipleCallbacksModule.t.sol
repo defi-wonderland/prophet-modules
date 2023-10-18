@@ -137,9 +137,9 @@ contract MultipleCallbacksModule_Unit_Setup is BaseTest {
     // Hardcoding data (as it is not the case tested) to avoid vm.assume issues
     bytes[] memory _targetData = new bytes[](_targets.length);
     for (uint256 _i = 0; _i < _targets.length; _i++) {
-      _targetData[_i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
-      assumeNotPrecompile(_targets[_i]);
+      _assumeFuzzable(_targets[_i]);
       vm.etch(_targets[_i], hex'069420');
+      _targetData[_i] = abi.encodeWithSelector(bytes4(keccak256('callback(bytes32,bytes)')), _requestId, _data);
     }
 
     bytes memory _requestData =

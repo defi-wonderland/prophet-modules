@@ -73,8 +73,11 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that finalizeRequest calls the _target.callback with the correct data
    */
-  function test_triggersCallback(bytes32 _requestId, address _target, bytes calldata _data) public {
-    assumeNotPrecompile(_target);
+  function test_triggersCallback(
+    bytes32 _requestId,
+    address _target,
+    bytes calldata _data
+  ) public assumeFuzzable(_target) {
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
@@ -89,8 +92,7 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     callbackModule.finalizeRequest(_requestId, address(oracle));
   }
 
-  function test_emitsEvent(bytes32 _requestId, address _target, bytes calldata _data) public {
-    assumeNotPrecompile(_target);
+  function test_emitsEvent(bytes32 _requestId, address _target, bytes calldata _data) public assumeFuzzable(_target) {
     vm.assume(_target != address(vm));
 
     // Create and set some mock request data
@@ -128,8 +130,7 @@ contract CallbackModule_Unit_Setup is BaseTest {
     address _target,
     bool _hasCode,
     bytes calldata _data
-  ) public {
-    assumeNotPrecompile(_target);
+  ) public assumeFuzzable(_target) {
     vm.assume(_target.code.length == 0);
     bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
 

@@ -54,129 +54,12 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   /// @inheritdoc IBondEscalationResolutionModule
   function pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
-    Escalation storage _escalation = escalations[_disputeId];
-
-    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
-
-    InequalityData storage _inequalityData = inequalityData[_disputeId];
-
-    RequestParameters memory _params = decodeRequestData(_requestId);
-
-    {
-      uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
-
-      if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
-
-      // Revert if the inequality timer has passed
-      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _params.timeToBreakInequality) {
-        revert BondEscalationResolutionModule_MustBeResolved();
-      }
-
-      if (_inequalityData.inequalityStatus == InequalityStatus.AgainstTurnToEqualize) {
-        revert BondEscalationResolutionModule_AgainstTurnToEqualize();
-      }
-    }
-
-    _escalation.pledgesFor += _pledgeAmount;
-    pledgesForDispute[_disputeId][msg.sender] += _pledgeAmount;
-
-    uint256 _updatedTotalVotes = _escalation.pledgesFor + _escalation.pledgesAgainst;
-
-    _params.accountingExtension.pledge({
-      _pledger: msg.sender,
-      _requestId: _requestId,
-      _disputeId: _disputeId,
-      _token: _params.bondToken,
-      _amount: _pledgeAmount
-    });
-    emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
-
-    if (_updatedTotalVotes >= _params.pledgeThreshold) {
-      uint256 _updatedForVotes = _escalation.pledgesFor;
-      uint256 _againstVotes = _escalation.pledgesAgainst;
-
-      uint256 _newForVotesPercentage = FixedPointMathLib.mulDivDown(_updatedForVotes, BASE, _updatedTotalVotes);
-      uint256 _againstVotesPercentage = FixedPointMathLib.mulDivDown(_againstVotes, BASE, _updatedTotalVotes);
-
-      int256 _forPercentageDifference = int256(_newForVotesPercentage) - int256(_againstVotesPercentage);
-      int256 _againstPercentageDifference = int256(_againstVotesPercentage) - int256(_newForVotesPercentage);
-
-      int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
-
-      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) return;
-
-      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
-        _inequalityData.inequalityStatus = InequalityStatus.AgainstTurnToEqualize;
-        _inequalityData.time = block.timestamp;
-      } else if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
-        // At this point, both _forPercentageDiff and _againstPercentageDiff are < _percentageDiff
-        _inequalityData.inequalityStatus = InequalityStatus.Equalized;
-        _inequalityData.time = 0;
-      }
-    }
+    _pledge(_requestId, _disputeId, _pledgeAmount, true);
   }
 
   /// @inheritdoc IBondEscalationResolutionModule
   function pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) external {
-    Escalation storage _escalation = escalations[_disputeId];
-
-    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
-
-    InequalityData storage _inequalityData = inequalityData[_disputeId];
-
-    RequestParameters memory _params = decodeRequestData(_requestId);
-
-    {
-      uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
-
-      if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
-
-      // Revert if the inequality timer has passed
-      if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _params.timeToBreakInequality) {
-        revert BondEscalationResolutionModule_MustBeResolved();
-      }
-
-      if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
-        revert BondEscalationResolutionModule_ForTurnToEqualize();
-      }
-    }
-
-    _escalation.pledgesAgainst += _pledgeAmount;
-    pledgesAgainstDispute[_disputeId][msg.sender] += _pledgeAmount;
-
-    uint256 _updatedTotalVotes = _escalation.pledgesFor + _escalation.pledgesAgainst;
-
-    _params.accountingExtension.pledge({
-      _pledger: msg.sender,
-      _requestId: _requestId,
-      _disputeId: _disputeId,
-      _token: _params.bondToken,
-      _amount: _pledgeAmount
-    });
-    emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
-
-    if (_updatedTotalVotes >= _params.pledgeThreshold) {
-      uint256 _updatedAgainstVotes = _escalation.pledgesAgainst;
-      uint256 _forVotes = _escalation.pledgesFor;
-
-      uint256 _forVotesPercentage = FixedPointMathLib.mulDivDown(_forVotes, BASE, _updatedTotalVotes);
-      uint256 _newAgainstVotesPercentage = FixedPointMathLib.mulDivDown(_updatedAgainstVotes, BASE, _updatedTotalVotes);
-      int256 _forPercentageDifference = int256(_forVotesPercentage) - int256(_newAgainstVotesPercentage);
-      int256 _againstPercentageDifference = int256(_newAgainstVotesPercentage) - int256(_forVotesPercentage);
-
-      int256 _scaledPercentageDiffAsInt = int256(_params.percentageDiff * BASE / 100);
-
-      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) return;
-
-      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
-        _inequalityData.inequalityStatus = InequalityStatus.ForTurnToEqualize;
-        _inequalityData.time = block.timestamp;
-      } else if (_inequalityData.inequalityStatus == InequalityStatus.AgainstTurnToEqualize) {
-        // At this point, both _forPercentageDiff and _againstPercentageDiff are < _percentageDiff
-        _inequalityData.inequalityStatus = InequalityStatus.Equalized;
-        _inequalityData.time = 0;
-      }
-    }
+    _pledge(_requestId, _disputeId, _pledgeAmount, false);
   }
 
   /// @inheritdoc IResolutionModule
@@ -189,11 +72,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     bytes32 _requestId = ORACLE.getDispute(_disputeId).requestId;
 
     RequestParameters memory _params = decodeRequestData(_requestId);
-
     InequalityData storage _inequalityData = inequalityData[_disputeId];
 
     uint256 _inequalityTimerDeadline = _inequalityData.time + _params.timeToBreakInequality;
-
     uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
 
     // Revert if we have not yet reached the deadline and the timer has not passed
@@ -228,7 +109,6 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     if (_escalation.resolution == Resolution.Unresolved) revert BondEscalationResolutionModule_NotResolved();
 
-    RequestParameters memory _params = decodeRequestData(_requestId);
     uint256 _pledgerBalanceBefore;
     uint256 _pledgerProportion;
     uint256 _amountToRelease;
@@ -237,88 +117,176 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     if (_escalation.resolution == Resolution.DisputerWon) {
       _pledgerBalanceBefore = pledgesForDispute[_disputeId][msg.sender];
       pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
-
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesFor);
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _params.accountingExtension.releasePledge({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _amount: _amountToRelease
-      });
-      emit PledgeClaimed({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _pledgeReleased: _amountToRelease,
-        _resolution: Resolution.DisputerWon
-      });
+      _claimPledge(_requestId, _disputeId, _amountToRelease, _escalation.resolution);
     } else if (_escalation.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
-
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesAgainst);
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _params.accountingExtension.releasePledge({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _amount: _amountToRelease
-      });
-      emit PledgeClaimed({
-        _requestId: _requestId,
-        _disputeId: _disputeId,
-        _pledger: msg.sender,
-        _token: _params.bondToken,
-        _pledgeReleased: _amountToRelease,
-        _resolution: Resolution.DisputerLost
-      });
+      _claimPledge(_requestId, _disputeId, _amountToRelease, _escalation.resolution);
     } else if (_escalation.resolution == Resolution.NoResolution) {
       uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
       uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
 
       if (_pledgerBalanceFor > 0) {
         pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
-        _params.accountingExtension.releasePledge({
-          _requestId: _requestId,
-          _disputeId: _disputeId,
-          _pledger: msg.sender,
-          _token: _params.bondToken,
-          _amount: _pledgerBalanceFor
-        });
-        emit PledgeClaimed({
-          _requestId: _requestId,
-          _disputeId: _disputeId,
-          _pledger: msg.sender,
-          _token: _params.bondToken,
-          _pledgeReleased: _pledgerBalanceFor,
-          _resolution: Resolution.NoResolution
-        });
+        _claimPledge(_requestId, _disputeId, _pledgerBalanceFor, _escalation.resolution);
       }
 
       if (_pledgerBalanceAgainst > 0) {
         pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
-        _params.accountingExtension.releasePledge({
-          _requestId: _requestId,
-          _disputeId: _disputeId,
-          _pledger: msg.sender,
-          _token: _params.bondToken,
-          _amount: _pledgerBalanceAgainst
-        });
-        emit PledgeClaimed({
-          _requestId: _requestId,
-          _disputeId: _disputeId,
-          _pledger: msg.sender,
-          _token: _params.bondToken,
-          _pledgeReleased: _pledgerBalanceAgainst,
-          _resolution: Resolution.NoResolution
-        });
+        _claimPledge(_requestId, _disputeId, _pledgerBalanceAgainst, _escalation.resolution);
       }
     }
+  }
+
+  /**
+   * @notice Pledges for or against a dispute
+   *
+   * @param _requestId The ID of the request
+   * @param _disputeId The ID of the dispute
+   * @param _pledgeAmount The amount to pledge
+   * @param _pledgingFor Whether the pledger is pledging for or against the dispute
+   */
+  function _pledge(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount, bool _pledgingFor) internal {
+    Escalation storage _escalation = escalations[_disputeId];
+
+    if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
+
+    InequalityData storage _inequalityData = inequalityData[_disputeId];
+    RequestParameters memory _params = decodeRequestData(_requestId);
+
+    uint256 _pledgingDeadline = _escalation.startTime + _params.timeUntilDeadline;
+
+    if (block.timestamp >= _pledgingDeadline) revert BondEscalationResolutionModule_PledgingPhaseOver();
+
+    // Revert if the inequality timer has passed
+    if (_inequalityData.time != 0 && block.timestamp >= _inequalityData.time + _params.timeToBreakInequality) {
+      revert BondEscalationResolutionModule_MustBeResolved();
+    }
+
+    _params.accountingExtension.pledge({
+      _pledger: msg.sender,
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _token: _params.bondToken,
+      _amount: _pledgeAmount
+    });
+
+    if (_pledgingFor) {
+      if (_inequalityData.inequalityStatus == InequalityStatus.AgainstTurnToEqualize) {
+        revert BondEscalationResolutionModule_AgainstTurnToEqualize();
+      }
+
+      _escalation.pledgesFor += _pledgeAmount;
+      pledgesForDispute[_disputeId][msg.sender] += _pledgeAmount;
+      emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
+    } else {
+      if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
+        revert BondEscalationResolutionModule_ForTurnToEqualize();
+      }
+
+      _escalation.pledgesAgainst += _pledgeAmount;
+      pledgesAgainstDispute[_disputeId][msg.sender] += _pledgeAmount;
+      emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
+    }
+
+    if (_escalation.pledgesFor + _escalation.pledgesAgainst >= _params.pledgeThreshold) {
+      _updateInequalityStatus({
+        _inequalityData: _inequalityData,
+        _pledgesFor: _escalation.pledgesFor,
+        _pledgesAgainst: _escalation.pledgesAgainst,
+        _percentageDiff: _params.percentageDiff,
+        _pledgingFor: _pledgingFor
+      });
+    }
+  }
+
+  /**
+   * @notice Updates the inequality status of the dispute, switching it from one side to the other if the percentage difference is reached
+   *
+   * @param _inequalityData The inequality data for the dispute
+   * @param _pledgesFor The total amount of pledges for the dispute
+   * @param _pledgesAgainst The total amount of pledges against the dispute
+   * @param _percentageDiff The percentage difference between the two sides
+   * @param _pledgingFor Whether the pledger is pledging for or against the dispute
+   */
+  function _updateInequalityStatus(
+    InequalityData storage _inequalityData,
+    uint256 _pledgesFor,
+    uint256 _pledgesAgainst,
+    uint256 _percentageDiff,
+    bool _pledgingFor
+  ) internal {
+    uint256 _totalPledges = _pledgesFor + _pledgesAgainst;
+    uint256 _pledgesForPercentage = FixedPointMathLib.mulDivDown(_pledgesFor, BASE, _totalPledges);
+    uint256 _pledgesAgainstPercentage = FixedPointMathLib.mulDivDown(_pledgesAgainst, BASE, _totalPledges);
+
+    int256 _forPercentageDifference = int256(_pledgesForPercentage) - int256(_pledgesAgainstPercentage);
+    int256 _againstPercentageDifference = int256(_pledgesAgainstPercentage) - int256(_pledgesForPercentage);
+
+    int256 _scaledPercentageDiffAsInt = int256(_percentageDiff * BASE / 100);
+
+    if (_pledgingFor) {
+      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) return;
+
+      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) {
+        _inequalityData.inequalityStatus = InequalityStatus.AgainstTurnToEqualize;
+        _inequalityData.time = block.timestamp;
+      } else if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
+        // At this point, both _forPercentageDiff and _againstPercentageDiff are < _percentageDiff
+        _inequalityData.inequalityStatus = InequalityStatus.Equalized;
+        _inequalityData.time = 0;
+      }
+    } else {
+      if (_forPercentageDifference >= _scaledPercentageDiffAsInt) return;
+
+      if (_againstPercentageDifference >= _scaledPercentageDiffAsInt) {
+        _inequalityData.inequalityStatus = InequalityStatus.ForTurnToEqualize;
+        _inequalityData.time = block.timestamp;
+      } else if (_inequalityData.inequalityStatus == InequalityStatus.AgainstTurnToEqualize) {
+        // At this point, both _forPercentageDiff and _againstPercentageDiff are < _percentageDiff
+        _inequalityData.inequalityStatus = InequalityStatus.Equalized;
+        _inequalityData.time = 0;
+      }
+    }
+  }
+
+  /**
+   * @notice Releases the pledged funds to the pledger
+   *
+   * @param _requestId The ID of the request
+   * @param _disputeId The ID of the dispute
+   * @param _amountToRelease The amount to release
+   * @param _resolution The resolution of the dispute
+   */
+  function _claimPledge(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _amountToRelease,
+    Resolution _resolution
+  ) internal {
+    RequestParameters memory _params = decodeRequestData(_requestId);
+
+    _params.accountingExtension.releasePledge({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: msg.sender,
+      _token: _params.bondToken,
+      _amount: _amountToRelease
+    });
+
+    emit PledgeClaimed({
+      _requestId: _requestId,
+      _disputeId: _disputeId,
+      _pledger: msg.sender,
+      _token: _params.bondToken,
+      _pledgeReleased: _amountToRelease,
+      _resolution: _resolution
+    });
   }
 }

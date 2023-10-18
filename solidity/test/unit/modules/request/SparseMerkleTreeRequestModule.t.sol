@@ -166,7 +166,7 @@ contract SparseMerkleTreeRequestModule_Unit_Setup is BaseTest {
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
     ITreeVerifier _treeVerifier
-  ) public {
+  ) public assumeFuzzable(address(_accounting)) {
     bytes memory _requestData = abi.encode(
       ISparseMerkleTreeRequestModule.RequestParameters({
         treeData: _treeData,
@@ -217,7 +217,7 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
     ITreeVerifier _treeVerifier
-  ) public {
+  ) public assumeFuzzable(address(_accounting)) {
     // Use the correct accounting parameters
     bytes memory _requestData = abi.encode(
       ISparseMerkleTreeRequestModule.RequestParameters({
@@ -282,7 +282,7 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
     ITreeVerifier _treeVerifier
-  ) public {
+  ) public assumeFuzzable(address(_accounting)) {
     // Use the correct accounting parameters
     bytes memory _requestData = abi.encode(
       ISparseMerkleTreeRequestModule.RequestParameters({

@@ -8,6 +8,17 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
 contract Helpers is DSTestPlus {
+  modifier assumeFuzzable(address _address) {
+    _assumeFuzzable(_address);
+    _;
+  }
+
+  function _assumeFuzzable(address _address) internal {
+    assumeNotForgeAddress(_address);
+    assumeNotZeroAddress(_address);
+    assumeNotPrecompile(_address);
+  }
+
   function _mockAndExpect(address _receiver, bytes memory _calldata, bytes memory _returned) internal {
     vm.mockCall(_receiver, _calldata, _returned);
     vm.expectCall(_receiver, _calldata);
