@@ -24,7 +24,7 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _pledger   The address of the pledger.
    * @param _amount    The amount pledged.
    */
-  event PledgedInFavorOfDisputer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
+  event PledgedForDispute(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
 
   /**
    * @notice A pledge has been made against a dispute.
@@ -33,7 +33,7 @@ interface IBondEscalationModule is IDisputeModule {
    * @param _pledger   The address of the pledger.
    * @param _amount    The amount pledged.
    */
-  event PledgedInFavorOfProposer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
+  event PledgedAgainstDispute(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
 
   /**
    * @notice The status of the bond escalation mechanism has been updated.
@@ -57,7 +57,7 @@ interface IBondEscalationModule is IDisputeModule {
   /**
    * @notice Thrown when trying to pledge for a dispute that is not going through the bond escalation mechanism.
    */
-  error BondEscalationModule_DisputeNotEscalated();
+  error BondEscalationModule_InvalidDispute();
   /**
    * @notice Thrown when the number of escalation pledges of a given dispute has reached its maximum.
    */
@@ -71,9 +71,9 @@ interface IBondEscalationModule is IDisputeModule {
    */
   error BondEscalationModule_ShouldBeEscalated();
   /**
-   * @notice Thrown when trying to tie outside of the tying buffer.
+   * @notice Thrown when trying to break a tie after the tying buffer has started.
    */
-  error BondEscalationModule_CanOnlyTieDuringTyingBuffer();
+  error BondEscalationModule_CannotBreakTieDuringTyingBuffer();
   /**
    * @notice Thrown when the max number of escalations or the bond size is set to 0.
    */

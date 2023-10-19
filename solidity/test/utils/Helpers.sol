@@ -13,7 +13,7 @@ contract Helpers is DSTestPlus {
     _;
   }
 
-  function _assumeFuzzable(address _address) internal {
+  function _assumeFuzzable(address _address) internal pure {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
     assumeNotPrecompile(_address);

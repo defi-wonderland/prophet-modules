@@ -54,10 +54,6 @@ contract ForTest_BondEscalationModule is BondEscalationModule {
   function forTest_setEscalatedDispute(bytes32 _requestId, bytes32 _disputeId) public {
     _escalations[_requestId].disputeId = _disputeId;
   }
-
-  function forTest_setDisputeToRequest(bytes32 _disputeId, bytes32 _requestId) public {
-    _disputeToRequest[_disputeId] = _requestId;
-  }
 }
 
 /**
@@ -93,8 +89,8 @@ contract BaseTest is Test, Helpers {
   IOracle.Response internal _mockResponse;
 
   // Events
-  event PledgedInFavorOfDisputer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
-  event PledgedInFavorOfProposer(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
+  event PledgedForDispute(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
+  event PledgedAgainstDispute(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
   event BondEscalationStatusUpdated(
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
@@ -452,7 +448,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     // Set the number of pledgers for both sides
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
-    // Check: is the event emmited?
+    // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Escalated);
 
@@ -649,6 +645,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    * @notice Tests that onDisputeStatusChange pays the proposer if the disputer lost
    */
   function test_callPayIfNormalDisputeLost(bytes32 _disputeId, bytes32 _requestId) public {
+    vm.assume(_disputeId > 0 && _requestId > 0);
+
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
@@ -658,13 +656,6 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     _mockAndExpect(
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, bondSize)),
-      abi.encode(true)
-    );
-
-    // Mock and expect IAccountingExtension.release to be called
-    _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, bondSize)),
       abi.encode(true)
     );
 
@@ -712,7 +703,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       abi.encode(true)
     );
 
-    // Mock and expect IAccountingExtension.pay to be called
+    // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
       abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
@@ -787,9 +778,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
     IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _status);
 
-    uint256 _bondSize = 1000;
-
-    _setRequestData(_requestId, _bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, disputeWindow);
+    _setRequestData(_requestId, bondSize, maxEscalations, bondEscalationDeadline, tyingBuffer, disputeWindow);
 
     uint256 _numForPledgers = 2;
     uint256 _numAgainstPledgers = 2;
@@ -808,14 +797,14 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     // Mock and expect IAccountingExtension.pay to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, _bondSize)),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.proposer, _dispute.disputer, token, bondSize)),
       abi.encode(true)
     );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, _bondSize)),
+      abi.encodeCall(IAccountingExtension.release, (_dispute.disputer, _requestId, token, bondSize)),
       abi.encode(true)
     );
 
@@ -824,7 +813,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(accounting),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, true, token, _bondSize << 1, _numForPledgers)
+        (_requestId, _disputeId, true, token, bondSize << 1, _numForPledgers)
       ),
       abi.encode()
     );
@@ -876,13 +865,6 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     _mockAndExpect(
       address(accounting),
       abi.encodeCall(IAccountingExtension.pay, (_requestId, _dispute.disputer, _dispute.proposer, token, _bondSize)),
-      abi.encode(true)
-    );
-
-    // Mock and expect IAccountingExtension.release to be called
-    _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_dispute.proposer, _requestId, token, _bondSize)),
       abi.encode(true)
     );
 
@@ -938,7 +920,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Check: does it revert if the dispute is not escalated yet?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_DisputeNotEscalated.selector);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
 
@@ -1035,7 +1017,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
   /**
    * @notice Tests that pledgeForDispute reverts if the timestamp is within the tying buffer and someone attempts
-   *         to pledge when the funds are tied--effectively breaking the tie
+   *         to pledge when the funds are tied, effectively breaking the tie
    */
   function test_revertIfAttemptToBreakTieDuringTyingBuffer(bytes32 _disputeId, bytes32 _requestId) public {
     vm.assume(_disputeId > 0);
@@ -1062,7 +1044,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Check: does it revert if trying to tie outside of the tying buffer?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeForDispute(_disputeId);
   }
 
@@ -1101,11 +1083,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit PledgedInFavorOfDisputer(_disputeId, address(this), _bondSize);
+    emit PledgedForDispute(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeForDispute(_disputeId);
-
-    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
     uint256 _pledgesForDispute = bondEscalationModule.getEscalation(_requestId).amountOfPledgesForDispute;
     // Check: is the number of pledges for the dispute properly updated?
@@ -1144,7 +1124,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
 
     // Check: does it revert if the dispute is not escalated yet?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_DisputeNotEscalated.selector);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
 
@@ -1244,7 +1224,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
   /**
    * @notice Tests that pledgeAgainstDispute reverts if the timestamp is within the tying buffer and someone attempts
-   *         to pledge when the funds are tied--effectively breaking the tie
+   *         to pledge when the funds are tied, effectively breaking the tie
    */
   function test_revertIfAttemptToBreakTieDuringTyingBuffer(bytes32 _disputeId, bytes32 _requestId) public {
     vm.assume(_disputeId > 0);
@@ -1271,8 +1251,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Check: does it revert if trying to tie outside of the tying buffer?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlyTieDuringTyingBuffer.selector);
-
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
   }
 
@@ -1311,11 +1290,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit PledgedInFavorOfProposer(_disputeId, address(this), _bondSize);
+    emit PledgedAgainstDispute(_disputeId, address(this), _bondSize);
 
     bondEscalationModule.pledgeAgainstDispute(_disputeId);
-
-    bondEscalationModule.forTest_setDisputeToRequest(_disputeId, _requestId);
 
     uint256 _pledgesForDispute = bondEscalationModule.getEscalation(_requestId).amountOfPledgesAgainstDispute;
     // Check: is the number of pledges for the dispute properly updated?
@@ -1361,7 +1338,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
   }
 
   /**
-   * @notice Tests that settleBondEscalation reverts if someone tries to settle a bondescalated dispute that
+   * @notice Tests that settleBondEscalation reverts if someone tries to settle a bond-escalated dispute that
    *         has the same number of pledgers.
    */
   function test_revertIfSameNumberOfPledgers(bytes32 _requestId, bytes32 _disputeId) public {
@@ -1403,14 +1380,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
 
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
-    uint256 _amountToPay = _bondSize + (_numAgainstPledgers * _bondSize) / _numForPledgers;
-
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(
-        IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, true, token, _amountToPay, _numForPledgers)
-      ),
+      address(oracle),
+      abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won)),
       abi.encode(true)
     );
 
@@ -1445,15 +1417,10 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
 
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
-    uint256 _amountToPay = _bondSize + (_numForPledgers * _bondSize) / _numAgainstPledgers;
-
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(
-        IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, false, token, _amountToPay, _numAgainstPledgers)
-      ),
-      abi.encode()
+      address(oracle),
+      abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost)),
+      abi.encode(true)
     );
 
     // Check: is the event emitted?

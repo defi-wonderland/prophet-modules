@@ -24,7 +24,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
     address _pledger,
-    // TODO: leaving this request id here for the allowed module check until the audit fix is defined
     bytes32 _requestId,
     bytes32 _disputeId,
     IERC20 _token,

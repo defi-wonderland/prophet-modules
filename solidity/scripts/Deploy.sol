@@ -28,7 +28,7 @@ import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAc
 
 // solhint-disable no-console
 contract Deploy is Script {
-  IOracle oracle = IOracle(0x19cEcCd6942ad38562Ee10bAfd44776ceB67e923);
+  IOracle oracle = IOracle(0xe40DED509A3806Eed8065b478BB681953bD9B554);
 
   ArbitratorModule arbitratorModule;
   BondedDisputeModule bondedDisputeModule;

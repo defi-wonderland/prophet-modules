@@ -20,11 +20,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    */
   mapping(bytes32 _requestId => BondEscalation) internal _escalations;
 
-  /**
-   * @notice Mapping storing all dispute IDs to request IDs.
-   */
-  mapping(bytes32 _disputeId => bytes32 _requestId) internal _disputeToRequest;
-
   constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
@@ -75,20 +70,22 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     address _proposer
   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
     RequestParameters memory _params = decodeRequestData(_requestId);
-
     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
+
     if (block.timestamp > _response.createdAt + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 
     BondEscalation storage _escalation = _escalations[_requestId];
 
-    if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
-
+    // Only the first dispute of a request should go through the bond escalation
+    // Consecutive disputes should be handled by the resolution module
     if (_escalation.status == BondEscalationStatus.None) {
-      _escalation.status = BondEscalationStatus.Active;
+      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
+
       // Note: this imitates the way _disputeId is calculated on the Oracle, it must always match
       bytes32 _disputeId = keccak256(abi.encodePacked(_disputer, _requestId, _responseId));
+      _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_requestId, _disputeId, BondEscalationStatus.Active);
     }
@@ -126,35 +123,58 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _amount: _params.bondSize
     });
 
-    _params.accountingExtension.release({
-      _bonder: _won ? _dispute.disputer : _dispute.proposer,
-      _requestId: _dispute.requestId,
-      _token: _params.bondToken,
-      _amount: _params.bondSize
-    });
+    if (_won) {
+      _params.accountingExtension.release({
+        _requestId: _dispute.requestId,
+        _bonder: _dispute.disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+    }
 
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (_disputeId == _escalation.disputeId && _escalation.status == BondEscalationStatus.Escalated) {
-      if (_escalation.amountOfPledgesAgainstDispute == 0) {
-        return;
+    if (_disputeId == _escalation.disputeId) {
+      // The dispute has been escalated to the Resolution module
+      if (_escalation.status == BondEscalationStatus.Escalated) {
+        if (_escalation.amountOfPledgesAgainstDispute == 0) {
+          return;
+        }
+
+        BondEscalationStatus _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
+        _escalation.status = _newStatus;
+
+        emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
+
+        _params.accountingExtension.onSettleBondEscalation({
+          _requestId: _dispute.requestId,
+          _disputeId: _disputeId,
+          _forVotesWon: _won,
+          _token: _params.bondToken,
+          _amountPerPledger: _params.bondSize << 1,
+          _winningPledgersLength: _won ? _escalation.amountOfPledgesForDispute : _escalation.amountOfPledgesAgainstDispute
+        });
+      } else {
+        // The status has changed to Won or Lost
+        uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
+        uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
+        bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
+
+        uint256 _amountToPay = _disputersWon
+          ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
+          : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
+
+        _params.accountingExtension.onSettleBondEscalation({
+          _requestId: _dispute.requestId,
+          _disputeId: _escalation.disputeId,
+          _forVotesWon: _disputersWon,
+          _token: _params.bondToken,
+          _amountPerPledger: _amountToPay,
+          _winningPledgersLength: _disputersWon ? _pledgesForDispute : _pledgesAgainstDispute
+        });
       }
-
-      BondEscalationStatus _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
-
-      _escalation.status = _newStatus;
-
-      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
-
-      _params.accountingExtension.onSettleBondEscalation({
-        _requestId: _dispute.requestId,
-        _disputeId: _disputeId,
-        _forVotesWon: _won,
-        _token: _params.bondToken,
-        _amountPerPledger: _params.bondSize << 1,
-        _winningPledgersLength: _won ? _escalation.amountOfPledgesForDispute : _escalation.amountOfPledgesAgainstDispute
-      });
     }
+
     emit DisputeStatusChanged({
       _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
@@ -182,7 +202,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _amount: _params.bondSize
     });
 
-    emit PledgedInFavorOfDisputer(_disputeId, msg.sender, _params.bondSize);
+    emit PledgedForDispute(_disputeId, msg.sender, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -199,7 +219,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _amount: _params.bondSize
     });
 
-    emit PledgedInFavorOfProposer(_disputeId, msg.sender, _params.bondSize);
+    emit PledgedAgainstDispute(_disputeId, msg.sender, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -223,26 +243,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     }
 
     bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
+    _escalation.status = _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
-    uint256 _amountToPay = _disputersWon
-      ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
-      : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
+    emit BondEscalationStatusUpdated(_requestId, _escalation.disputeId, _escalation.status);
 
-    BondEscalationStatus _newStatus =
-      _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
-
-    _escalation.status = _newStatus;
-
-    emit BondEscalationStatusUpdated(_requestId, _escalation.disputeId, _newStatus);
-
-    _params.accountingExtension.onSettleBondEscalation({
-      _requestId: _requestId,
-      _disputeId: _escalation.disputeId,
-      _forVotesWon: _disputersWon,
-      _token: _params.bondToken,
-      _amountPerPledger: _amountToPay,
-      _winningPledgersLength: _disputersWon ? _pledgesForDispute : _pledgesAgainstDispute
-    });
+    ORACLE.updateDisputeStatus(
+      _escalation.disputeId, _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost
+    );
   }
 
   /**
@@ -262,7 +269,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     BondEscalation memory _escalation = _escalations[_requestId];
 
     if (_disputeId != _escalation.disputeId) {
-      revert BondEscalationModule_DisputeNotEscalated();
+      revert BondEscalationModule_InvalidDispute();
     }
 
     _params = decodeRequestData(_requestId);
@@ -287,7 +294,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     }
 
     if (block.timestamp > _params.bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
-      revert BondEscalationModule_CanOnlyTieDuringTyingBuffer();
+      revert BondEscalationModule_CannotBreakTieDuringTyingBuffer();
     }
   }
 
