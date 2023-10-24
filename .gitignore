@@ -21,7 +21,7 @@ npm
 
 # Docs build files
 docs/book
-docs/src/solidity/interfaces
+docs/src/interfaces
 docs/src/static
 
 # Coverage

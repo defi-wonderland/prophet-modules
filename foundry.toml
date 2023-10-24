@@ -25,7 +25,7 @@ out = 'out-via-ir'
 src = 'solidity/test'
 
 [profile.docs]
-src = 'solidity/interfaces/'
+src = 'interfaces' # $output_folder variable in build-docs.sh
 
 [fuzz]
 runs = 1000
