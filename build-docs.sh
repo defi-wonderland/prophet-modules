@@ -1,10 +1,20 @@
 #!/bin/bash
 
 root_path="solidity/interfaces"
+core_path="node_modules/@defi-wonderland/prophet-core-contracts"
+
 # generate docs in a temporary directory
 temp_folder="technical-docs"
 
+mkdir ./solidity/contracts/core
+mkdir ./solidity/interfaces/core
+cp -r $core_path/solidity/contracts/* ./solidity/contracts/core
+cp -r $core_path/solidity/interfaces/* ./solidity/interfaces/core
+
 FOUNDRY_PROFILE=docs forge doc --out "$temp_folder"
+
+rm -rf ./solidity/contracts/core
+rm -rf ./solidity/interfaces/core
 
 # edit generated summary not to have container pages
 # - [jobs](solidity/interfaces/jobs/README.md)
