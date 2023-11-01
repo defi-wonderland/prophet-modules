@@ -10,20 +10,21 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
 
 /*
   * @title BondedResponseModule
-  * @notice Module allowing users to propose a response for a request
-  * by bonding tokens.
+  * @notice Module allowing users to propose a response for a request by bonding tokens
   */
 interface IBondedResponseModule is IResponseModule {
   /*///////////////////////////////////////////////////////////////
-                              ERRORS
+                              EVENTS
   //////////////////////////////////////////////////////////////*/
   /**
    * @notice Emitted when a response is proposed
+   *
    * @param _requestId The ID of the request that the response was proposed
-   * @param _proposer The user that proposed the response
-   * @param _responseData The data for the response
+   * @param _response The proposed response
+   * @param _blockNumber The number of the block in which the response was proposed
    */
-  event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
+  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
+
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
@@ -43,22 +44,13 @@ interface IBondedResponseModule is IResponseModule {
    */
   error BondedResponseModule_AlreadyResponded();
 
-  /**
-   * @notice Thrown when trying to delete a response after the proposing deadline
-   */
-  error BondedResponseModule_TooLateToDelete();
-
-  /**
-   * @notice Thrown when trying to create an invalid request
-   */
-  error BondedResponseModule_InvalidRequest();
-
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
   /**
    * @notice Parameters of the request as stored in the module
+   *
    * @param accountingExtension The accounting extension used to bond and release tokens
    * @param bondToken The token used for bonds in the request
    * @param bondSize The amount of `_bondToken` to bond to propose a response and dispute
@@ -79,39 +71,32 @@ interface IBondedResponseModule is IResponseModule {
 
   /**
    * @notice Returns the decoded data for a request
-   * @param _requestId The ID of the request
+   *
+   * @param _data The encoded data
    * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external pure returns (RequestParameters memory _params);
 
   /**
    * @notice Proposes a response for a request, bonding the proposer's tokens
+   *
    * @dev The user must have previously deposited tokens into the accounting extension
-   * @param _requestId The ID of the request to propose a response for
-   * @param _proposer The user proposing the response
-   * @param _responseData The data for the response
-   * @param _sender The address calling propose on the Oracle
-   * @return _response The struct of proposed response
+   * @param _request The request to propose a response to
+   * @param _response The response being proposed
+   * @param _sender The address that initiated the transaction
    */
-  function propose(
-    bytes32 _requestId,
-    address _proposer,
-    bytes calldata _responseData,
-    address _sender
-  ) external returns (IOracle.Response memory _response);
-
-  /**
-   * @notice Allows a user to delete an undisputed response they proposed before the deadline, releasing the bond
-   * @param _requestId The ID of the request to delete the response from
-   * @param _responseId The ID of the response to delete
-   * @param _proposer The user who proposed the response
-   */
-  function deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer) external;
+  function propose(IOracle.Request calldata _request, IOracle.Response calldata _response, address _sender) external;
 
   /**
    * @notice Finalizes the request by releasing the bond of the proposer
-   * @param _requestId The ID of the request to finalize
+   *
+   * @param _request The request that is being finalized
+   * @param _response The final response
    * @param _finalizer The user who triggered the finalization
    */
-  function finalizeRequest(bytes32 _requestId, address _finalizer) external;
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external;
 }

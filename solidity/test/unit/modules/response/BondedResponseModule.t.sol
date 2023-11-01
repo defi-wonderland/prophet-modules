@@ -40,8 +40,8 @@ contract BaseTest is Test, Helpers {
   // Base dispute window
   uint256 internal _baseDisputeWindow = 12 hours;
 
-  event ProposeResponse(bytes32 indexed _requestId, address _proposer, bytes _responseData);
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
+  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
+  event RequestFinalized(bytes32 indexed _requestId, IOracle.Request _response, address indexed _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -90,31 +90,6 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
     assertEq(_params.bondSize, _bondSize, 'Mismatch: bond size');
     assertEq(_params.deadline, _deadline, 'Mismatch: deadline');
     assertEq(_params.disputeWindow, _disputeWindow, 'Mismatch: dispute window');
-  }
-}
-
-contract BondedResponseModule_Unit_Setup is BaseTest {
-  function test_setupRequestRevertsIfInvalidRequest(
-    IAccountingExtension _accounting,
-    IERC20 _token,
-    uint256 _deadline,
-    uint256 _bondSize
-  ) public {
-    _deadline = bound(_deadline, 0, block.timestamp);
-
-    IBondedResponseModule.RequestParameters memory _requestParams = IBondedResponseModule.RequestParameters({
-      accountingExtension: _accounting,
-      bondToken: _token,
-      bondSize: _bondSize,
-      deadline: _deadline,
-      disputeWindow: _baseDisputeWindow
-    });
-
-    // Check: does it revert if the provided deadline is invalid?
-    vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidRequest.selector);
-    vm.prank(address(oracle));
-
-    bondedResponseModule.setupRequest(bytes32(0), abi.encode(_requestParams));
   }
 }
 
@@ -220,7 +195,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
-    emit ProposeResponse(_requestId, _proposer, _responseData);
+    emit ResponseProposed(_requestId, _proposer, _responseData);
 
     vm.prank(address(oracle));
     bondedResponseModule.propose(_requestId, _proposer, _responseData, _sender);
@@ -419,43 +394,5 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.warp(_deadline + 1);
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(_requestId, _finalizer);
-  }
-}
-
-contract BondedResponseModule_Unit_DeleteResponse is BaseTest {
-  /**
-   * @notice Test that the delete response function triggers bond release.
-   */
-  function test_deleteResponse(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    uint256 _bondSize,
-    uint256 _deadline,
-    uint256 _timestamp,
-    IERC20 _token,
-    address _proposer
-  ) public {
-    _timestamp = bound(_timestamp, 1, type(uint248).max);
-
-    // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
-    bondedResponseModule.forTest_setRequestData(_requestId, _data);
-
-    vm.warp(_timestamp);
-
-    if (_deadline >= _timestamp) {
-      // Mock and expect IAccountingExtension.release to be called
-      _mockAndExpect(
-        address(accounting),
-        abi.encodeCall(IAccountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
-        abi.encode()
-      );
-    } else {
-      // Check: does it revert if the deadline has passed?
-      vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToDelete.selector);
-    }
-
-    vm.prank(address(oracle));
-    bondedResponseModule.deleteResponse(_requestId, _responseId, _proposer);
   }
 }
