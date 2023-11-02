@@ -62,7 +62,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     IOracle.Response calldata _response,
     address _finalizer
   ) external override(IBondedResponseModule, Module) onlyOracle {
-    RequestParameters memory _params = decodeRequestData(_response.requestId);
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
@@ -70,7 +70,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
-    if (_response.createdAt != 0) {
+    if (ORACLE.createdAt[_getId(_response)] != 0) {
       if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
         revert BondedResponseModule_TooEarlyToFinalize();
       }
