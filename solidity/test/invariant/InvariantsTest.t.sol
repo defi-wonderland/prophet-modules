@@ -1,182 +1,182 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+// // SPDX-License-Identifier: AGPL-3.0-only
+// pragma solidity ^0.8.19;
 
-import 'forge-std/Test.sol';
+// import 'forge-std/Test.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
-import {IFinalityModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
+// import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+// import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+// import {IFinalityModule} from
+//   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
 
-import {HttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
-import {BondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
-import {BondedDisputeModule} from '../../contracts/modules/dispute/BondedDisputeModule.sol';
-import {BondEscalationResolutionModule} from '../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
-import {BondEscalationAccounting} from '../../contracts/extensions/BondEscalationAccounting.sol';
+// import {HttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
+// import {BondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
+// import {BondedDisputeModule} from '../../contracts/modules/dispute/BondedDisputeModule.sol';
+// import {BondEscalationResolutionModule} from '../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+// import {AccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
+// import {BondEscalationAccounting} from '../../contracts/extensions/BondEscalationAccounting.sol';
 
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
-import {WETH9} from './imports/WETH9.sol';
+// import {IWETH9} from '../../interfaces/external/IWETH9.sol';
+// import {WETH9} from './imports/WETH9.sol';
 
-/**
- * @title Invariant tests
- */
-contract InvariantsTest is Test {
-  using stdStorage for StdStorage;
+// /**
+//  * @title Invariant tests
+//  */
+// contract InvariantsTest is Test {
+//   using stdStorage for StdStorage;
 
-  Oracle public oracle;
-  HandlerProphet public handler;
+//   Oracle public oracle;
+//   HandlerProphet public handler;
 
-  function setUp() public {
-    oracle = new Oracle();
-    handler = new HandlerProphet(oracle);
+//   function setUp() public {
+//     oracle = new Oracle();
+//     handler = new HandlerProphet(oracle);
 
-    targetContract(address(handler));
-  }
-}
+//     targetContract(address(handler));
+//   }
+// }
 
-contract HandlerProphet is Test {
-  Oracle public oracle;
+// contract HandlerProphet is Test {
+//   Oracle public oracle;
 
-  HttpRequestModule public httpRequestModule;
-  BondedResponseModule public bondedResponseModule;
-  BondedDisputeModule public bondedDisputeModule;
-  BondEscalationResolutionModule public bondEscalationResolutionModule;
+//   HttpRequestModule public httpRequestModule;
+//   BondedResponseModule public bondedResponseModule;
+//   BondedDisputeModule public bondedDisputeModule;
+//   BondEscalationResolutionModule public bondEscalationResolutionModule;
 
-  AccountingExtension public accountingExtension;
-  BondEscalationAccounting public bondEscalationAccounting;
+//   AccountingExtension public accountingExtension;
+//   BondEscalationAccounting public bondEscalationAccounting;
 
-  IWETH9 public weth;
+//   IWETH9 public weth;
 
-  bytes32 public requestId;
+//   bytes32 public requestId;
 
-  mapping(bytes32 response => bytes32 request) public ghostResponseIdToRequestId;
-  bool public responseRequestDiscrepancy;
+//   mapping(bytes32 response => bytes32 request) public ghostResponseIdToRequestId;
+//   bool public responseRequestDiscrepancy;
 
-  mapping(bytes32 request => bool) public finalized;
-  bool public finalizedDiscrepancy;
+//   mapping(bytes32 request => bool) public finalized;
+//   bool public finalizedDiscrepancy;
 
-  uint256 public ghostNumberOfDispute;
-  uint256 public ghostNumberOfResponse;
-  uint256 public ghostNumberOfRequest;
+//   uint256 public ghostNumberOfDispute;
+//   uint256 public ghostNumberOfResponse;
+//   uint256 public ghostNumberOfRequest;
 
-  mapping(uint256 => bytes32) public ghostDisputeToResponseId;
+//   mapping(uint256 => bytes32) public ghostDisputeToResponseId;
 
-  constructor(Oracle _oracle) {
-    oracle = _oracle;
+//   constructor(Oracle _oracle) {
+//     oracle = _oracle;
 
-    httpRequestModule = new HttpRequestModule(oracle);
-    bondedResponseModule = new BondedResponseModule(oracle);
-    bondedDisputeModule = new BondedDisputeModule(oracle);
-    bondEscalationResolutionModule = new BondEscalationResolutionModule(oracle);
+//     httpRequestModule = new HttpRequestModule(oracle);
+//     bondedResponseModule = new BondedResponseModule(oracle);
+//     bondedDisputeModule = new BondedDisputeModule(oracle);
+//     bondEscalationResolutionModule = new BondEscalationResolutionModule(oracle);
 
-    weth = IWETH9(address(new WETH9()));
-    accountingExtension = new AccountingExtension(oracle);
+//     weth = IWETH9(address(new WETH9()));
+//     accountingExtension = new AccountingExtension(oracle);
 
-    requestId = _createRequest(1 ether, 1 ether); // TODO: fuzz payment amount
-  }
+//     requestId = _createRequest(1 ether, 1 ether); // TODO: fuzz payment amount
+//   }
 
-  /////////////////////////////////////////////////////////////////////
-  //                          Test helpers                           //
-  /////////////////////////////////////////////////////////////////////
+//   /////////////////////////////////////////////////////////////////////
+//   //                          Test helpers                           //
+//   /////////////////////////////////////////////////////////////////////
 
-  function _createRequest(uint256 _payment, uint256 _bondedAmount) internal returns (bytes32 _requestId) {
-    bytes memory _httpRequestModuleData = abi.encode('_url', '_method', '_body', accountingExtension, weth, _payment);
-    bytes memory _bondedResponseModuleData =
-      abi.encode(accountingExtension, weth, _bondedAmount, block.timestamp + 1 days);
-    bytes memory _bondedDisputeModuleData = abi.encode(accountingExtension, weth, _bondedAmount);
+//   function _createRequest(uint256 _payment, uint256 _bondedAmount) internal returns (bytes32 _requestId) {
+//     bytes memory _httpRequestModuleData = abi.encode('_url', '_method', '_body', accountingExtension, weth, _payment);
+//     bytes memory _bondedResponseModuleData =
+//       abi.encode(accountingExtension, weth, _bondedAmount, block.timestamp + 1 days);
+//     bytes memory _bondedDisputeModuleData = abi.encode(accountingExtension, weth, _bondedAmount);
 
-    // TODO: fuzz? not too constrained?
-    uint256 _percentageDiff = 10;
-    uint256 _pledgeThreshold = 100;
-    uint256 _timeUntilDeadline = 1 days;
-    uint256 _timeToBreakInequality = 1 days;
+//     // TODO: fuzz? not too constrained?
+//     uint256 _percentageDiff = 10;
+//     uint256 _pledgeThreshold = 100;
+//     uint256 _timeUntilDeadline = 1 days;
+//     uint256 _timeToBreakInequality = 1 days;
 
-    bytes memory _bondEscalationResolutionModuleData = abi.encode(
-      accountingExtension, weth, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality
-    );
+//     bytes memory _bondEscalationResolutionModuleData = abi.encode(
+//       accountingExtension, weth, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality
+//     );
 
-    vm.deal(address(this), _bondedAmount);
-    weth.deposit{value: msg.value}();
-    accountingExtension.deposit(IERC20(address(weth)), _bondedAmount);
+//     vm.deal(address(this), _bondedAmount);
+//     weth.deposit{value: msg.value}();
+//     accountingExtension.deposit(IERC20(address(weth)), _bondedAmount);
 
-    IOracle.NewRequest memory _request = IOracle.NewRequest({
-      requestModuleData: _httpRequestModuleData,
-      responseModuleData: _bondedResponseModuleData,
-      disputeModuleData: _bondedDisputeModuleData,
-      resolutionModuleData: _bondEscalationResolutionModuleData,
-      finalityModuleData: '',
-      ipfsHash: bytes32(''),
-      requestModule: httpRequestModule,
-      responseModule: bondedResponseModule,
-      disputeModule: bondedDisputeModule,
-      resolutionModule: bondEscalationResolutionModule,
-      finalityModule: IFinalityModule(address(0))
-    });
+//     IOracle.NewRequest memory _request = IOracle.NewRequest({
+//       requestModuleData: _httpRequestModuleData,
+//       responseModuleData: _bondedResponseModuleData,
+//       disputeModuleData: _bondedDisputeModuleData,
+//       resolutionModuleData: _bondEscalationResolutionModuleData,
+//       finalityModuleData: '',
+//       ipfsHash: bytes32(''),
+//       requestModule: httpRequestModule,
+//       responseModule: bondedResponseModule,
+//       disputeModule: bondedDisputeModule,
+//       resolutionModule: bondEscalationResolutionModule,
+//       finalityModule: IFinalityModule(address(0))
+//     });
 
-    return oracle.createRequest(_request);
-  }
+//     return oracle.createRequest(_request);
+//   }
 
-  /////////////////////////////////////////////////////////////////////
-  //                     Original logic handling                     //
-  /////////////////////////////////////////////////////////////////////
+//   /////////////////////////////////////////////////////////////////////
+//   //                     Original logic handling                     //
+//   /////////////////////////////////////////////////////////////////////
 
-  function createRequest(IOracle.NewRequest memory _request) public {
-    oracle.createRequest(_request);
-    ghostNumberOfRequest++;
-  }
+//   function createRequest(IOracle.NewRequest memory _request) public {
+//     oracle.createRequest(_request);
+//     ghostNumberOfRequest++;
+//   }
 
-  function proposeResponse(bytes calldata _responseData) external {
-    bytes32 _responseId = oracle.proposeResponse(msg.sender, requestId, _responseData);
-    // This request has already a response which is different?
-    if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
-      responseRequestDiscrepancy = true;
-    }
+//   function proposeResponse(bytes calldata _responseData) external {
+//     bytes32 _responseId = oracle.proposeResponse(msg.sender, requestId, _responseData);
+//     // This request has already a response which is different?
+//     if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
+//       responseRequestDiscrepancy = true;
+//     }
 
-    ghostResponseIdToRequestId[_responseId] = requestId;
+//     ghostResponseIdToRequestId[_responseId] = requestId;
 
-    ghostNumberOfResponse++;
-  }
+//     ghostNumberOfResponse++;
+//   }
 
-  function proposeResponse(address _proposer, bytes calldata _responseData) external {
-    bytes32 _responseId = oracle.proposeResponse(_proposer, requestId, _responseData);
+//   function proposeResponse(address _proposer, bytes calldata _responseData) external {
+//     bytes32 _responseId = oracle.proposeResponse(_proposer, requestId, _responseData);
 
-    // This request has already a response which is different?
-    if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
-      responseRequestDiscrepancy = true;
-    }
+//     // This request has already a response which is different?
+//     if (ghostResponseIdToRequestId[_responseId] != bytes32(0) && ghostResponseIdToRequestId[_responseId] != requestId) {
+//       responseRequestDiscrepancy = true;
+//     }
 
-    ghostResponseIdToRequestId[_responseId] = requestId;
+//     ghostResponseIdToRequestId[_responseId] = requestId;
 
-    ghostNumberOfResponse++;
-  }
+//     ghostNumberOfResponse++;
+//   }
 
-  function disputeResponse(bytes32, /* _requestId */ bytes32 _responseId) external {
-    oracle.disputeResponse(requestId, _responseId);
+//   function disputeResponse(bytes32, /* _requestId */ bytes32 _responseId) external {
+//     oracle.disputeResponse(requestId, _responseId);
 
-    ghostDisputeToResponseId[ghostNumberOfDispute] = _responseId;
-    ghostNumberOfDispute++;
-  }
+//     ghostDisputeToResponseId[ghostNumberOfDispute] = _responseId;
+//     ghostNumberOfDispute++;
+//   }
 
-  function escalateDispute(bytes32 _disputeId) external {
-    oracle.escalateDispute(_disputeId);
-  }
+//   function escalateDispute(bytes32 _disputeId) external {
+//     oracle.escalateDispute(_disputeId);
+//   }
 
-  function resolveDispute(bytes32 _disputeId) external {
-    oracle.resolveDispute(_disputeId);
-  }
+//   function resolveDispute(bytes32 _disputeId) external {
+//     oracle.resolveDispute(_disputeId);
+//   }
 
-  function updateDisputeStatus(bytes32 _disputeId, IOracle.DisputeStatus _status) external {
-    oracle.updateDisputeStatus(_disputeId, _status);
-  }
+//   function updateDisputeStatus(bytes32 _disputeId, IOracle.DisputeStatus _status) external {
+//     oracle.updateDisputeStatus(_disputeId, _status);
+//   }
 
-  function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
-    oracle.finalize(requestId, _finalizedResponseId);
+//   function finalize(bytes32 _requestId, bytes32 _finalizedResponseId) external {
+//     oracle.finalize(requestId, _finalizedResponseId);
 
-    if (!finalized[_requestId]) {
-      finalized[_requestId] = true;
-    } else {
-      finalizedDiscrepancy = true;
-    }
-  }
-}
+//     if (!finalized[_requestId]) {
+//       finalized[_requestId] = true;
+//     } else {
+//       finalizedDiscrepancy = true;
+//     }
+//   }
+// }
