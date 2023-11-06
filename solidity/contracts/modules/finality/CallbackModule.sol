@@ -29,6 +29,6 @@ contract CallbackModule is Module, ICallbackModule {
     RequestParameters memory _params = decodeRequestData(_request.finalityModuleData);
     _params.target.call(_params.data);
     emit Callback(_response.requestId, _params.target, _params.data);
-    emit RequestFinalized(_response.requestId, _finalizer);
+    emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
 }
