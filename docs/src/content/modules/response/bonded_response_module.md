@@ -10,7 +10,7 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
+- `decodeRequestData(bytes calldata _data)`: Returns the decoded data for a request.
 - `propose(bytes32 _requestId, address _proposer, bytes calldata _responseData)`: Proposes a response for a request, bonding the proposer's tokens.
 - `deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer)`: Allows a user to delete an undisputed response they proposed before the deadline, releasing the bond.
 - `finalizeRequest(bytes32 _requestId, address _finalizer)`: Finalizes the request.
