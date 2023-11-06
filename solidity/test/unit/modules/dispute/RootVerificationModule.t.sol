@@ -107,12 +107,11 @@
 //     rootVerificationModule = new ForTest_RootVerificationModule(oracle);
 
 //     mockDispute = IOracle.Dispute({
-//       createdAt: block.timestamp,
 //       disputer: dude,
 //       responseId: mockId,
 //       proposer: dude,
 //       requestId: mockId,
-//       status: IOracle.DisputeStatus.Active
+
 //     });
 //   }
 // }
@@ -263,7 +262,7 @@
 
 //     // Check: is the event emitted?
 //     vm.expectEmit(true, true, true, true, address(rootVerificationModule));
-//     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
+//     emit ResponseDisputed({_requestId: _dispute.requestId, _responseId: _dispute.responseId, _dispute: _dispute, blockNumber: block.number});
 
 //     vm.prank(address(oracle));
 //     rootVerificationModule.disputeResponse(_requestId, _responseId, _disputer, _proposer);
@@ -335,22 +334,5 @@
 
 //     vm.prank(_randomCaller);
 //     rootVerificationModule.disputeResponse(mockId, mockId, dude, dude);
-//   }
-// }
-
-// contract RootVerificationModule_Unit_DisputeEscalated is BaseTest {
-//   /**
-//    * @notice Test if dispute escalated do nothing
-//    */
-//   function test_returnCorrectStatus() public {
-//     // Record sstore and sload
-//     vm.prank(address(oracle));
-//     vm.record();
-//     rootVerificationModule.disputeEscalated(mockId);
-//     (bytes32[] memory _reads, bytes32[] memory _writes) = vm.accesses(address(rootVerificationModule));
-
-//     // Check: no storage access?
-//     assertEq(_reads.length, 0);
-//     assertEq(_writes.length, 0);
 //   }
 // }
