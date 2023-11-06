@@ -18,13 +18,9 @@ contract BaseTest is Test, Helpers {
   CallbackModule public callbackModule;
   // A mock oracle
   IOracle public oracle;
-  // // Mock request
-  // IOracle.Request internal _mockRequest;
-  // // Mock response
-  // IOracle.Response internal _mockResponse;
 
   event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
+  event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -84,7 +80,7 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
-    emit RequestFinalized(_requestId, _proposer);
+    emit RequestFinalized(_requestId, _mockResponse, _proposer);
 
     vm.prank(address(oracle));
     callbackModule.finalizeRequest(_request, _mockResponse, _proposer);
