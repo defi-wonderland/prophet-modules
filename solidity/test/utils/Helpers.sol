@@ -51,4 +51,16 @@ contract Helpers is DSTestPlus {
     _accountingExtension.deposit(_token, _depositAmount);
     vm.stopPrank();
   }
+
+  function _getId(IOracle.Response memory _response) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_response));
+  }
+
+  function _getId(IOracle.Request memory _request) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_request));
+  }
+
+  function _getId(IOracle.Dispute memory _dispute) internal pure returns (bytes32 _id) {
+    _id = keccak256(abi.encode(_dispute));
+  }
 }
