@@ -6,8 +6,9 @@ import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPl
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
+import {TestConstants} from './TestConstants.sol';
 
-contract Helpers is DSTestPlus {
+contract Helpers is DSTestPlus, TestConstants {
   // 100% random sequence of bytes representing request, response, or dispute id
   bytes32 public mockId = bytes32('69');
 
@@ -16,9 +17,13 @@ contract Helpers is DSTestPlus {
   address public proposer = makeAddr('proposer');
 
   // Mocks objects
+  IOracle.Request public mockRequest;
   IOracle.Response public mockResponse = IOracle.Response({proposer: proposer, requestId: mockId, response: bytes('')});
   IOracle.Dispute public mockDispute =
     IOracle.Dispute({disputer: disputer, responseId: mockId, proposer: proposer, requestId: mockId});
+
+  // Shared events that all modules emit
+  event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
 
   modifier assumeFuzzable(address _address) {
     _assumeFuzzable(_address);
