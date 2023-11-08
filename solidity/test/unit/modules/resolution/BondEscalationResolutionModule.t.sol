@@ -1,1191 +1,1136 @@
-// // SPDX-License-Identifier: AGPL-3.0-only
-// pragma solidity ^0.8.19;
-
-// import 'forge-std/Test.sol';
-
-// import {Helpers} from '../../../utils/Helpers.sol';
-
-// import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-// import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-// import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
-
-// import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-// import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-
-// import {
-//   BondEscalationResolutionModule,
-//   IBondEscalationResolutionModule
-// } from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-// import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
-
-// /**
-//  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
-//  */
-
-// contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModule {
-//   constructor(IOracle _oracle) BondEscalationResolutionModule(_oracle) {}
-
-//   function forTest_setRequestData(
-//     bytes32 _requestId,
-//     uint256 _percentageDiff,
-//     uint256 _pledgeThreshold,
-//     uint256 _timeUntilDeadline,
-//     uint256 _timeToBreakInequality,
-//     IBondEscalationAccounting _accounting,
-//     IERC20 _token
-//   ) public {
-//     bytes memory _data =
-//       abi.encode(_accounting, _token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
-//     requestData[_requestId] = _data;
-//   }
-
-//   function forTest_setEscalation(
-//     bytes32 _disputeId,
-//     IBondEscalationResolutionModule.Resolution _resolution,
-//     uint128 _startTime,
-//     uint256 _pledgesFor,
-//     uint256 _pledgesAgainst
-//   ) public {
-//     BondEscalationResolutionModule.Escalation memory _escalation =
-//       IBondEscalationResolutionModule.Escalation(_resolution, _startTime, _pledgesFor, _pledgesAgainst);
-//     escalations[_disputeId] = _escalation;
-//   }
-
-//   function forTest_setInequalityData(
-//     bytes32 _disputeId,
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus,
-//     uint256 _time
-//   ) public {
-//     BondEscalationResolutionModule.InequalityData memory _inequalityData =
-//       IBondEscalationResolutionModule.InequalityData(_inequalityStatus, _time);
-//     inequalityData[_disputeId] = _inequalityData;
-//   }
-
-//   function forTest_setPledgesFor(bytes32 _disputeId, address _pledger, uint256 _pledge) public {
-//     pledgesForDispute[_disputeId][_pledger] = _pledge;
-//   }
-
-//   function forTest_setPledgesAgainst(bytes32 _disputeId, address _pledger, uint256 _pledge) public {
-//     pledgesAgainstDispute[_disputeId][_pledger] = _pledge;
-//   }
-// }
-
-// /**
-//  * @title Bonded Escalation Resolution Module Unit tests
-//  */
-
-// contract BaseTest is Test, Helpers {
-//   struct FakeDispute {
-//     bytes32 requestId;
-//     bytes32 test;
-//   }
-
-//   struct FakeRequest {
-//     address disputeModule;
-//   }
-
-//   // The target contract
-//   ForTest_BondEscalationResolutionModule public module;
-//   // A mock oracle
-//   IOracle public oracle;
-//   // A mock accounting extension
-//   IBondEscalationAccounting public accounting;
-//   // A mock token
-//   IERC20 public token;
-//   // Mock EOA proposer
-//   address public proposer = makeAddr('proposer');
-//   // Mock EOA disputer
-//   address public disputer = makeAddr('disputer');
-//   // Mock EOA pledgerFor
-//   address public pledgerFor = makeAddr('pledgerFor');
-//   // Mock EOA pledgerAgainst
-//   address public pledgerAgainst = makeAddr('pledgerAgainst');
-//   // Mock percentageDiff
-//   uint256 public percentageDiff;
-//   // Mock pledge threshold
-//   uint256 public pledgeThreshold;
-//   // Mock time until main deadline
-//   uint256 public timeUntilDeadline;
-//   // Mock time to break inequality
-//   uint256 public timeToBreakInequality;
-
-//   // Events
-//   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
-
-//   event ResolutionStarted(bytes32 indexed _requestId, bytes32 indexed _disputeId);
-
-//   event PledgedForDispute(
-//     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
-//   );
-
-//   event PledgedAgainstDispute(
-//     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
-//   );
-
-//   event PledgeClaimed(
-//     bytes32 indexed _requestId,
-//     bytes32 indexed _disputeId,
-//     address indexed _pledger,
-//     IERC20 _token,
-//     uint256 _pledgeReleased,
-//     IBondEscalationResolutionModule.Resolution _resolution
-//   );
-
-//   /**
-//    * @notice Deploy the target and mock oracle+accounting extension
-//    */
-//   function setUp() public {
-//     oracle = IOracle(makeAddr('Oracle'));
-//     vm.etch(address(oracle), hex'069420');
-
-//     accounting = IBondEscalationAccounting(makeAddr('AccountingExtension'));
-//     vm.etch(address(accounting), hex'069420');
-
-//     token = IERC20(makeAddr('ERC20'));
-//     vm.etch(address(token), hex'069420');
-
-//     // Avoid starting at 0 for time sensitive tests
-//     vm.warp(123_456);
-
-//     module = new ForTest_BondEscalationResolutionModule(oracle);
-//   }
-
-//   function _createPledgers(
-//     uint256 _numOfPledgers,
-//     uint256 _amount
-//   ) internal returns (address[] memory _pledgers, uint256[] memory _pledgedAmounts) {
-//     _pledgers = new address[](_numOfPledgers);
-//     _pledgedAmounts = new uint256[](_numOfPledgers);
-//     address _pledger;
-//     uint256 _pledge;
-
-//     for (uint256 _i; _i < _numOfPledgers; _i++) {
-//       _pledger = makeAddr(string.concat('pledger', Strings.toString(_i)));
-//       _pledgers[_i] = _pledger;
-//     }
-
-//     for (uint256 _j; _j < _numOfPledgers; _j++) {
-//       _pledge = _amount / (_j + 100);
-//       _pledgedAmounts[_j] = _pledge;
-//     }
-
-//     return (_pledgers, _pledgedAmounts);
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
-//   function test_decodeRequestDataReturnTheCorrectData(
-//     bytes32 _requestId,
-//     uint256 _percentageDiff,
-//     uint256 _pledgeThreshold,
-//     uint256 _timeUntilDeadline,
-//     uint256 _timeToBreakInequality
-//   ) public {
-//     // Storing fuzzed data
-//     module.forTest_setRequestData(
-//       _requestId, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-
-//     IBondEscalationResolutionModule.RequestParameters memory _params = module.decodeRequestData(_requestId);
-
-//     // Check: do the stored values match?
-//     assertEq(address(accounting), address(_params.accountingExtension));
-//     assertEq(address(token), address(_params.bondToken));
-//     assertEq(_percentageDiff, _params.percentageDiff);
-//     assertEq(_pledgeThreshold, _params.pledgeThreshold);
-//     assertEq(_timeUntilDeadline, _params.timeUntilDeadline);
-//     assertEq(_timeToBreakInequality, _params.timeToBreakInequality);
-//   }
-
-//   /**
-//    * @notice Test that the moduleName function returns the correct name
-//    */
-//   function test_moduleName() public {
-//     assertEq(module.moduleName(), 'BondEscalationResolutionModule');
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
-//   function test_startResolution(bytes32 _disputeId, bytes32 _requestId) public {
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     // Check: does it revert if the caller is not the Oracle?
-//     vm.expectRevert(IModule.Module_OnlyOracle.selector);
-//     module.startResolution(_disputeId);
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit ResolutionStarted(_requestId, _disputeId);
-
-//     vm.prank(address(oracle));
-//     module.startResolution(_disputeId);
-
-//     (, uint128 _startTime,,) = module.escalations(_disputeId);
-//     // Check: is the escalation start time set to block.timestamp?
-//     assertEq(_startTime, uint128(block.timestamp));
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
-//   function test_reverts(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) public {
-//     // Mock escalation with start time 0
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
-
-//     // Check: does it revert if the dispute is not escalated?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     // Mock escalation with start time 1
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
-
-//     uint256 _timeUntilDeadline = block.timestamp - 1;
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Check: does it revert if the pledging phase is over?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock escalation with start time equal to current timestamp
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
-//     );
-
-//     _timeUntilDeadline = 10_000;
-//     uint256 _timeToBreakInequality = 5000;
-
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-
-//     vm.warp(block.timestamp + _timeToBreakInequality);
-
-//     // Check: does it revert if inequality timer has passed?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect the pledge call
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: does it revert if status == AgainstTurnToEqualize?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
-//     vm.prank(pledgerFor);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-//   }
-
-//   function test_earlyReturnIfThresholdNotSurpassed(
-//     bytes32 _requestId,
-//     bytes32 _disputeId,
-//     uint256 _pledgeAmount
-//   ) public {
-//     vm.assume(_pledgeAmount < type(uint256).max - 1000);
-//     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
-
-//     // block.timestamp < _startTime + _timeUntilDeadline
-//     uint128 _startTime = uint128(block.timestamp - 1000);
-//     uint256 _timeUntilDeadline = 1001;
-
-//     // _pledgeThreshold > _updatedTotalVotes;
-//     uint256 _pledgesFor = 1000;
-//     uint256 _pledgesAgainst = 1000;
-//     uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
-
-//     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-//     uint256 _timeToBreakInequality = 5000;
-
-//     // assuming the threshold has not passed, this is the only valid state
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.Equalized;
-
-//     // set all data
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect IBondEscalationAccounting.pledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
-
-//     vm.startPrank(pledgerFor);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
-//     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
-//     // Check: is the pledges for dispute amount updated?
-//     assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
-//   }
-
-//   function test_percentageDifferences(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) public {
-//     //////////////////////////////////////////////////////////////////////
-//     // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
-//     //////////////////////////////////////////////////////////////////////
-
-//     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
-//     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
-
-//     // block.timestamp < _startTime + _timeUntilDeadline
-//     uint128 _startTime = uint128(block.timestamp - 1000);
-//     uint256 _timeUntilDeadline = 1001;
-
-//     // I'm setting the values so that the percentage diff is 20% in favor of pledgesFor.
-//     // In this case, _pledgeAmount will be the entirety of pledgesFor, as if it were the first pledge.
-//     // Therefore, _pledgeAmount must be 60% of total votes, _pledgesAgainst then should be 40%
-//     // 40 = 60 * 2 / 3 -> thats why I'm multiplying by 200 and dividing by 300
-//     uint256 _pledgesFor = 0;
-//     uint256 _pledgesAgainst = _pledgeAmount * 200 / 300;
-//     uint256 _percentageDiff = 20;
-
-//     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-//     uint256 _timeToBreakInequality = 5000;
-
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.Equalized;
-
-//     // Set all data
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-//     module.forTest_setRequestData(
-//       _requestId, _percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect IBondEscalationAccounting.pledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
-
-//     vm.startPrank(pledgerFor);
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
-//     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
-//     // Check: is the pledge for dispute amount updated?
-//     assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
-//     // Check: is the timer properly updated to current timestamp?
-//     assertEq(uint256(_timer), block.timestamp);
-
-//     ////////////////////////////////////////////////////////////////////
-//     // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
-//     ////////////////////////////////////////////////////////////////////
-
-//     //----------------------------------------------------------------------//
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
-//     /////////////////////////////////////////////////////////////////////////
-
-//     // Resetting status changed by previous test
-//     _inequalityStatus = IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-//     module.forTest_setPledgesFor(_disputeId, pledgerFor, 0);
-
-//     // Making the against percentage 60% of the total as percentageDiff is 20%
-//     // Note: I'm using 301 to account for rounding down errors. I'm also setting some _pledgesFor
-//     //       to avoid the case when pledges are at 0 and someone just pledges 1 token
-//     //       which is not realistic due to the pledgeThreshold forbidding the lines tested here
-//     //       to be reached.
-//     _pledgesFor = 100_000;
-//     _pledgesAgainst = (_pledgeAmount + _pledgesFor) * 301 / 200;
-
-//     // Resetting the pledges values
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
-
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,, _realPledgesFor,) = module.escalations(_disputeId);
-//     (_status, _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
-//     // Check: is the pledges for amount updated?
-//     assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize));
-
-//     ////////////////////////////////////////////////////////////////////
-//     // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
-//     ////////////////////////////////////////////////////////////////////
-
-//     //----------------------------------------------------------------------//
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // START TEST _status == forTurnToEqualize && both diffs < percentageDiff
-//     /////////////////////////////////////////////////////////////////////////
-
-//     // Resetting status changed by previous test
-//     module.forTest_setPledgesFor(_disputeId, pledgerFor, 0);
-
-//     // Making both the same so the percentage diff is not reached
-//     _pledgesFor = 100_000;
-//     _pledgesAgainst = (_pledgeAmount + _pledgesFor);
-
-//     // Resetting the pledges values
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
-
-//     module.pledgeForDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,, _realPledgesFor,) = module.escalations(_disputeId);
-//     (_status, _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
-//     // Check: is the pledges for amount updated?
-//     assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
-//     // Check: is the timer reset?
-//     assertEq(_timer, 0);
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // END TEST _status == forTurnToEqualize && both diffs < percentageDiff
-//     /////////////////////////////////////////////////////////////////////////
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
-//   function test_reverts(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) public {
-//     // Set mock escalation with no pledges and start time 0
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
-
-//     // Check: does it revert if the dispute is not escalated?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     // Set mock escalation with no pledges and start time 1
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
-
-//     uint256 _timeUntilDeadline = block.timestamp - 1;
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Check: does it revert if the pledging phase is over?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Set mock escalation with no pledges and start time == block.timestamp
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
-//     );
-
-//     _timeUntilDeadline = 10_000;
-//     uint256 _timeToBreakInequality = 5000;
-
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-
-//     vm.warp(block.timestamp + _timeToBreakInequality);
-
-//     // Check: does it revert if inequality timer has passed?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect the pledge call
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: does it revert if status == AgainstTurnToEqualize?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
-//     vm.prank(pledgerAgainst);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-//   }
-
-//   function test_earlyReturnIfThresholdNotSurpassed(
-//     bytes32 _requestId,
-//     bytes32 _disputeId,
-//     uint256 _pledgeAmount
-//   ) public {
-//     vm.assume(_pledgeAmount < type(uint256).max - 1000);
-//     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
-
-//     // block.timestamp < _startTime + _timeUntilDeadline
-//     uint128 _startTime = uint128(block.timestamp - 1000);
-//     uint256 _timeUntilDeadline = 1001;
-
-//     // _pledgeThreshold > _updatedTotalVotes;
-//     uint256 _pledgesFor = 1000;
-//     uint256 _pledgesAgainst = 1000;
-//     uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
-
-//     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-//     uint256 _timeToBreakInequality = 5000;
-
-//     // Assuming the threshold has not passed, this is the only valid state
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.Equalized;
-
-//     // Set all data
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect IBondEscalationAccounting.pledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
-
-//     vm.startPrank(pledgerAgainst);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
-//     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
-//     // asdf
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
-//     // Check: is the pledges against amount updated?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
-//   }
-
-//   function test_percentageDifferences(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount) public {
-//     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
-//     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
-//     /////////////////////////////////////////////////////////////////////////
-
-//     // block.timestamp < _startTime + _timeUntilDeadline
-//     uint128 _startTime = uint128(block.timestamp - 1000);
-//     uint256 _timeUntilDeadline = 1001;
-
-//     // I'm setting the values so that the percentage diff is 20% in favor of pledgesAgainst.
-//     // In this case, _pledgeAmount will be the entirety of pledgesAgainst, as if it were the first pledge.
-//     // Therefore, _pledgeAmount must be 60% of total votes, _pledgesFor then should be 40%
-//     // 40 = 60 * 2 / 3 -> thats why I'm multiplying by 200 and dividing by 300
-//     uint256 _pledgesAgainst = 0;
-//     uint256 _pledgesFor = _pledgeAmount * 200 / 300;
-//     uint256 _percentageDiff = 20;
-
-//     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-//     uint256 _timeToBreakInequality = 5000;
-
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.Equalized;
-
-//     // Set all data
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-//     module.forTest_setRequestData(
-//       _requestId, _percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Mock and expect IBondEscalationAccounting.pledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
-
-//     vm.startPrank(pledgerAgainst);
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
-//     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
-//     // Check: is the pledges against amount updated?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize));
-//     // Check: is the timer properly updated?
-//     assertEq(uint256(_timer), block.timestamp);
-
-//     ///////////////////////////////////////////////////////////////////////
-//     // END TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
-//     ///////////////////////////////////////////////////////////////////////
-
-//     //----------------------------------------------------------------------//
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
-//     /////////////////////////////////////////////////////////////////////////
-
-//     // Resetting status changed by previous test
-//     _inequalityStatus = IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-//     module.forTest_setPledgesAgainst(_disputeId, pledgerAgainst, 0);
-
-//     // Making the for percentage 60% of the total as percentageDiff is 20%
-//     // Note: I'm using 301 to account for rounding down errors. I'm also setting some _pledgesAgainst
-//     //       to avoid the case when pledges are at 0 and someone just pledges 1 token
-//     //       which is not realistic due to the pledgeThreshold forbidding the lines tested here
-//     //       to be reached.
-//     _pledgesAgainst = 100_000;
-//     _pledgesFor = (_pledgeAmount + _pledgesAgainst) * 301 / 200;
-
-//     // Resetting the pledges values
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
-
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,,, _realPledgesAgainst) = module.escalations(_disputeId);
-//     (_status, _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
-//     // Check: is the pledges against amount updated?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
-
-//     ////////////////////////////////////////////////////////////////////
-//     // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
-//     ////////////////////////////////////////////////////////////////////
-
-//     //----------------------------------------------------------------------//
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // START TEST _status == forTurnToEqualize && both diffs < percentageDiff
-//     /////////////////////////////////////////////////////////////////////////
-
-//     // Resetting status changed by previous test
-//     module.forTest_setPledgesAgainst(_disputeId, pledgerAgainst, 0);
-
-//     // Making both the same so the percentage diff is not reached
-//     _pledgesAgainst = 100_000;
-//     _pledgesFor = (_pledgeAmount + _pledgesAgainst);
-
-//     // Resetting the pledges values
-//     module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
-
-//     module.pledgeAgainstDispute(_requestId, _disputeId, _pledgeAmount);
-
-//     (,,, _realPledgesAgainst) = module.escalations(_disputeId);
-//     (_status, _timer) = module.inequalityData(_disputeId);
-
-//     // Check: is the pledge amount added to the total?
-//     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
-//     // Check: is the pledges against amount updated?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
-//     // Check: is the status properly updated?
-//     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
-//     // Check: is the timer properly reset?
-//     assertEq(_timer, 0);
-
-//     //////////////////////////////////////////////////////////////////////////
-//     // END TEST _status == forTurnToEqualize && both diffs < percentageDiff
-//     /////////////////////////////////////////////////////////////////////////
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
-//   /*
-//   Specs:
-//     0. Should revert if the resolution status is different than Unresolved - done
-//     1. Should revert if the dispute is not escalated (startTime == 0) - done
-//     2. Should revert if the main deadline has not be reached and the inequality timer has not culminated - done
-
-//     3. After resolve, if the pledges from both sides never reached the threshold, or if the pledges of both sides end up tied
-//        it should set the resolution status to NoResolution. TODO: and do the appropriate calls.
-//     4. After resolve, if the pledges for the disputer were more than the pledges against him, then it should
-//        set the resolution state to DisputerWon and call the oracle to update the status with Won. Also emit event.
-//     5. Same as 4 but with DisputerLost, and Lost when the pledges against the disputer were more than the pledges in favor of
-//        the disputer.
-//   */
-
-//   function test_reverts(bytes32 _requestId, bytes32 _disputeId) public {
-//     // Set mock escalation with resolution == DisputerWon
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, 0, 0);
-
-//     // Check: does it revert if the status is different than resolved?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AlreadyResolved.selector);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     // Set mock escalation with resolution == Unresolved
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
-
-//     // Check: does it revert if the dispute is not escalated?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     // Revert if we have not yet reached the deadline and the timer has not passed
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     uint256 _timeUntilDeadline = 100_000;
-//     uint256 _timeToBreakInequality = 100_000;
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality, accounting, token
-//     );
-
-//     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
-//       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
-//     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
-
-//     // Set mock escalation with resolution == Unresolved and start time == block.timestamp
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
-//     );
-
-//     // Check: does it revert if the dispute must be resolved?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseNotOver.selector);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-//   }
-
-//   function test_thresholdNotReached(bytes32 _requestId, bytes32 _disputeId) public {
-//     // START OF SETUP TO AVOID REVERTS
-//     // Set a mock escalation with resolution == Unresolved and start time == 1
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
-
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     // Mock and expect IOracle.updateDisputeStatus to be called
-//     _mockAndExpect(
-//       address(oracle),
-//       abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.NoResolution)),
-//       abi.encode()
-//     );
-//     // END OF SETUP TO AVOID REVERTS
-
-//     // START OF TEST THRESHOLD NOT REACHED
-//     uint256 _pledgeThreshold = 1000;
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, _pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
-
-//     // Check: is the resolution status updated to NoResolution?
-//     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
-
-//     // END OF TEST THRESHOLD NOT REACHED
-//   }
-
-//   function test_tiedPledges(bytes32 _requestId, bytes32 _disputeId) public {
-//     // START OF SETUP TO AVOID REVERTS
-//     // Set mock escalation with tied pledges
-//     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 2000, 2000);
-
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     // Mock and expect IOracle.updateDisputeStatus to be called
-//     _mockAndExpect(
-//       address(oracle),
-//       abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.NoResolution)),
-//       abi.encode()
-//     );
-
-//     // END OF SETUP TO AVOID REVERTS
-
-//     // START OF TIED PLEDGES
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Events
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
-
-//     // Check: is the escalation status updated to NoResolution?
-//     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
-
-//     // END OF TIED PLEDGES
-//   }
-
-//   function test_forPledgesWon(
-//     bytes32 _requestId,
-//     bytes32 _disputeId,
-//     uint256 _pledgesAgainst,
-//     uint256 _pledgesFor
-//   ) public {
-//     vm.assume(_pledgesAgainst < _pledgesFor);
-//     vm.assume(_pledgesFor < type(uint128).max);
-//     // START OF SETUP TO AVOID REVERTS
-
-//     // Set mock escalation with pledgers for dispute winning
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
-//     );
-
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     // END OF SETUP TO AVOID REVERTS
-
-//     // START OF FOR PLEDGES WON
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Mock and expect IOracle.updateDisputeStatus to be called
-//     _mockAndExpect(
-//       address(oracle),
-//       abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Won)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
-//     // Check: is the status of the escalation == DisputerWon?
-//     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerWon));
-
-//     // END OF FOR PLEDGES WON
-//   }
-
-//   function test_againstPledgesWon(
-//     bytes32 _requestId,
-//     bytes32 _disputeId,
-//     uint256 _pledgesFor,
-//     uint256 _pledgesAgainst
-//   ) public {
-//     vm.assume(_pledgesAgainst > _pledgesFor);
-//     vm.assume(_pledgesAgainst < type(uint128).max);
-//     // START OF SETUP TO AVOID REVERTS
-
-//     // Set mock escalation with pledgers against dispute winning
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
-//     );
-
-//     IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-//     // Mock and expect IOracle.getDispute to be called
-//     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getDispute, (_disputeId)), abi.encode(_mockDispute));
-
-//     // END OF SETUP TO AVOID REVERTS
-
-//     // START OF FOR PLEDGES LOST
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Mock and expect IOracle.updateDisputeStatus to be called
-//     _mockAndExpect(
-//       address(oracle),
-//       abi.encodeCall(IOracle.updateDisputeStatus, (_disputeId, IOracle.DisputeStatus.Lost)),
-//       abi.encode()
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
-
-//     vm.prank(address(oracle));
-//     module.resolveDispute(_disputeId);
-
-//     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
-//     // Check: is the status of the escalation == DisputerLost?
-//     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerLost));
-
-//     // END OF FOR PLEDGES LOST
-//   }
-// }
-
-// contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
-//   function test_reverts(
-//     bytes32 _disputeId,
-//     bytes32 _requestId,
-//     uint256 _pledgesFor,
-//     uint256 _pledgesAgainst,
-//     uint128 _startTime,
-//     address _randomPledger
-//   ) public {
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-//     // Set a mock escalation with resolution == Unresolved
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
-//     );
-
-//     module.forTest_setPledgesFor(_disputeId, _randomPledger, _pledgesFor);
-//     module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _pledgesAgainst);
-
-//     // Check: does it revert if trying to claim a pledge of a not resolved escalation?
-//     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotResolved.selector);
-//     module.claimPledge(_requestId, _disputeId);
-//   }
-
-//   function test_disputerWon(
-//     bytes32 _disputeId,
-//     bytes32 _requestId,
-//     uint256 _totalPledgesFor,
-//     uint256 _totalPledgesAgainst,
-//     uint256 _userForPledge,
-//     address _randomPledger
-//   ) public {
-//     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
-//     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
-//     // no single pledger should surpass a balance of type(uint192).max
-//     _userForPledge = bound(_userForPledge, 0, type(uint192).max);
-//     vm.assume(_totalPledgesFor > _totalPledgesAgainst);
-//     vm.assume(_totalPledgesFor >= _userForPledge);
-
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Set mock escalation with resolution == DisputerWon
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, _totalPledgesFor, _totalPledgesAgainst
-//     );
-
-//     module.forTest_setPledgesFor(_disputeId, _randomPledger, _userForPledge);
-
-//     uint256 _pledgerProportion = FixedPointMathLib.mulDivDown(_userForPledge, module.BASE(), (_totalPledgesFor));
-//     uint256 _amountToRelease =
-//       _userForPledge + (FixedPointMathLib.mulDivDown(_totalPledgesAgainst, _pledgerProportion, (module.BASE())));
-
-//     // Mock and expect IBondEscalationAccounting.releasePledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
-//       abi.encode(true)
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgeClaimed(
-//       _requestId,
-//       _disputeId,
-//       _randomPledger,
-//       token,
-//       _amountToRelease,
-//       IBondEscalationResolutionModule.Resolution.DisputerWon
-//     );
-
-//     vm.prank(_randomPledger);
-//     module.claimPledge(_requestId, _disputeId);
-
-//     // Check: are the pledges for dispute for the dispute and pledger set to 0?
-//     assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
-//   }
-
-//   function test_disputerLost(
-//     bytes32 _disputeId,
-//     bytes32 _requestId,
-//     uint256 _totalPledgesFor,
-//     uint256 _totalPledgesAgainst,
-//     uint256 _userAgainstPledge,
-//     address _randomPledger
-//   ) public {
-//     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
-//     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
-//     // no single pledger should surpass a balance of type(uint192).max
-//     _userAgainstPledge = bound(_userAgainstPledge, 0, type(uint192).max);
-//     vm.assume(_totalPledgesAgainst > _totalPledgesFor);
-//     vm.assume(_totalPledgesAgainst >= _userAgainstPledge);
-
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Set mock escalation with resolution == DisputerLost
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.DisputerLost, 0, _totalPledgesFor, _totalPledgesAgainst
-//     );
-
-//     module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _userAgainstPledge);
-
-//     uint256 _pledgerProportion = FixedPointMathLib.mulDivDown(_userAgainstPledge, module.BASE(), _totalPledgesAgainst);
-//     uint256 _amountToRelease =
-//       _userAgainstPledge + (FixedPointMathLib.mulDivDown(_totalPledgesFor, _pledgerProportion, module.BASE()));
-
-//     // Mock and expect IBondEscalationAccounting.releasePledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
-//       abi.encode(true)
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgeClaimed(
-//       _requestId,
-//       _disputeId,
-//       _randomPledger,
-//       token,
-//       _amountToRelease,
-//       IBondEscalationResolutionModule.Resolution.DisputerLost
-//     );
-
-//     vm.prank(_randomPledger);
-//     module.claimPledge(_requestId, _disputeId);
-
-//     // Check: is the pledges against dispute for this dispute and pledger set to 0?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
-//   }
-
-//   function test_noResolution(
-//     bytes32 _disputeId,
-//     bytes32 _requestId,
-//     uint256 _userForPledge,
-//     uint256 _userAgainstPledge,
-//     address _randomPledger
-//   ) public {
-//     vm.assume(_userForPledge > 0);
-//     vm.assume(_userAgainstPledge > 0);
-
-//     module.forTest_setRequestData(
-//       _requestId, percentageDiff, pledgeThreshold, timeUntilDeadline, timeToBreakInequality, accounting, token
-//     );
-
-//     // Set mock escalation with resolution == NoResolution
-//     module.forTest_setEscalation(
-//       _disputeId, IBondEscalationResolutionModule.Resolution.NoResolution, 0, _userForPledge, _userAgainstPledge
-//     );
-
-//     module.forTest_setPledgesFor(_disputeId, _randomPledger, _userForPledge);
-//     module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _userAgainstPledge);
-
-//     // Mock and expect IBondEscalationAccounting.releasePledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userForPledge)),
-//       abi.encode(true)
-//     );
-
-//     // Mock and expect IBondEscalationAccounting.releasePledge to be called
-//     _mockAndExpect(
-//       address(accounting),
-//       abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userAgainstPledge)),
-//       abi.encode(true)
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgeClaimed(
-//       _requestId,
-//       _disputeId,
-//       _randomPledger,
-//       token,
-//       _userForPledge,
-//       IBondEscalationResolutionModule.Resolution.NoResolution
-//     );
-
-//     // Check: is the event emitted?
-//     vm.expectEmit(true, true, true, true, address(module));
-//     emit PledgeClaimed(
-//       _requestId,
-//       _disputeId,
-//       _randomPledger,
-//       token,
-//       _userAgainstPledge,
-//       IBondEscalationResolutionModule.Resolution.NoResolution
-//     );
-
-//     vm.prank(_randomPledger);
-//     module.claimPledge(_requestId, _disputeId);
-
-//     // Check: is the pledges against dispute for this dispute and pledger set to 0?
-//     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
-//     // Check: is the pledges for dispute for this dispute and pledger set to 0?
-//     assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
-//   }
-// }
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.8.19;
+
+import 'forge-std/Test.sol';
+
+import {Helpers} from '../../../utils/Helpers.sol';
+
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
+import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+
+import {
+  BondEscalationResolutionModule,
+  IBondEscalationResolutionModule
+} from '../../../../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBondEscalationAccounting.sol';
+
+/**
+ * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
+ */
+
+contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModule {
+  constructor(IOracle _oracle) BondEscalationResolutionModule(_oracle) {}
+
+  function forTest_setEscalation(
+    bytes32 _disputeId,
+    IBondEscalationResolutionModule.Resolution _resolution,
+    uint128 _startTime,
+    uint256 _pledgesFor,
+    uint256 _pledgesAgainst
+  ) public {
+    BondEscalationResolutionModule.Escalation memory _escalation =
+      IBondEscalationResolutionModule.Escalation(_resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    escalations[_disputeId] = _escalation;
+  }
+
+  function forTest_setInequalityData(
+    bytes32 _disputeId,
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus,
+    uint256 _time
+  ) public {
+    BondEscalationResolutionModule.InequalityData memory _inequalityData =
+      IBondEscalationResolutionModule.InequalityData(_inequalityStatus, _time);
+    inequalityData[_disputeId] = _inequalityData;
+  }
+
+  function forTest_setPledgesFor(bytes32 _disputeId, address _pledger, uint256 _pledge) public {
+    pledgesForDispute[_disputeId][_pledger] = _pledge;
+  }
+
+  function forTest_setPledgesAgainst(bytes32 _disputeId, address _pledger, uint256 _pledge) public {
+    pledgesAgainstDispute[_disputeId][_pledger] = _pledge;
+  }
+}
+
+/**
+ * @title Bonded Escalation Resolution Module Unit tests
+ */
+
+contract BaseTest is Test, Helpers {
+  struct FakeDispute {
+    bytes32 requestId;
+    bytes32 test;
+  }
+
+  struct FakeRequest {
+    address disputeModule;
+  }
+
+  // The target contract
+  ForTest_BondEscalationResolutionModule public module;
+  // A mock oracle
+  IOracle public oracle;
+  // A mock accounting extension
+  IBondEscalationAccounting public accounting;
+  // A mock token
+  IERC20 public token;
+  // Mock EOA proposer
+  address public proposer = makeAddr('proposer');
+  // Mock EOA disputer
+  address public disputer = makeAddr('disputer');
+  // Mock EOA pledgerFor
+  address public pledgerFor = makeAddr('pledgerFor');
+  // Mock EOA pledgerAgainst
+  address public pledgerAgainst = makeAddr('pledgerAgainst');
+  // Mock percentageDiff
+  uint256 public percentageDiff;
+  // Mock pledge threshold
+  uint256 public pledgeThreshold;
+  // Mock time until main deadline
+  uint256 public timeUntilDeadline;
+  // Mock time to break inequality
+  uint256 public timeToBreakInequality;
+
+  // Mock dispute
+  IOracle.Dispute public mockDispute;
+  // Mock response
+  IOracle.Response public mockResponse;
+
+  // Events
+  event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
+  event ResolutionStarted(bytes32 indexed _requestId, bytes32 indexed _disputeId);
+  event PledgedForDispute(
+    address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
+  );
+  event PledgedAgainstDispute(
+    address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, uint256 _pledgedAmount
+  );
+  event PledgeClaimed(
+    bytes32 indexed _requestId,
+    bytes32 indexed _disputeId,
+    address indexed _pledger,
+    IERC20 _token,
+    uint256 _pledgeReleased,
+    IBondEscalationResolutionModule.Resolution _resolution
+  );
+
+  /**
+   * @notice Deploy the target and mock oracle+accounting extension
+   */
+  function setUp() public {
+    oracle = IOracle(makeAddr('Oracle'));
+    vm.etch(address(oracle), hex'069420');
+
+    accounting = IBondEscalationAccounting(makeAddr('AccountingExtension'));
+    vm.etch(address(accounting), hex'069420');
+
+    token = IERC20(makeAddr('ERC20'));
+    vm.etch(address(token), hex'069420');
+
+    // Avoid starting at 0 for time sensitive tests
+    vm.warp(123_456);
+
+    module = new ForTest_BondEscalationResolutionModule(oracle);
+
+    mockDispute = IOracle.Dispute({
+      disputer: disputer,
+      responseId: bytes32('response'),
+      proposer: proposer,
+      requestId: bytes32('69')
+    });
+
+    mockResponse =
+      IOracle.Response({proposer: proposer, requestId: bytes32('69'), response: abi.encode(bytes32('response'))});
+  }
+
+  function _createPledgers(
+    uint256 _numOfPledgers,
+    uint256 _amount
+  ) internal returns (address[] memory _pledgers, uint256[] memory _pledgedAmounts) {
+    _pledgers = new address[](_numOfPledgers);
+    _pledgedAmounts = new uint256[](_numOfPledgers);
+    address _pledger;
+    uint256 _pledge;
+
+    for (uint256 _i; _i < _numOfPledgers; _i++) {
+      _pledger = makeAddr(string.concat('pledger', Strings.toString(_i)));
+      _pledgers[_i] = _pledger;
+    }
+
+    for (uint256 _j; _j < _numOfPledgers; _j++) {
+      _pledge = _amount / (_j + 100);
+      _pledgedAmounts[_j] = _pledge;
+    }
+
+    return (_pledgers, _pledgedAmounts);
+  }
+}
+
+contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
+  function test_decodeRequestDataReturnTheCorrectData(
+    bytes32 _requestId,
+    uint256 _percentageDiff,
+    uint256 _pledgeThreshold,
+    uint256 _timeUntilDeadline,
+    uint256 _timeToBreakInequality
+  ) public {
+    // Storing fuzzed data
+    bytes memory _data =
+      abi.encode(accounting, token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
+    IBondEscalationResolutionModule.RequestParameters memory _params = module.decodeRequestData(_data);
+
+    // Check: do the stored values match?
+    assertEq(address(accounting), address(_params.accountingExtension));
+    assertEq(address(token), address(_params.bondToken));
+    assertEq(_percentageDiff, _params.percentageDiff);
+    assertEq(_pledgeThreshold, _params.pledgeThreshold);
+    assertEq(_timeUntilDeadline, _params.timeUntilDeadline);
+    assertEq(_timeToBreakInequality, _params.timeToBreakInequality);
+  }
+
+  /**
+   * @notice Test that the moduleName function returns the correct name
+   */
+  function test_moduleName() public {
+    assertEq(module.moduleName(), 'BondEscalationResolutionModule');
+  }
+}
+
+contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
+  function test_startResolution(bytes32 _disputeId, bytes32 _requestId, IOracle.Request calldata _request) public {
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // Check: does it revert if the caller is not the Oracle?
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
+    module.startResolution(_disputeId, _request, mockResponse, mockDispute);
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit ResolutionStarted(_requestId, _disputeId);
+
+    vm.prank(address(oracle));
+    module.startResolution(_disputeId, _request, mockResponse, mockDispute);
+
+    (, uint128 _startTime,,) = module.escalations(_disputeId);
+    // Check: is the escalation start time set to block.timestamp?
+    assertEq(_startTime, uint128(block.timestamp));
+  }
+}
+
+contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
+  function test_reverts(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgeAmount,
+    IOracle.Request calldata _request
+  ) public {
+    // Mock escalation with start time 0
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
+
+    // Check: does it revert if the dispute is not escalated?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
+    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+    // Mock escalation with start time 1
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
+
+    uint256 _timeUntilDeadline = block.timestamp - 1;
+
+    // Check: does it revert if the pledging phase is over?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
+    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+      IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Mock escalation with start time equal to current timestamp
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
+    );
+
+    _timeUntilDeadline = 10_000;
+    uint256 _timeToBreakInequality = 5000;
+
+    vm.warp(block.timestamp + _timeToBreakInequality);
+
+    // Check: does it revert if inequality timer has passed?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
+    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+    vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Mock and expect the pledge call
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
+    // Check: does it revert if status == AgainstTurnToEqualize?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
+    vm.prank(pledgerFor);
+    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+  }
+
+  function test_earlyReturnIfThresholdNotSurpassed(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgeAmount,
+    IOracle.Request calldata _request
+  ) public {
+    vm.assume(_pledgeAmount < type(uint256).max - 1000);
+    IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
+
+    // block.timestamp < _startTime + _timeUntilDeadline
+    uint128 _startTime = uint128(block.timestamp - 1000);
+    uint256 _timeUntilDeadline = 1001;
+
+    // _pledgeThreshold > _updatedTotalVotes;
+    uint256 _pledgesFor = 1000;
+    uint256 _pledgesAgainst = 1000;
+    uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
+
+    // block.timestamp < _inequalityData.time + _timeToBreakInequality
+    uint256 _timeToBreakInequality = 5000;
+
+    // assuming the threshold has not passed, this is the only valid state
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+      IBondEscalationResolutionModule.InequalityStatus.Equalized;
+
+    // set all data
+    module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Mock and expect IBondEscalationAccounting.pledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
+
+    vm.startPrank(pledgerFor);
+    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+    (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
+    (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
+
+    // Check: is the pledge amount added to the total?
+    assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
+    // Check: is the pledges for dispute amount updated?
+    assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
+    // Check: is the status properly updated?
+    assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
+  }
+
+  // TODO: Break this test into several smaller functions
+  // function test_percentageDifferences(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount, IOracle.Request calldata _request) public {
+  //   //////////////////////////////////////////////////////////////////////
+  //   // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
+  //   //////////////////////////////////////////////////////////////////////
+
+  //   _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
+  //   IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
+
+  //   // block.timestamp < _startTime + _timeUntilDeadline
+  //   uint128 _startTime = uint128(block.timestamp - 1000);
+  //   uint256 _timeUntilDeadline = 1001;
+
+  //   // I'm setting the values so that the percentage diff is 20% in favor of pledgesFor.
+  //   // In this case, _pledgeAmount will be the entirety of pledgesFor, as if it were the first pledge.
+  //   // Therefore, _pledgeAmount must be 60% of total votes, _pledgesAgainst then should be 40%
+  //   // 40 = 60 * 2 / 3 -> thats why I'm multiplying by 200 and dividing by 300
+  //   uint256 _pledgesFor = 0;
+  //   uint256 _pledgesAgainst = _pledgeAmount * 200 / 300;
+  //   uint256 _percentageDiff = 20;
+
+  //   // block.timestamp < _inequalityData.time + _timeToBreakInequality
+  //   uint256 _timeToBreakInequality = 5000;
+
+  //   IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+  //     IBondEscalationResolutionModule.InequalityStatus.Equalized;
+
+  //   // Set all data
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+  //   // Mock and expect IBondEscalationAccounting.pledge to be called
+  //   _mockAndExpect(
+  //     address(accounting),
+  //     abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+  //     abi.encode()
+  //   );
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
+
+  //   vm.startPrank(pledgerFor);
+  //   module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
+  //   (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
+  //   // Check: is the pledge for dispute amount updated?
+  //   assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
+  //   // Check: is the timer properly updated to current timestamp?
+  //   assertEq(uint256(_timer), block.timestamp);
+
+  //   ////////////////////////////////////////////////////////////////////
+  //   // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
+  //   ////////////////////////////////////////////////////////////////////
+
+  //   //----------------------------------------------------------------------//
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
+  //   /////////////////////////////////////////////////////////////////////////
+
+  //   // Resetting status changed by previous test
+  //   _inequalityStatus = IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
+  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+  //   module.forTest_setPledgesFor(_disputeId, pledgerFor, 0);
+
+  //   // Making the against percentage 60% of the total as percentageDiff is 20%
+  //   // Note: I'm using 301 to account for rounding down errors. I'm also setting some _pledgesFor
+  //   //       to avoid the case when pledges are at 0 and someone just pledges 1 token
+  //   //       which is not realistic due to the pledgeThreshold forbidding the lines tested here
+  //   //       to be reached.
+  //   _pledgesFor = 100_000;
+  //   _pledgesAgainst = (_pledgeAmount + _pledgesFor) * 301 / 200;
+
+  //   // Resetting the pledges values
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
+
+  //   module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,, _realPledgesFor,) = module.escalations(_disputeId);
+  //   (_status, _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
+  //   // Check: is the pledges for amount updated?
+  //   assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize));
+
+  //   ////////////////////////////////////////////////////////////////////
+  //   // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
+  //   ////////////////////////////////////////////////////////////////////
+
+  //   //----------------------------------------------------------------------//
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // START TEST _status == forTurnToEqualize && both diffs < percentageDiff
+  //   /////////////////////////////////////////////////////////////////////////
+
+  //   // Resetting status changed by previous test
+  //   module.forTest_setPledgesFor(_disputeId, pledgerFor, 0);
+
+  //   // Making both the same so the percentage diff is not reached
+  //   _pledgesFor = 100_000;
+  //   _pledgesAgainst = (_pledgeAmount + _pledgesFor);
+
+  //   // Resetting the pledges values
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
+
+  //   module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,, _realPledgesFor,) = module.escalations(_disputeId);
+  //   (_status, _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesFor, _pledgesFor + _pledgeAmount);
+  //   // Check: is the pledges for amount updated?
+  //   assertEq(module.pledgesForDispute(_disputeId, pledgerFor), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
+  //   // Check: is the timer reset?
+  //   assertEq(_timer, 0);
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // END TEST _status == forTurnToEqualize && both diffs < percentageDiff
+  //   /////////////////////////////////////////////////////////////////////////
+  // }
+}
+
+contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
+  function test_reverts(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgeAmount,
+    IOracle.Request calldata _request
+  ) public {
+    // Set mock escalation with no pledges and start time 0
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
+
+    // Check: does it revert if the dispute is not escalated?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
+    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+    // Set mock escalation with no pledges and start time 1
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
+
+    uint256 _timeUntilDeadline = block.timestamp - 1;
+
+    // Check: does it revert if the pledging phase is over?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
+    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+      IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Set mock escalation with no pledges and start time == block.timestamp
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
+    );
+
+    _timeUntilDeadline = 10_000;
+    uint256 _timeToBreakInequality = 5000;
+
+    vm.warp(block.timestamp + _timeToBreakInequality);
+
+    // Check: does it revert if inequality timer has passed?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
+    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+    vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Mock and expect the pledge call
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
+    // Check: does it revert if status == AgainstTurnToEqualize?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
+    vm.prank(pledgerAgainst);
+    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+  }
+
+  function test_earlyReturnIfThresholdNotSurpassed(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgeAmount,
+    IOracle.Request calldata _request
+  ) public {
+    vm.assume(_pledgeAmount < type(uint256).max - 1000);
+    IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
+
+    // block.timestamp < _startTime + _timeUntilDeadline
+    uint128 _startTime = uint128(block.timestamp - 1000);
+    uint256 _timeUntilDeadline = 1001;
+
+    // _pledgeThreshold > _updatedTotalVotes;
+    uint256 _pledgesFor = 1000;
+    uint256 _pledgesAgainst = 1000;
+    uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
+
+    // block.timestamp < _inequalityData.time + _timeToBreakInequality
+    uint256 _timeToBreakInequality = 5000;
+
+    // Assuming the threshold has not passed, this is the only valid state
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+      IBondEscalationResolutionModule.InequalityStatus.Equalized;
+
+    // Set all data
+    module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Mock and expect IBondEscalationAccounting.pledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
+
+    vm.startPrank(pledgerAgainst);
+    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+    (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
+    (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
+    // asdf
+
+    // Check: is the pledge amount added to the total?
+    assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
+    // Check: is the pledges against amount updated?
+    assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
+    // Check: is the status properly updated?
+    assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
+  }
+
+  // TODO: Break this test into several smaller functions
+  // function test_percentageDifferences(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount, IOracle.Request calldata _request) public {
+  //   _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
+  //   IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // START TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
+  //   /////////////////////////////////////////////////////////////////////////
+
+  //   // block.timestamp < _startTime + _timeUntilDeadline
+  //   uint128 _startTime = uint128(block.timestamp - 1000);
+  //   uint256 _timeUntilDeadline = 1001;
+
+  //   // I'm setting the values so that the percentage diff is 20% in favor of pledgesAgainst.
+  //   // In this case, _pledgeAmount will be the entirety of pledgesAgainst, as if it were the first pledge.
+  //   // Therefore, _pledgeAmount must be 60% of total votes, _pledgesFor then should be 40%
+  //   // 40 = 60 * 2 / 3 -> thats why I'm multiplying by 200 and dividing by 300
+  //   uint256 _pledgesAgainst = 0;
+  //   uint256 _pledgesFor = _pledgeAmount * 200 / 300;
+  //   uint256 _percentageDiff = 20;
+
+  //   // block.timestamp < _inequalityData.time + _timeToBreakInequality
+  //   uint256 _timeToBreakInequality = 5000;
+
+  //   IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+  //     IBondEscalationResolutionModule.InequalityStatus.Equalized;
+
+  //   // Set all data
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+  //   // Mock and expect IBondEscalationAccounting.pledge to be called
+  //   _mockAndExpect(
+  //     address(accounting),
+  //     abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+  //     abi.encode()
+  //   );
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
+
+  //   vm.startPrank(pledgerAgainst);
+  //   module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
+  //   (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
+  //   // Check: is the pledges against amount updated?
+  //   assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize));
+  //   // Check: is the timer properly updated?
+  //   assertEq(uint256(_timer), block.timestamp);
+
+  //   ///////////////////////////////////////////////////////////////////////
+  //   // END TEST _againstPercentageDifference >= _scaledPercentageDiffAsInt
+  //   ///////////////////////////////////////////////////////////////////////
+
+  //   //----------------------------------------------------------------------//
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // START TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
+  //   /////////////////////////////////////////////////////////////////////////
+
+  //   // Resetting status changed by previous test
+  //   _inequalityStatus = IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
+  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+  //   module.forTest_setPledgesAgainst(_disputeId, pledgerAgainst, 0);
+
+  //   // Making the for percentage 60% of the total as percentageDiff is 20%
+  //   // Note: I'm using 301 to account for rounding down errors. I'm also setting some _pledgesAgainst
+  //   //       to avoid the case when pledges are at 0 and someone just pledges 1 token
+  //   //       which is not realistic due to the pledgeThreshold forbidding the lines tested here
+  //   //       to be reached.
+  //   _pledgesAgainst = 100_000;
+  //   _pledgesFor = (_pledgeAmount + _pledgesAgainst) * 301 / 200;
+
+  //   // Resetting the pledges values
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
+
+  //   module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,,, _realPledgesAgainst) = module.escalations(_disputeId);
+  //   (_status, _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
+  //   // Check: is the pledges against amount updated?
+  //   assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
+
+  //   ////////////////////////////////////////////////////////////////////
+  //   // END TEST _forPercentageDifference >= _scaledPercentageDiffAsInt
+  //   ////////////////////////////////////////////////////////////////////
+
+  //   //----------------------------------------------------------------------//
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // START TEST _status == forTurnToEqualize && both diffs < percentageDiff
+  //   /////////////////////////////////////////////////////////////////////////
+
+  //   // Resetting status changed by previous test
+  //   module.forTest_setPledgesAgainst(_disputeId, pledgerAgainst, 0);
+
+  //   // Making both the same so the percentage diff is not reached
+  //   _pledgesAgainst = 100_000;
+  //   _pledgesFor = (_pledgeAmount + _pledgesAgainst);
+
+  //   // Resetting the pledges values
+  //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+
+  //   // Check: is the event emitted?
+  //   vm.expectEmit(true, true, true, true, address(module));
+  //   emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
+
+  //   module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+
+  //   (,,, _realPledgesAgainst) = module.escalations(_disputeId);
+  //   (_status, _timer) = module.inequalityData(_disputeId);
+
+  //   // Check: is the pledge amount added to the total?
+  //   assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
+  //   // Check: is the pledges against amount updated?
+  //   assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
+  //   // Check: is the status properly updated?
+  //   assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.Equalized));
+  //   // Check: is the timer properly reset?
+  //   assertEq(_timer, 0);
+
+  //   //////////////////////////////////////////////////////////////////////////
+  //   // END TEST _status == forTurnToEqualize && both diffs < percentageDiff
+  //   /////////////////////////////////////////////////////////////////////////
+  // }
+}
+
+contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
+  /*
+  Specs:
+    0. Should revert if the resolution status is different than Unresolved - done
+    1. Should revert if the dispute is not escalated (startTime == 0) - done
+    2. Should revert if the main deadline has not be reached and the inequality timer has not culminated - done
+
+    3. After resolve, if the pledges from both sides never reached the threshold, or if the pledges of both sides end up tied
+       it should set the resolution status to NoResolution. TODO: and do the appropriate calls.
+    4. After resolve, if the pledges for the disputer were more than the pledges against him, then it should
+       set the resolution state to DisputerWon and call the oracle to update the status with Won. Also emit event.
+    5. Same as 4 but with DisputerLost, and Lost when the pledges against the disputer were more than the pledges in favor of
+       the disputer.
+  */
+
+  function test_reverts(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+    // Set mock escalation with resolution == DisputerWon
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, 0, 0);
+
+    // Check: does it revert if the status is different than resolved?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AlreadyResolved.selector);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    // Set mock escalation with resolution == Unresolved
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
+
+    // Check: does it revert if the dispute is not escalated?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    // Revert if we have not yet reached the deadline and the timer has not passed
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    uint256 _timeUntilDeadline = 100_000;
+    uint256 _timeToBreakInequality = 100_000;
+
+    IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
+      IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
+    module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+
+    // Set mock escalation with resolution == Unresolved and start time == block.timestamp
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
+    );
+
+    // Check: does it revert if the dispute must be resolved?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseNotOver.selector);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+  }
+
+  function test_thresholdNotReached(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+    // START OF SETUP TO AVOID REVERTS
+    // Set a mock escalation with resolution == Unresolved and start time == 1
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
+
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+      ),
+      abi.encode()
+    );
+    // END OF SETUP TO AVOID REVERTS
+
+    // START OF TEST THRESHOLD NOT REACHED
+    uint256 _pledgeThreshold = 1000;
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
+
+    // Check: is the resolution status updated to NoResolution?
+    assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
+
+    // END OF TEST THRESHOLD NOT REACHED
+  }
+
+  function test_tiedPledges(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+    // START OF SETUP TO AVOID REVERTS
+    // Set mock escalation with tied pledges
+    module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 2000, 2000);
+
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+      ),
+      abi.encode()
+    );
+
+    // END OF SETUP TO AVOID REVERTS
+
+    // START OF TIED PLEDGES
+
+    // Events
+    vm.expectEmit(true, true, true, true, address(module));
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
+
+    // Check: is the escalation status updated to NoResolution?
+    assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
+
+    // END OF TIED PLEDGES
+  }
+
+  function test_forPledgesWon(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgesAgainst,
+    uint256 _pledgesFor,
+    IOracle.Request calldata _request
+  ) public {
+    vm.assume(_pledgesAgainst < _pledgesFor);
+    vm.assume(_pledgesFor < type(uint128).max);
+    // START OF SETUP TO AVOID REVERTS
+
+    // Set mock escalation with pledgers for dispute winning
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
+    );
+
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // END OF SETUP TO AVOID REVERTS
+
+    // START OF FOR PLEDGES WON
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.Won)),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
+    // Check: is the status of the escalation == DisputerWon?
+    assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerWon));
+
+    // END OF FOR PLEDGES WON
+  }
+
+  function test_againstPledgesWon(
+    bytes32 _requestId,
+    bytes32 _disputeId,
+    uint256 _pledgesFor,
+    uint256 _pledgesAgainst,
+    IOracle.Request calldata _request
+  ) public {
+    vm.assume(_pledgesAgainst > _pledgesFor);
+    vm.assume(_pledgesAgainst < type(uint128).max);
+    // START OF SETUP TO AVOID REVERTS
+
+    // Set mock escalation with pledgers against dispute winning
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
+    );
+
+    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+
+    // END OF SETUP TO AVOID REVERTS
+
+    // START OF FOR PLEDGES LOST
+
+    // Mock and expect IOracle.updateDisputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.Lost)),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
+
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+
+    (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
+    // Check: is the status of the escalation == DisputerLost?
+    assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.DisputerLost));
+
+    // END OF FOR PLEDGES LOST
+  }
+}
+
+contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
+  function test_reverts(
+    bytes32 _disputeId,
+    bytes32 _requestId,
+    uint256 _pledgesFor,
+    uint256 _pledgesAgainst,
+    uint128 _startTime,
+    address _randomPledger,
+    IOracle.Request calldata _request
+  ) public {
+    // Set a mock escalation with resolution == Unresolved
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
+    );
+
+    module.forTest_setPledgesFor(_disputeId, _randomPledger, _pledgesFor);
+    module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _pledgesAgainst);
+
+    // Check: does it revert if trying to claim a pledge of a not resolved escalation?
+    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotResolved.selector);
+    module.claimPledge(_request, mockDispute);
+  }
+
+  function test_disputerWon(
+    bytes32 _disputeId,
+    bytes32 _requestId,
+    uint256 _totalPledgesFor,
+    uint256 _totalPledgesAgainst,
+    uint256 _userForPledge,
+    address _randomPledger,
+    IOracle.Request calldata _request
+  ) public {
+    // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
+    // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
+    // no single pledger should surpass a balance of type(uint192).max
+    _userForPledge = bound(_userForPledge, 0, type(uint192).max);
+    vm.assume(_totalPledgesFor > _totalPledgesAgainst);
+    vm.assume(_totalPledgesFor >= _userForPledge);
+
+    // Set mock escalation with resolution == DisputerWon
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, _totalPledgesFor, _totalPledgesAgainst
+    );
+
+    module.forTest_setPledgesFor(_disputeId, _randomPledger, _userForPledge);
+
+    uint256 _pledgerProportion = FixedPointMathLib.mulDivDown(_userForPledge, module.BASE(), (_totalPledgesFor));
+    uint256 _amountToRelease =
+      _userForPledge + (FixedPointMathLib.mulDivDown(_totalPledgesAgainst, _pledgerProportion, (module.BASE())));
+
+    // Mock and expect IBondEscalationAccounting.releasePledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
+      abi.encode(true)
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _amountToRelease,
+      IBondEscalationResolutionModule.Resolution.DisputerWon
+    );
+
+    vm.prank(_randomPledger);
+    module.claimPledge(_request, mockDispute);
+
+    // Check: are the pledges for dispute for the dispute and pledger set to 0?
+    assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
+  }
+
+  function test_disputerLost(
+    bytes32 _disputeId,
+    bytes32 _requestId,
+    uint256 _totalPledgesFor,
+    uint256 _totalPledgesAgainst,
+    uint256 _userAgainstPledge,
+    address _randomPledger,
+    IOracle.Request calldata _request
+  ) public {
+    // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
+    // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
+    // no single pledger should surpass a balance of type(uint192).max
+    _userAgainstPledge = bound(_userAgainstPledge, 0, type(uint192).max);
+    vm.assume(_totalPledgesAgainst > _totalPledgesFor);
+    vm.assume(_totalPledgesAgainst >= _userAgainstPledge);
+
+    // Set mock escalation with resolution == DisputerLost
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.DisputerLost, 0, _totalPledgesFor, _totalPledgesAgainst
+    );
+
+    module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _userAgainstPledge);
+
+    uint256 _pledgerProportion = FixedPointMathLib.mulDivDown(_userAgainstPledge, module.BASE(), _totalPledgesAgainst);
+    uint256 _amountToRelease =
+      _userAgainstPledge + (FixedPointMathLib.mulDivDown(_totalPledgesFor, _pledgerProportion, module.BASE()));
+
+    // Mock and expect IBondEscalationAccounting.releasePledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
+      abi.encode(true)
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _amountToRelease,
+      IBondEscalationResolutionModule.Resolution.DisputerLost
+    );
+
+    vm.prank(_randomPledger);
+    module.claimPledge(_request, mockDispute);
+
+    // Check: is the pledges against dispute for this dispute and pledger set to 0?
+    assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
+  }
+
+  function test_noResolution(
+    bytes32 _disputeId,
+    bytes32 _requestId,
+    uint256 _userForPledge,
+    uint256 _userAgainstPledge,
+    address _randomPledger,
+    IOracle.Request calldata _request
+  ) public {
+    vm.assume(_userForPledge > 0);
+    vm.assume(_userAgainstPledge > 0);
+
+    // Set mock escalation with resolution == NoResolution
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.NoResolution, 0, _userForPledge, _userAgainstPledge
+    );
+
+    module.forTest_setPledgesFor(_disputeId, _randomPledger, _userForPledge);
+    module.forTest_setPledgesAgainst(_disputeId, _randomPledger, _userAgainstPledge);
+
+    // Mock and expect IBondEscalationAccounting.releasePledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userForPledge)),
+      abi.encode(true)
+    );
+
+    // Mock and expect IBondEscalationAccounting.releasePledge to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userAgainstPledge)),
+      abi.encode(true)
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _userForPledge,
+      IBondEscalationResolutionModule.Resolution.NoResolution
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(module));
+    emit PledgeClaimed(
+      _requestId,
+      _disputeId,
+      _randomPledger,
+      token,
+      _userAgainstPledge,
+      IBondEscalationResolutionModule.Resolution.NoResolution
+    );
+
+    vm.prank(_randomPledger);
+    module.claimPledge(_request, mockDispute);
+
+    // Check: is the pledges against dispute for this dispute and pledger set to 0?
+    assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
+    // Check: is the pledges for dispute for this dispute and pledger set to 0?
+    assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
+  }
+}
