@@ -192,10 +192,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-8dcf8161":
-  version "0.0.0-8dcf8161"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-8dcf8161.tgz#0f330ec397f46ccd251bac0607f2e6c76e33abe9"
-  integrity sha512-ySbrupm/IYSx6Wq3qhd25a4xOilMZMYkzTwF+49YQn1e0kGlKlVMDO5la6/FoddTa49Q61YoPfO5Tnt2KGnSyQ==
+"@defi-wonderland/prophet-core-contracts@0.0.0-48b0248d":
+  version "0.0.0-48b0248d"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-48b0248d.tgz#16d0473360074f17b66199c8e3660b71a3d72ad4"
+  integrity sha512-bEufdaPkLcg1VuYpTWRB5Xf4pmpV3wi0487taGI4A+YtwhMsIh9ZCNPdgWssqLvIfMPlB4FdGOM936l1yqAKYQ==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-3e9c8e8b"
     "@openzeppelin/contracts" "^4.9.3"
@@ -324,9 +324,9 @@
     ts-essentials "^7.0.1"
 
 "@types/minimist@^1.2.0":
-  version "1.2.4"
-  resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.4.tgz#81f886786411c45bba3f33e781ab48bd56bfca2e"
-  integrity sha512-Kfe/D3hxHTusnPNRbycJE1N77WHDsdS4AjUYIzlDzhDrS47NrwuL3YW4VITxwR7KCVpzwgy4Rbj829KSSQmwXQ==
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.5.tgz#ec10755e871497bcd83efe927e43ec46e8c0747e"
+  integrity sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag==
 
 "@types/node@20.5.1":
   version "20.5.1"
@@ -334,9 +334,9 @@
   integrity sha512-4tT2UrL5LBqDwoed9wZ6N3umC4Yhz3W3FloMmiiG4JwmUJWpie0c7lcnUNd4gtMKuDEO4wRVS8B6Xa0uMRsMKg==
 
 "@types/normalize-package-data@^2.4.0":
-  version "2.4.3"
-  resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.3.tgz#291c243e4b94dbfbc0c0ee26b7666f1d5c030e2c"
-  integrity sha512-ehPtgRgaULsFG8x0NeYJvmyH1hmlfsNLujHe9dQEia/7MAJYdzMSi19JtchUHjmBA6XC/75dK55mzZH+RyieSg==
+  version "2.4.4"
+  resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.4.tgz#56e2cc26c397c038fab0e3a917a12d5c5909e901"
+  integrity sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==
 
 "@types/prettier@^2.1.1":
   version "2.7.3"
@@ -1453,9 +1453,9 @@ fast-diff@^1.1.2, fast-diff@^1.2.0:
   integrity sha512-VxPP4NqbUjj6MaAOafWeUn2cXWLcCtljklUtZf0Ind4XQ+QPtmA0b18zZy0jIQx+ExRVCR/ZQpBmik5lXshNsw==
 
 fast-glob@^3.3.0:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/fast-glob/-/fast-glob-3.3.1.tgz#784b4e897340f3dbbef17413b3f11acf03c874c4"
-  integrity sha512-kNFPyjhh5cKjrUltxs+wFx+ZkbRaxxmZ+X0ZU31SOsxCEtP9VPgtq2teZw1DebupL5GmDaNQ6yKMMVcM41iqDg==
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/fast-glob/-/fast-glob-3.3.2.tgz#a904501e57cfdd2ffcded45e99a54fef55e46129"
+  integrity sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==
   dependencies:
     "@nodelib/fs.stat" "^2.0.2"
     "@nodelib/fs.walk" "^1.2.3"
@@ -1568,7 +1568,7 @@ for-each@^0.3.3:
 
 "forge-std@git+https://github.com/foundry-rs/forge-std.git":
   version "1.7.1"
-  resolved "git+https://github.com/foundry-rs/forge-std.git#267acd30a625086b3f16e1a28cfe0c5097fa46b8"
+  resolved "git+https://github.com/foundry-rs/forge-std.git#37a37ab73364d6644bfe11edf88a07880f99bd56"
 
 "forge-std@git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e":
   version "1.5.6"

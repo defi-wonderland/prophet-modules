@@ -38,7 +38,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/prophet-core-contracts": "0.0.0-8dcf8161",
+    "@defi-wonderland/prophet-core-contracts": "0.0.0-48b0248d",
     "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "@openzeppelin/contracts": "^4.9.3",
     "ds-test": "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0",
