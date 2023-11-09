@@ -19,8 +19,8 @@ contract BaseTest is Test, Helpers {
   // A mock oracle
   IOracle public oracle;
 
+  // Events
   event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
-  event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -44,10 +44,9 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(bytes32 _requestId, address _target, bytes memory _data) public {
+  function test_decodeRequestData(address _target, bytes memory _data) public {
     // Create and set some mock request data
     bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
-    // callbackModule.forTest_setRequestData(_requestId, _requestData);
 
     // Decode the given request data
     ICallbackModule.RequestParameters memory _params = callbackModule.decodeRequestData(_requestData);
@@ -60,53 +59,55 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
 
 contract CallbackModule_Unit_FinalizeRequest is BaseTest {
   /**
-   * @notice Test that finalizeRequest calls the _target.callback with the correct data
+   * @notice Test that finalizeRequest emits events
    */
-  function test_triggersCallback(
-    bytes32 _requestId,
-    address _proposer,
-    address _target,
-    IOracle.Request memory _request,
-    bytes calldata _data
-  ) public assumeFuzzable(_target) {
-    _request.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
-
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({proposer: _proposer, requestId: _requestId, response: abi.encode(bytes32('response'))});
+  function test_emitsEvents(address _proposer, address _target, bytes calldata _data) public assumeFuzzable(_target) {
+    mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
+    mockResponse.requestId = _getId(mockRequest);
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
-    emit Callback(_requestId, _target, _data);
+    emit Callback(mockResponse.requestId, _target, _data);
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
-    emit RequestFinalized(_requestId, _mockResponse, _proposer);
+    emit RequestFinalized(mockResponse.requestId, mockResponse, _proposer);
 
     vm.prank(address(oracle));
-    callbackModule.finalizeRequest(_request, _mockResponse, _proposer);
+    callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);
+  }
+
+  /**
+   * @notice Test that finalizeRequest triggers the callback
+   */
+  function test_triggersCallback(
+    address _proposer,
+    address _target,
+    bytes calldata _data
+  ) public assumeFuzzable(_target) {
+    mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
+    mockResponse.requestId = _getId(mockRequest);
+
+    // Mock and expect the callback
+    _mockAndExpect(_target, _data, abi.encode(''));
+
+    vm.prank(address(oracle));
+    callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);
   }
 
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_revertsIfWrongCaller(
-    bytes32 _requestId,
-    address _proposer,
-    address _target,
-    IOracle.Request memory _request,
-    bytes calldata _data
-  ) public {
-    vm.assume(_proposer != address(oracle));
+  function test_revertsIfWrongCaller(ICallbackModule.RequestParameters calldata _data, address _caller) public {
+    vm.assume(_caller != address(oracle));
 
-    _request.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
-
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({proposer: _proposer, requestId: _requestId, response: abi.encode(bytes32('response'))});
+    mockRequest.finalityModuleData = abi.encode(_data);
+    mockResponse.requestId = _getId(mockRequest);
 
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
 
-    vm.prank(_proposer);
-    callbackModule.finalizeRequest(_request, _mockResponse, _proposer);
+    vm.prank(_caller);
+    callbackModule.finalizeRequest(mockRequest, mockResponse, _caller);
   }
 }
