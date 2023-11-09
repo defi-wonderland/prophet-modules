@@ -48,20 +48,17 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       IOracle.Response memory _newResponse =
         IOracle.Response({requestId: _dispute.requestId, proposer: _dispute.disputer, response: _correctResponse});
 
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
+
       ORACLE.proposeResponse(_dispute.disputer, _request, _newResponse);
       ORACLE.finalize(_request, _newResponse);
     } else {
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Lost});
+
       ORACLE.finalize(_request, _response);
     }
 
     delete _correctResponses[_dispute.requestId];
-
-    // TODO: Emit event
-    // emit DisputeStatusChanged({
-    //   _disputeId: _disputeId,
-    //   _dispute: _dispute,
-    //   _status: IOracle.DisputeStatus.Resolved
-    // });
   }
 
   /// @inheritdoc ICircuitResolverModule
@@ -73,6 +70,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     (bool _success, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
+
     // TODO: Revert if !_success
     _correctResponses[_response.requestId] = _correctResponse;
 
