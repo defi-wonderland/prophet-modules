@@ -64,6 +64,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   ) external override(IBondedResponseModule, Module) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
+    // TODO: If deadline has passed, we can skip the caller validation
     bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
     if (!_isModule && block.timestamp < _params.deadline) {
