@@ -24,15 +24,6 @@ interface ICallbackModule is IFinalityModule {
   event Callback(bytes32 indexed _requestId, address indexed _target, bytes _data);
 
   /*///////////////////////////////////////////////////////////////
-                              ERRORS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Thrown when the target address has no code (i.e. is not a contract)
-   */
-  error CallbackModule_TargetHasNoCode();
-
-  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
