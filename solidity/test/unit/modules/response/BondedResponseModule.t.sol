@@ -25,7 +25,7 @@ contract BaseTest is Test, Helpers {
   // A mock oracle
   IOracle public oracle;
   // A mock accounting extension
-  IAccountingExtension public accounting = IAccountingExtension(makeAddr('accounting'));
+  IAccountingExtension public accounting = IAccountingExtension(makeAddr('Accounting'));
   // Base dispute window
   uint256 internal _baseDisputeWindow = 12 hours;
 
@@ -57,13 +57,7 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(
-    bytes32 _requestId,
-    uint256 _bondSize,
-    uint256 _deadline,
-    uint256 _disputeWindow,
-    IERC20 _token
-  ) public {
+  function test_decodeRequestData(IERC20 _token, uint256 _bondSize, uint256 _deadline, uint256 _disputeWindow) public {
     // Create and set some mock request data
     bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
 
@@ -83,12 +77,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
   /**
    * @notice Test that the propose function is only callable by the oracle
    */
-  function test_revertIfNotOracle(
-    bytes32 _requestId,
-    address _sender,
-    address _proposer,
-    bytes calldata _responseData
-  ) public {
+  function test_revertIfNotOracle(address _sender) public {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
@@ -99,24 +88,26 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
   }
 
   /**
-   * @notice Test that the propose function works correctly and triggers _afterPropose (which bonds)
+   * @notice Test that the propose function works correctly and bonds the proposer's funds
    */
   function test_propose(
-    bytes32 _requestId,
+    IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    bytes calldata _responseData,
     address _sender,
-    IERC20 _token,
     address _proposer
-  ) public {
+  ) public assumeFuzzable(_sender) assumeFuzzable(_proposer) {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
     _bondSize = bound(_bondSize, 0, type(uint248).max);
 
-    // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    // Set the response module parameters
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.getResponseIds to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
@@ -135,20 +126,21 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
   }
 
   function test_emitsEvent(
-    bytes32 _requestId,
+    IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    bytes calldata _responseData,
     address _sender,
-    IERC20 _token,
     address _proposer
   ) public {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Create and set some mock request data
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.getResponseIds to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
@@ -175,23 +167,34 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that the propose function is only callable by the oracle
    */
-  function test_calls(
-    bytes32 _requestId,
+  function test_revertIfNotOracle(address _sender) public {
+    vm.assume(_sender != address(oracle));
+
+    // Check: does it revert if not called by the Oracle?
+    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+
+    vm.prank(address(_sender));
+    bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _sender);
+  }
+
+  function test_revertsBeforeDeadline(
+    IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    IERC20 _token,
     address _proposer
   ) public {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Check revert if deadline has not passed
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    mockResponse.requestId = _getId(mockRequest);
+    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.allowedModule to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(false)
     );
 
     // Check: does it revert if it's too early to finalize?
@@ -199,19 +202,37 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
 
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
+  }
+
+  function test_releasesBond(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow,
+    address _proposer
+  ) public {
+    _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Check correct calls are made if deadline has passed
     _deadline = block.timestamp;
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    mockResponse.requestId = _getId(mockRequest);
+    mockResponse.proposer = _proposer;
 
-    _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    // Mock and expect IOracle.allowedModule to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(true)
+    );
 
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({requestId: _requestId, proposer: _proposer, response: bytes('bleh')});
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+    );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
+      abi.encodeCall(IAccountingExtension.release, (_proposer, _getId(mockRequest), _token, _bondSize)),
       abi.encode(true)
     );
 
@@ -221,43 +242,36 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
   }
 
-  function test_emitsEvent(
-    bytes32 _requestId,
-    uint256 _bondSize,
-    uint256 _deadline,
-    uint256 _disputeWindow,
-    IERC20 _token,
-    address _proposer
-  ) public {
-    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
+  function test_emitsEvent(IERC20 _token, uint256 _bondSize, uint256 _disputeWindow, address _proposer) public {
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
-    // Check revert if deadline has not passed
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    // Check correct calls are made if deadline has passed
+    uint256 _deadline = block.timestamp;
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.allowedModule to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
     );
 
-    // Check correct calls are made if deadline has passed
-    _deadline = block.timestamp;
-
-    _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
-
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({requestId: _requestId, proposer: _proposer, response: bytes('bleh')});
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+    );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_proposer, _requestId, _token, _bondSize)),
+      abi.encodeCall(IAccountingExtension.release, (_proposer, _getId(mockRequest), _token, _bondSize)),
       abi.encode(true)
     );
 
     // Check: is event emitted?
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
-    emit RequestFinalized({_requestId: _requestId, _response: mockResponse, _finalizer: address(this)});
+    emit RequestFinalized({_requestId: _getId(mockRequest), _response: mockResponse, _finalizer: address(this)});
 
     vm.warp(block.timestamp + _disputeWindow);
 
@@ -269,24 +283,30 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
    * @notice Test that the finalize function can be called by an allowed module before the time window.
    */
   function test_earlyByModule(
-    bytes32 _requestId,
+    IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
-    IERC20 _token,
-    address _proposer
-  ) public {
+    address _proposer,
+    address _allowedModule
+  ) public assumeFuzzable(_allowedModule) {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
 
-    address _allowedModule = makeAddr('allowed module');
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.allowedModule to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _allowedModule)), abi.encode(true)
     );
 
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({requestId: _requestId, proposer: _proposer, response: bytes('bleh')});
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))),
+      abi.encode(block.timestamp - _baseDisputeWindow)
+    );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
@@ -303,26 +323,22 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
    * @notice Test that the finalizing a request during a response dispute window will revert.
    */
   function test_revertDuringDisputeWindow(
-    bytes32 _requestId,
+    IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
-    IERC20 _token,
-    address _proposer
+    address _finalizer
   ) public {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
 
-    address _finalizer = makeAddr('finalizer');
-    bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
 
     // Mock and expect IOracle.allowedModule to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _finalizer)), abi.encode(false));
 
-    IOracle.Response memory _mockResponse =
-      IOracle.Response({requestId: _requestId, proposer: _proposer, response: bytes('bleh')});
-
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
 
-    vm.warp(_deadline + 1);
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _finalizer);
   }
