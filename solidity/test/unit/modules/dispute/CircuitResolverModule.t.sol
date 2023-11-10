@@ -41,7 +41,11 @@ contract BaseTest is Test, Helpers {
   // Events
   event DisputeStatusChanged(bytes32 _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event ResponseDisputed(
-    bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute, uint256 _blockNumber
+    bytes32 indexed _requestId,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    IOracle.Dispute _dispute,
+    uint256 _blockNumber
   );
 
   /**
@@ -162,6 +166,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(circuitResolverModule));
     emit ResponseDisputed({
+      _requestId: mockResponse.requestId,
       _responseId: mockDispute.responseId,
       _disputeId: _getId(mockDispute),
       _dispute: mockDispute,

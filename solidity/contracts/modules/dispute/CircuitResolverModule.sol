@@ -50,7 +50,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
 
-      ORACLE.proposeResponse(_dispute.disputer, _request, _newResponse);
+      ORACLE.proposeResponse(_request, _newResponse);
       ORACLE.finalize(_request, _newResponse);
     } else {
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Lost});
@@ -79,6 +79,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     // TODO: call ORACLE.updateDisputeStatus
     emit ResponseDisputed({
+      _requestId: _response.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _getId(_dispute),
       _dispute: _dispute,
