@@ -15,6 +15,7 @@ import {
 } from '../../../../contracts/modules/dispute/CircuitResolverModule.sol';
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
+import {MockVerifier} from '../../../mocks/MockVerifier.sol';
 
 /**
  * @dev Harness to set an entry in the correctResponses mapping
@@ -36,7 +37,7 @@ contract BaseTest is Test, Helpers {
   // A mock oracle
   IOracle public oracle;
   // A mock circuit verifier address
-  address public circuitVerifier;
+  MockVerifier public mockVerifier;
 
   // Events
   event DisputeStatusChanged(bytes32 _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
@@ -55,8 +56,7 @@ contract BaseTest is Test, Helpers {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    circuitVerifier = makeAddr('CircuitVerifier');
-    vm.etch(address(circuitVerifier), hex'069420');
+    mockVerifier = new MockVerifier();
 
     circuitResolverModule = new ForTest_CircuitResolverModule(oracle);
   }
@@ -76,7 +76,7 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
     bytes memory _requestData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
-        verifier: circuitVerifier,
+        verifier: address(mockVerifier),
         accountingExtension: IAccountingExtension(_accountingExtension),
         bondToken: IERC20(_randomToken),
         bondSize: _bondSize
@@ -91,9 +91,9 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
       address(_params.accountingExtension), address(_accountingExtension), 'Mismatch: decoded accounting extension'
     );
     assertEq(address(_params.bondToken), address(_randomToken), 'Mismatch: decoded token');
+    assertEq(_params.verifier, address(mockVerifier), 'Mismatch: decoded circuit verifier');
     assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
     assertEq(_params.callData, _callData, 'Mismatch: decoded calldata');
-    assertEq(_params.verifier, circuitVerifier, 'Mismatch: decoded circuit verifier');
   }
 
   /**
@@ -114,10 +114,12 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     uint256 _bondSize,
     bytes memory _callData
   ) public {
+    _callData = abi.encodeWithSelector(mockVerifier.calculateRoot.selector, _callData);
+
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
-        verifier: circuitVerifier,
+        verifier: address(mockVerifier),
         accountingExtension: _accountingExtension,
         bondToken: _randomToken,
         bondSize: _bondSize
@@ -131,7 +133,16 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _getId(mockResponse);
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(circuitVerifier, _callData, abi.encode(_correctResponse));
+    _mockAndExpect(address(mockVerifier), _callData, abi.encode(_correctResponse));
+
+    // Mock and expect the call the oracle, updating the dispute's status
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeWithSelector(
+        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      ),
+      abi.encode(true)
+    );
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
@@ -147,7 +158,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
-        verifier: circuitVerifier,
+        verifier: address(mockVerifier),
         accountingExtension: _accountingExtension,
         bondToken: _randomToken,
         bondSize: _bondSize
@@ -161,7 +172,16 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     mockResponse.response = abi.encode(true);
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(circuitVerifier, _callData, abi.encode(_correctResponse));
+    _mockAndExpect(address(mockVerifier), _callData, abi.encode(_correctResponse));
+
+    // Mock and expect the call the oracle, updating the dispute's status
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeWithSelector(
+        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      ),
+      abi.encode(true)
+    );
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(circuitResolverModule));
@@ -186,10 +206,12 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     uint256 _bondSize,
     bytes memory _callData
   ) public {
+    _callData = abi.encodeWithSelector(mockVerifier.calculateRoot.selector, _callData);
+
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
-        verifier: circuitVerifier,
+        verifier: address(mockVerifier),
         accountingExtension: _accountingExtension,
         bondToken: _randomToken,
         bondSize: _bondSize
@@ -202,7 +224,16 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     mockResponse.response = _encodedCorrectResponse;
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(circuitVerifier, _callData, _encodedCorrectResponse);
+    _mockAndExpect(address(mockVerifier), _callData, _encodedCorrectResponse);
+
+    // Mock and expect the call the oracle, updating the dispute's status
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeWithSelector(
+        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost
+      ),
+      abi.encode(true)
+    );
 
     vm.prank(address(oracle));
     circuitResolverModule.disputeResponse(mockRequest, mockResponse, mockDispute);
@@ -232,7 +263,7 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
-        verifier: circuitVerifier,
+        verifier: address(mockVerifier),
         accountingExtension: _accountingExtension,
         bondToken: _randomToken,
         bondSize: _bondSize
