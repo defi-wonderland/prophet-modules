@@ -75,10 +75,11 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     _correctResponses[_response.requestId] = _correctResponse;
 
-    bool _won = _response.response.length != _correctResponse.length
-      || keccak256(_response.response) != keccak256(_correctResponse);
+    IOracle.DisputeStatus _status = _response.response.length != _correctResponse.length
+      || keccak256(_response.response) != keccak256(_correctResponse)
+      ? IOracle.DisputeStatus.Won
+      : IOracle.DisputeStatus.Lost;
 
-    // TODO: call ORACLE.updateDisputeStatus
     emit ResponseDisputed({
       _requestId: _response.requestId,
       _responseId: _dispute.responseId,
@@ -86,5 +87,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
       _dispute: _dispute,
       _blockNumber: block.number
     });
+
+    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
   }
 }
