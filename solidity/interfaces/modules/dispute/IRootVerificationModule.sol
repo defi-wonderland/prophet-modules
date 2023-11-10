@@ -11,11 +11,10 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
 
 /*
   * @title RootVerificationModule
-  * @notice Dispute module allowing disputers to calculate the correct root
-  * for a given request and propose it as a response. If the disputer wins the
-  * dispute, he is rewarded with the bond of the proposer.
-  * @dev This module is a pre-dispute module. It allows disputing
-  * and resolving a response in a single call.
+  * @notice Dispute module allowing disputers to calculate the correct root for a given request and propose it as a response.
+  * If the disputer wins the dispute, he is rewarded with the bond of the proposer.
+  *
+  * @dev This module is a pre-dispute module. It allows disputing and resolving a response in a single call.
   */
 interface IRootVerificationModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
@@ -50,14 +49,29 @@ interface IRootVerificationModule is IDisputeModule {
    */
   function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
-  /// @inheritdoc IDisputeModule
+  /**
+   * @notice Initiates and resolves the dispute by comparing the proposed response with the one returned by the verifier
+   *
+   * @dev This function will notify the oracle about the outcome of the dispute
+   * @param _request  The request that the response was proposed to
+   * @param _response The response that is being disputed
+   * @param _dispute  The dispute created by the oracle
+   */
   function disputeResponse(
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external;
 
-  /// @inheritdoc IDisputeModule
+  /**
+   * @notice Depending on the status of the dispute, either pays the disputer and submits the correct response,
+   * or pays the proposer. Finalizes the request in any case.
+   *
+   * @param _disputeId  The id of the dispute
+   * @param _request    The request that the response was proposed to
+   * @param _response   The response that was disputed
+   * @param _dispute    The dispute
+   */
   function onDisputeStatusChange(
     bytes32 _disputeId,
     IOracle.Request calldata _request,

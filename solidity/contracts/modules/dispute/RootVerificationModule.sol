@@ -56,20 +56,16 @@ contract RootVerificationModule is Module, IRootVerificationModule {
         response: abi.encode(_correctRoot)
       });
 
-      ORACLE.proposeResponse(_dispute.disputer, _request, _newResponse);
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
+
+      ORACLE.proposeResponse(_request, _newResponse);
       ORACLE.finalize(_request, _newResponse);
     } else {
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Lost});
       ORACLE.finalize(_request, _response);
     }
 
     delete _correctRoots[_dispute.requestId];
-
-    // TODO: Emit event
-    // emit DisputeStatusChanged({
-    //   _disputeId: _disputeId,
-    //   _dispute: _dispute,
-    //   _status: IOracle.DisputeStatus.Resolved
-    // });
   }
 
   /// @inheritdoc IRootVerificationModule
@@ -83,14 +79,17 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     bytes32 _correctRoot = _params.treeVerifier.calculateRoot(_params.treeData, _params.leavesToInsert);
     _correctRoots[_response.requestId] = _correctRoot;
 
-    bool _won = abi.decode(_response.response, (bytes32)) != _correctRoot;
+    IOracle.DisputeStatus _status =
+      abi.decode(_response.response, (bytes32)) != _correctRoot ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost;
 
-    // TODO: call ORACLE.updateDisputeStatus
     emit ResponseDisputed({
+      _requestId: _response.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _getId(_dispute),
       _dispute: _dispute,
       _blockNumber: block.number
     });
+
+    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
   }
 }
