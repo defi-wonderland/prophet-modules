@@ -29,7 +29,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    // TODO: Call `disputeStatus` to check the current status
+    // TODO: Call `disputeStatus` to check the current status instead of reading from `_correctResponses`
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     bytes memory _correctResponse = _correctResponses[_dispute.requestId];
