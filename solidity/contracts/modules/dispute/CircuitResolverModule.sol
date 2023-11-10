@@ -71,7 +71,8 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     (bool _success, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
 
-    // TODO: Revert if !_success
+    if (!_success) revert CircuitResolverModule_VerificationFailed();
+
     _correctResponses[_response.requestId] = _correctResponse;
 
     bool _won = _response.response.length != _correctResponse.length
