@@ -10,10 +10,9 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
-- `propose(bytes32 _requestId, address _proposer, bytes calldata _responseData)`: Proposes a response for a request, bonding the proposer's tokens.
-- `deleteResponse(bytes32 _requestId, bytes32 _responseId, address _proposer)`: Allows a user to delete an undisputed response they proposed before the deadline, releasing the bond.
-- `finalizeRequest(bytes32 _requestId, address _finalizer)`: Finalizes the request.
+- `decodeRequestData`: Returns the decoded data for a request.
+- `propose`: Proposes a response for a request, bonding the proposer's tokens.
+- `finalizeRequest`: Finalizes the request.
 
 ### Request Parameters
 
@@ -24,14 +23,12 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ## 3. Key Mechanisms & Concepts
 
-- Deleting a response: If a proposer realizes the response they've submitted is incorrect, they can delete it. Note that disputed responses cannot be taken back.
-
 - Early finalization: It is possible for pre-dispute modules to atomically calculate the correct response on-chain, decide on the result of a dispute and finalize the request before its deadline.
+
+- Dispute window: Prevents proposers from submitting a response 1 block before the deadline and finalizing it in the next block, leaving disputers no time to dispute the response.
 
 ## 4. Gotchas
 
 - In case of no valid responses, a request can be finalized after the deadline and the requester will get back their tokens.
-- A proposer might submit a response 1 block before the deadline and finalize it in the next block, making it impossible to dispute.
 - Users cannot propose a response after the deadline for a request.
 - Users cannot propose a response if an undisputed response has already been proposed.
-- Users cannot delete a response after the proposing deadline.

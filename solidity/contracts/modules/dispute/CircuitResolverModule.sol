@@ -1,91 +1,93 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// // solhint-disable-next-line no-unused-import
-// import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-// import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+// solhint-disable-next-line no-unused-import
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
-// import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
+import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
 
-// contract CircuitResolverModule is Module, ICircuitResolverModule {
-//   constructor(IOracle _oracle) Module(_oracle) {}
+contract CircuitResolverModule is Module, ICircuitResolverModule {
+  constructor(IOracle _oracle) Module(_oracle) {}
 
-//   mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
+  mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
 
-//   /// @inheritdoc IModule
-//   function moduleName() external pure returns (string memory _moduleName) {
-//     return 'CircuitResolverModule';
-//   }
+  /// @inheritdoc IModule
+  function moduleName() external pure returns (string memory _moduleName) {
+    return 'CircuitResolverModule';
+  }
 
-//   /// @inheritdoc ICircuitResolverModule
-//   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
-//     _params = abi.decode(requestData[_requestId], (RequestParameters));
-//   }
+  /// @inheritdoc ICircuitResolverModule
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+    _params = abi.decode(_data, (RequestParameters));
+  }
 
-//   /// @inheritdoc ICircuitResolverModule
-//   function disputeEscalated(bytes32 _disputeId) external onlyOracle {}
+  /// @inheritdoc ICircuitResolverModule
+  function onDisputeStatusChange(
+    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external onlyOracle {
+    // TODO: Call `disputeStatus` to check the current status instead of reading from `_correctResponses`
+    RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
-//   /// @inheritdoc ICircuitResolverModule
-//   function onDisputeStatusChange(bytes32, /* _disputeId */ IOracle.Dispute memory _dispute) external onlyOracle {
-//     RequestParameters memory _params = decodeRequestData(_dispute.requestId);
+    bytes memory _correctResponse = _correctResponses[_dispute.requestId];
+    bool _won = _response.response.length != _correctResponse.length
+      || keccak256(_response.response) != keccak256(_correctResponse);
 
-//     IOracle.Response memory _response = ORACLE.getResponse(_dispute.responseId);
+    if (_won) {
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _dispute.proposer,
+        _receiver: _dispute.disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
 
-//     bytes memory _correctResponse = _correctResponses[_dispute.requestId];
-//     bool _won = _response.response.length != _correctResponse.length
-//       || keccak256(_response.response) != keccak256(_correctResponse);
+      IOracle.Response memory _newResponse =
+        IOracle.Response({requestId: _dispute.requestId, proposer: _dispute.disputer, response: _correctResponse});
 
-//     if (_won) {
-//       _params.accountingExtension.pay({
-//         _requestId: _dispute.requestId,
-//         _payer: _dispute.proposer,
-//         _receiver: _dispute.disputer,
-//         _token: _params.bondToken,
-//         _amount: _params.bondSize
-//       });
-//       bytes32 _correctResponseId =
-//         ORACLE.proposeResponse(_dispute.disputer, _dispute.requestId, abi.encode(_correctResponses[_dispute.requestId]));
-//       ORACLE.finalize(_dispute.requestId, _correctResponseId);
-//     } else {
-//       ORACLE.finalize(_dispute.requestId, _dispute.responseId);
-//     }
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
 
-//     delete _correctResponses[_dispute.requestId];
+      ORACLE.proposeResponse(_request, _newResponse);
+      ORACLE.finalize(_request, _newResponse);
+    } else {
+      emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Lost});
 
-//     emit DisputeStatusChanged({
-//       _requestId: _dispute.requestId,
-//       _responseId: _dispute.responseId,
-//       _disputer: _dispute.disputer,
-//       _proposer: _dispute.proposer,
-//       _status: _dispute.status
-//     });
-//   }
+      ORACLE.finalize(_request, _response);
+    }
 
-//   /// @inheritdoc ICircuitResolverModule
-//   function disputeResponse(
-//     bytes32 _requestId,
-//     bytes32 _responseId,
-//     address _disputer,
-//     address _proposer
-//   ) external onlyOracle returns (IOracle.Dispute memory _dispute) {
-//     IOracle.Response memory _response = ORACLE.getResponse(_responseId);
-//     RequestParameters memory _params = decodeRequestData(_requestId);
+    delete _correctResponses[_dispute.requestId];
+  }
 
-//     (, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
-//     _correctResponses[_requestId] = _correctResponse;
+  /// @inheritdoc ICircuitResolverModule
+  function disputeResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
-//     bool _won = _response.response.length != _correctResponse.length
-//       || keccak256(_response.response) != keccak256(_correctResponse);
+    (bool _success, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
 
-//     _dispute = IOracle.Dispute({
-//       disputer: _disputer,
-//       responseId: _responseId,
-//       proposer: _proposer,
-//       requestId: _requestId,
-//       status: _won ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
-//       createdAt: block.timestamp
-//     });
+    if (!_success) revert CircuitResolverModule_VerificationFailed();
 
-//     emit ResponseDisputed(_requestId, _responseId, _disputer, _proposer);
-//   }
-// }
+    _correctResponses[_response.requestId] = _correctResponse;
+
+    IOracle.DisputeStatus _status = _response.response.length != _correctResponse.length
+      || keccak256(_response.response) != keccak256(_correctResponse)
+      ? IOracle.DisputeStatus.Won
+      : IOracle.DisputeStatus.Lost;
+
+    emit ResponseDisputed({
+      _requestId: _response.requestId,
+      _responseId: _dispute.responseId,
+      _disputeId: _getId(_dispute),
+      _dispute: _dispute,
+      _blockNumber: block.number
+    });
+
+    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
+  }
+}
