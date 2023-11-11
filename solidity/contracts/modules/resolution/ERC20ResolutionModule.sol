@@ -57,11 +57,11 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     uint256 _numberOfVotes
   ) public {
     bytes32 _disputeId = _getId(_dispute);
-    if (ORACLE.createdAt(_disputeId) == 0) revert ERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
-
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
+      revert ERC20ResolutionModule_AlreadyResolved();
+    }
 
     RequestParameters memory _params = decodeRequestData(_request.resolutionModuleData);
     uint256 _deadline = _escalation.startTime + _params.timeUntilDeadline;
@@ -84,11 +84,12 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     // 0. Check disputeId actually exists and that it isn't resolved already
-    if (ORACLE.createdAt(_disputeId) == 0) revert ERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) revert ERC20ResolutionModule_AlreadyResolved();
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
+      revert ERC20ResolutionModule_AlreadyResolved();
+    }
 
-    Escalation memory _escalation = escalations[_disputeId];
     // 1. Check that the dispute is actually escalated
+    Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
 
     // 2. Check that voting deadline is over
