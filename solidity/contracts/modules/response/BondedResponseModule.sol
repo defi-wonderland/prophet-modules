@@ -1,118 +1,91 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// // solhint-disable-next-line no-unused-import
-// import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-// import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-// import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
+// solhint-disable-next-line no-unused-import
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
 
-// contract BondedResponseModule is Module, IBondedResponseModule {
-//   constructor(IOracle _oracle) Module(_oracle) {}
+contract BondedResponseModule is Module, IBondedResponseModule {
+  constructor(IOracle _oracle) Module(_oracle) {}
 
-//   /// @inheritdoc IModule
-//   function moduleName() public pure returns (string memory _moduleName) {
-//     _moduleName = 'BondedResponseModule';
-//   }
+  /// @inheritdoc IModule
+  function moduleName() public pure returns (string memory _moduleName) {
+    _moduleName = 'BondedResponseModule';
+  }
 
-//   /// @inheritdoc IBondedResponseModule
-//   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
-//     _params = abi.decode(requestData[_requestId], (RequestParameters));
-//   }
+  /// @inheritdoc IBondedResponseModule
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+    _params = abi.decode(_data, (RequestParameters));
+  }
 
-//   /// @inheritdoc IBondedResponseModule
-//   function propose(
-//     bytes32 _requestId,
-//     address _proposer,
-//     bytes calldata _responseData,
-//     address _sender
-//   ) external onlyOracle returns (IOracle.Response memory _response) {
-//     RequestParameters memory _params = decodeRequestData(_requestId);
+  /// @inheritdoc IBondedResponseModule
+  function propose(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _sender
+  ) external onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
-//     // Cannot propose after the deadline
-//     if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
+    // Cannot propose after the deadline
+    if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
 
-//     // Cannot propose to a request with a response, unless the response is being disputed
-//     bytes32[] memory _responseIds = ORACLE.getResponseIds(_requestId);
-//     uint256 _responsesLength = _responseIds.length;
+    // Cannot propose to a request with a response, unless the response is being disputed
+    bytes32[] memory _responseIds = ORACLE.getResponseIds(_response.requestId);
+    uint256 _responsesLength = _responseIds.length;
 
-//     if (_responsesLength != 0) {
-//       bytes32 _disputeId = ORACLE.getResponse(_responseIds[_responsesLength - 1]).disputeId;
+    if (_responsesLength != 0) {
+      bytes32 _disputeId = ORACLE.disputeOf(_responseIds[_responsesLength - 1]);
 
-//       // Allowing one undisputed response at a time
-//       if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
-//       IOracle.Dispute memory _dispute = ORACLE.getDispute(_disputeId);
-//       // TODO: leaving a note here to re-check this check if a new status is added
-//       // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
-//       if (_dispute.status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
-//     }
+      // Allowing one undisputed response at a time
+      if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
+      IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
+      // TODO: leaving a note here to re-check this check if a new status is added
+      // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
+      if (_status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
+    }
 
-//     _response = IOracle.Response({
-//       requestId: _requestId,
-//       disputeId: bytes32(0),
-//       proposer: _proposer,
-//       response: _responseData,
-//       createdAt: block.timestamp
-//     });
+    _params.accountingExtension.bond({
+      _bonder: _response.proposer,
+      _requestId: _response.requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize,
+      _sender: _sender
+    });
 
-//     _params.accountingExtension.bond({
-//       _bonder: _response.proposer,
-//       _requestId: _requestId,
-//       _token: _params.bondToken,
-//       _amount: _params.bondSize,
-//       _sender: _sender
-//     });
+    emit ResponseProposed(_response.requestId, _response, block.number);
+  }
 
-//     emit ProposeResponse(_requestId, _proposer, _responseData);
-//   }
+  /// @inheritdoc IBondedResponseModule
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external override(IBondedResponseModule, Module) onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
-//   /// @inheritdoc IBondedResponseModule
-//   function deleteResponse(bytes32 _requestId, bytes32, address _proposer) external onlyOracle {
-//     RequestParameters memory _params = decodeRequestData(_requestId);
+    // TODO: If deadline has passed, we can skip the caller validation
+    bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
-//     if (block.timestamp > _params.deadline) revert BondedResponseModule_TooLateToDelete();
+    if (!_isModule && block.timestamp < _params.deadline) {
+      revert BondedResponseModule_TooEarlyToFinalize();
+    }
 
-//     _params.accountingExtension.release({
-//       _bonder: _proposer,
-//       _requestId: _requestId,
-//       _token: _params.bondToken,
-//       _amount: _params.bondSize
-//     });
-//   }
+    uint256 _responseCreatedAt = ORACLE.createdAt(_getId(_response));
 
-//   /// @inheritdoc IBondedResponseModule
-//   function finalizeRequest(
-//     bytes32 _requestId,
-//     address _finalizer
-//   ) external override(IBondedResponseModule, Module) onlyOracle {
-//     RequestParameters memory _params = decodeRequestData(_requestId);
+    if (_responseCreatedAt != 0) {
+      if (!_isModule && block.timestamp < _responseCreatedAt + _params.disputeWindow) {
+        revert BondedResponseModule_TooEarlyToFinalize();
+      }
 
-//     bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
+      _params.accountingExtension.release({
+        _bonder: _response.proposer,
+        _requestId: _response.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+    }
 
-//     if (!_isModule && block.timestamp < _params.deadline) {
-//       revert BondedResponseModule_TooEarlyToFinalize();
-//     }
-
-//     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
-//     if (_response.createdAt != 0) {
-//       if (!_isModule && block.timestamp < _response.createdAt + _params.disputeWindow) {
-//         revert BondedResponseModule_TooEarlyToFinalize();
-//       }
-
-//       _params.accountingExtension.release({
-//         _bonder: _response.proposer,
-//         _requestId: _requestId,
-//         _token: _params.bondToken,
-//         _amount: _params.bondSize
-//       });
-//     }
-//     emit RequestFinalized(_requestId, _finalizer);
-//   }
-
-//   /// @inheritdoc Module
-//   function _afterSetupRequest(bytes32, bytes calldata _data) internal view override {
-//     RequestParameters memory _params = abi.decode(_data, (RequestParameters));
-//     if (_params.deadline <= block.timestamp) {
-//       revert BondedResponseModule_InvalidRequest();
-//     }
-//   }
-// }
+    emit RequestFinalized(_response.requestId, _response, _finalizer);
+  }
+}
