@@ -7,18 +7,12 @@ import {IResolutionModule} from
 
 /*
   * @title ArbitratorModule
-  * @notice Module allowing an external arbitrator contract
-  * to resolve a dispute.
+  * @notice Module allowing an external arbitrator contract to resolve a dispute.
   */
 interface IArbitratorModule is IResolutionModule {
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Thrown when an unauthorized caller calls a function only the arbitrator can call
-   */
-  error ArbitratorModule_OnlyArbitrator();
 
   /**
    * @notice Thrown when trying to resolve a dispute that is not escalated
@@ -64,18 +58,30 @@ interface IArbitratorModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Returns the decoded data for a request
+   *
+   * @param _data     The encoded request parameters
+   * @return _params  The struct containing the parameters for the request
+   */
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
+
+  /**
    * @notice Returns the current arbitration status of a dispute
+   *
    * @param _disputeId The ID of the dispute
    * @return _disputeStatus The `ArbitrationStatus` of the dispute
    */
   function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus);
 
   /**
-   * @notice Starts the arbitration process by calling `resolve` on the
-   * arbitrator and flags the dispute as Active
+   * @notice Starts the arbitration process by calling `resolve` on the arbitrator and flags the dispute as Active
+   *
    * @dev Only callable by the Oracle
    * @dev Will revert if the arbitrator address is the address zero
-   * @param _disputeId The ID of the dispute
+   * @param _disputeId  The ID of the dispute
+   * @param _request    The request
+   * @param _response   The disputed response
+   * @param _dispute    The dispute being sent to the resolution
    */
   function startResolution(
     bytes32 _disputeId,
@@ -85,10 +91,13 @@ interface IArbitratorModule is IResolutionModule {
   ) external;
 
   /**
-   * @notice Resolves the dispute by getting the answer from the arbitrator
-   * and updating the dispute status
+   * @notice Resolves the dispute by getting the answer from the arbitrator and updating the dispute status
+   *
    * @dev Only callable by the Oracle
-   * @param _disputeId The ID of the dispute
+   * @param _disputeId  The ID of the dispute
+   * @param _request    The request
+   * @param _response   The disputed response
+   * @param _dispute    The dispute that is being resolved
    */
   function resolveDispute(
     bytes32 _disputeId,
@@ -96,11 +105,4 @@ interface IArbitratorModule is IResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external;
-
-  /**
-   * @notice Returns the decoded data for a request
-   * @param _data The encoded request parameters
-   * @return _params The struct containing the parameters for the request
-   */
-  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 }

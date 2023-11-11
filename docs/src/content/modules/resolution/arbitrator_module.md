@@ -10,11 +10,11 @@ The Arbitrator Module is a part of the dispute resolution system. It allows an e
 
 ### Key Methods
 
-- `getStatus(bytes32 _disputeId)`: Returns the arbitration status of a dispute.
-- `isValid(bytes32 _disputeId)`: Indicates whether the dispute has been arbitrated.
-- `startResolution(bytes32 _disputeId)`: Starts the arbitration process by calling `resolve` on the arbitrator and flags the dispute as `Active`.
-- `resolveDispute(bytes32 _disputeId)`: Resolves the dispute by getting the answer from the arbitrator and notifying the oracle.
-- `decodeRequestData(bytes calldata _data)`: Returns the decoded data for a request.
+- `getStatus`: Returns the arbitration status of a dispute.
+- `isValid`: Indicates whether the dispute has been arbitrated.
+- `startResolution`: Starts the arbitration process by calling `resolve` on the arbitrator and flags the dispute as `Active`.
+- `resolveDispute`: Resolves the dispute by getting the answer from the arbitrator and notifying the oracle.
+- `decodeRequestData`: Returns the decoded data for a request.
 
 ### Request Parameters
 
