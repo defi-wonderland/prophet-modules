@@ -53,7 +53,6 @@ contract Helpers is DSTestPlus, TestConstants {
     vm.expectCall(_receiver, _calldata);
   }
 
-  // TODO: What does _balanceIncrease do?
   function _forBondDepositERC20(
     IAccountingExtension _accountingExtension,
     address _depositor,
