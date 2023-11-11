@@ -18,23 +18,15 @@ import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountin
  */
 contract BaseTest is Test, Helpers {
   // Mock request data
-  string public constant URL = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
+  // Fuzzing enums doesn't work: https://github.com/foundry-rs/foundry/issues/871
   IHttpRequestModule.HttpMethod public constant METHOD = IHttpRequestModule.HttpMethod.GET;
-  string public constant BODY = '69420';
 
-  // Mock token
-  IERC20 public immutable TOKEN = IERC20(makeAddr('ERC20'));
   // The target contract
   HttpRequestModule public httpRequestModule;
   // A mock oracle
   IOracle public oracle;
   // A mock accounting extension
-  IAccountingExtension public accounting = IAccountingExtension(makeAddr('accounting'));
-  IOracle.Response public mockResponse;
-  address internal _proposer = makeAddr('proposer');
-  bytes32 public mockId = bytes32('69');
-
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
+  IAccountingExtension public accounting;
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -47,7 +39,6 @@ contract BaseTest is Test, Helpers {
     vm.etch(address(accounting), hex'069420');
 
     httpRequestModule = new HttpRequestModule(oracle);
-    mockResponse = IOracle.Response({proposer: _proposer, requestId: mockId, response: bytes('')});
   }
 }
 
@@ -62,12 +53,12 @@ contract HttpRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(bytes32 _requestId, uint256 _amount, IERC20 _token) public {
+  function test_decodeRequestData(string memory _url, string memory _body, uint256 _amount, IERC20 _token) public {
     bytes memory _requestData = abi.encode(
       IHttpRequestModule.RequestParameters({
-        url: URL,
+        url: _url,
+        body: _body,
         method: METHOD,
-        body: BODY,
         accountingExtension: accounting,
         paymentToken: _token,
         paymentAmount: _amount
@@ -78,9 +69,9 @@ contract HttpRequestModule_Unit_ModuleData is BaseTest {
     IHttpRequestModule.RequestParameters memory _params = httpRequestModule.decodeRequestData(_requestData);
 
     // Check: decoded values match original values?
-    assertEq(_params.url, URL);
+    assertEq(_params.url, _url);
     assertEq(uint256(_params.method), uint256(METHOD));
-    assertEq(_params.body, BODY);
+    assertEq(_params.body, _body);
     assertEq(address(_params.accountingExtension), address(accounting));
     assertEq(address(_params.paymentToken), address(_token));
     assertEq(_params.paymentAmount, _amount);
@@ -95,77 +86,99 @@ contract HttpRequestModule_Unit_FinalizeRequest is BaseTest {
    *          - accounting extension pay
    *          - accounting extension release
    */
-  function test_makesCalls(
-    bytes32 _requestId,
-    address _requester,
-    address _proposer,
+  function test_finalizeWithResponse(
+    string calldata _url,
+    string calldata _body,
     uint256 _amount,
-    IERC20 _token,
-    IOracle.Request calldata _request
+    IERC20 _token
   ) public {
     _amount = bound(_amount, 0, type(uint248).max);
 
     // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(
+    mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
-        url: URL,
+        url: _url,
         method: METHOD,
-        body: BODY,
+        body: _body,
         accountingExtension: accounting,
         paymentToken: _token,
         paymentAmount: _amount
       })
     );
 
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+
+    // Mock and expect oracle to return the response's creation time
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+    );
+
     // Mock and expect IAccountingExtension.pay to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _token, _amount)),
+      abi.encodeCall(
+        IAccountingExtension.pay, (_requestId, mockRequest.requester, mockResponse.proposer, _token, _amount)
+      ),
       abi.encode()
     );
 
     vm.startPrank(address(oracle));
-    httpRequestModule.finalizeRequest(_request, mockResponse, address(oracle));
+    httpRequestModule.finalizeRequest(mockRequest, mockResponse, address(this));
+  }
+
+  function test_finalizeWithoutResponse(
+    string calldata _url,
+    string calldata _body,
+    uint256 _amount,
+    IERC20 _token
+  ) public {
+    _amount = bound(_amount, 0, type(uint248).max);
+
+    // Use the correct accounting parameters
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _url,
+        method: METHOD,
+        body: _body,
+        accountingExtension: accounting,
+        paymentToken: _token,
+        paymentAmount: _amount
+      })
+    );
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+
+    // Mock and expect oracle to return no timestamp
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(0));
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _token, _amount)),
+      abi.encodeCall(IAccountingExtension.release, (mockRequest.requester, _requestId, _token, _amount)),
       abi.encode(true)
     );
 
-    httpRequestModule.finalizeRequest(_request, mockResponse, address(this));
+    vm.startPrank(address(oracle));
+    httpRequestModule.finalizeRequest(mockRequest, mockResponse, address(this));
   }
 
-  function test_emitsEvent(
-    bytes32 _requestId,
-    address _requester,
-    address _proposer,
-    uint256 _amount,
-    IERC20 _token,
-    IOracle.Request calldata _request
-  ) public {
+  function test_emitsEvent(string calldata _url, string calldata _body, uint256 _amount, IERC20 _token) public {
     // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(
+    mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
-        url: URL,
+        url: _url,
         method: METHOD,
-        body: BODY,
+        body: _body,
         accountingExtension: accounting,
         paymentToken: _token,
         paymentAmount: _amount
       })
     );
 
-    // Mock and expect IAccountingExtension.pay to be called
-    _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _token, _amount)),
-      abi.encode()
-    );
-
-    vm.startPrank(address(oracle));
-    httpRequestModule.finalizeRequest(_request, mockResponse, address(oracle));
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
 
     // Update mock call to return the response's createdAt
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(0));
@@ -173,27 +186,28 @@ contract HttpRequestModule_Unit_FinalizeRequest is BaseTest {
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _token, _amount)),
+      abi.encodeCall(IAccountingExtension.release, (mockRequest.requester, _requestId, _token, _amount)),
       abi.encode(true)
     );
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(httpRequestModule));
-    emit RequestFinalized(_requestId, address(this));
+    emit RequestFinalized(_requestId, mockResponse, address(this));
 
-    httpRequestModule.finalizeRequest(_request, mockResponse, address(this));
+    vm.prank(address(oracle));
+    httpRequestModule.finalizeRequest(mockRequest, mockResponse, address(this));
   }
 
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_revertsIfWrongCaller(bytes32 _requestId, address _caller, IOracle.Request calldata _request) public {
+  function test_revertsIfWrongCaller(address _caller) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
 
     vm.prank(_caller);
-    httpRequestModule.finalizeRequest(_request, mockResponse, address(_caller));
+    httpRequestModule.finalizeRequest(mockRequest, mockResponse, address(_caller));
   }
 }
