@@ -38,8 +38,9 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     emit ResponseDisputed({
       _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
+      _disputeId: _getId(_dispute),
       _dispute: _dispute,
-      blockNumber: block.number
+      _blockNumber: block.number
     });
   }
 
