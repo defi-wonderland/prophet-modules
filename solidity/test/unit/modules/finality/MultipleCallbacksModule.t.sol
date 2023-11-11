@@ -18,18 +18,9 @@ contract BaseTest is Test, Helpers {
   MultipleCallbacksModule public multipleCallbackModule;
   // A mock oracle
   IOracle public oracle;
-  // Mock EOA proposer
-  address public proposer = makeAddr('proposer');
-  // Mock EOA disputer
-  address public disputer = makeAddr('disputer');
-  // Create a new dummy dispute
-  IOracle.Dispute public mockDispute;
-  // Create a new dummy response
-  IOracle.Response public mockResponse;
-  bytes32 public mockId = bytes32('69');
 
+  // Events
   event Callback(bytes32 indexed _request, address indexed _target, bytes _data);
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -39,9 +30,6 @@ contract BaseTest is Test, Helpers {
     vm.etch(address(oracle), hex'069420');
 
     multipleCallbackModule = new MultipleCallbacksModule(oracle);
-    mockDispute =
-      IOracle.Dispute({disputer: disputer, proposer: proposer, responseId: bytes32('69'), requestId: bytes32('69')});
-    mockResponse = IOracle.Response({proposer: proposer, requestId: mockId, response: bytes('')});
   }
 }
 
@@ -61,36 +49,33 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
   /**
    * @notice Test that finalizeRequests calls the _target.callback with the correct data
    */
-  function test_finalizeRequest(
-    IOracle.Request calldata _request,
-    address[1] calldata _targets,
-    bytes[1] calldata __data
-  ) public {
-    bytes32 _requestId = _getId(_request);
-    address _target = _targets[0];
-    bytes calldata _data = __data[0];
+  function test_finalizeRequest(address[] calldata _targets, bytes[] calldata _data) public {
+    vm.assume(_targets.length == _data.length);
 
-    assumeNotPrecompile(_target);
-    vm.assume(_target != address(vm));
+    mockRequest.finalityModuleData =
+      abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
 
-    // Create and set some mock request data
-    address[] memory _targetParams = new address[](1);
-    _targetParams[0] = _targets[0];
-    bytes[] memory _dataParams = new bytes[](1);
-    _dataParams[0] = __data[0];
+    for (uint256 _i; _i < _targets.length; _i++) {
+      address _target = _targets[_i];
+      bytes calldata _calldata = _data[_i];
 
-    _mockAndExpect(_target, _data, abi.encode());
+      // Skip precompiles, VM, console.log addresses, etc
+      _assumeFuzzable(_target);
+      _mockAndExpect(_target, _calldata, abi.encode());
 
-    // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
-    emit Callback(_requestId, _target, _data);
+      // Check: is the event emitted?
+      vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
+      emit Callback(_requestId, _target, _calldata);
+    }
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
-    emit RequestFinalized(_requestId, address(oracle));
+    emit RequestFinalized(_requestId, mockResponse, address(oracle));
 
     vm.prank(address(oracle));
-    multipleCallbackModule.finalizeRequest(_request, mockResponse, address(oracle));
+    multipleCallbackModule.finalizeRequest(mockRequest, mockResponse, address(oracle));
   }
 
   /**
