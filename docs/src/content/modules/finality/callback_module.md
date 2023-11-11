@@ -10,8 +10,8 @@ The Callback Module is a finality module that allows users to call a function on
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
-- `finalizeRequest(bytes32 _requestId, address)`: Executing the callback call on the target.
+- `decodeRequestData`: Returns the decoded data for a request.
+- `finalizeRequest`: Executing the callback call on the target.
 
 ### Request Parameters
 
@@ -25,4 +25,3 @@ As any finality module, the `CallbackModule` implements the `finalizeRequest` fu
 ## 4. Gotchas
 
 - The success of the callback call in `finalizeRequest` is purposely not checked, specifying a function or parameters that lead to a revert will not stop the request from being finalized.
-- The target must be a contract.
