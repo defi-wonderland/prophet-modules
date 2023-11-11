@@ -21,7 +21,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
   }
 
   /// @inheritdoc IHttpRequestModule
-  function createRequest(bytes32 _requestId, bytes calldata _data, address _requester) external {
+  function createRequest(bytes32 _requestId, bytes calldata _data, address _requester) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_data);
 
     _params.accountingExtension.bond({
