@@ -76,8 +76,8 @@ interface IArbitratorModule is IResolutionModule {
   /**
    * @notice Starts the arbitration process by calling `resolve` on the arbitrator and flags the dispute as Active
    *
-   * @dev Only callable by the Oracle
-   * @dev Will revert if the arbitrator address is the address zero
+   * @dev               Only callable by the Oracle
+   * @dev               Will revert if the arbitrator address is the address zero
    * @param _disputeId  The ID of the dispute
    * @param _request    The request
    * @param _response   The disputed response
@@ -93,7 +93,7 @@ interface IArbitratorModule is IResolutionModule {
   /**
    * @notice Resolves the dispute by getting the answer from the arbitrator and updating the dispute status
    *
-   * @dev Only callable by the Oracle
+   * @dev               Only callable by the Oracle
    * @param _disputeId  The ID of the dispute
    * @param _request    The request
    * @param _response   The disputed response
