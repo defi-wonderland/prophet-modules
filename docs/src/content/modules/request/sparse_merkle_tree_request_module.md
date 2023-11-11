@@ -10,8 +10,8 @@ The `SparseMerkleTreeRequestModule` is a contract that allows a user to request 
 
 ### Key Methods
 
-- `decodeRequestData(bytes calldata _data)`: This function decodes the request data for a given request ID. It returns a RequestParameters struct that contains the parameters for the request.
-- `finalizeRequest(bytes32 _requestId, address _finalizer)`: This function is called by the Oracle to finalize the request. It either pays the proposer for the response or releases the requester's bond if no response was submitted.
+- `decodeRequestData`: This function decodes the request data for a given request ID. It returns a RequestParameters struct that contains the parameters for the request.
+- `finalizeRequest`: This function is called by the Oracle to finalize the request. It either pays the proposer for the response or releases the requester's bond if no response was submitted.
 
 ### Request Parameters
 
@@ -28,5 +28,5 @@ The `SparseMerkleTreeRequestModule` uses a Merkle tree to calculate the root fro
 
 ## 4. Gotchas
 
-- The module is supposed to be paired with the root verification module.
+- The module is supposed to be paired with [`RootVerificationModule`](../dispute/root_verification_module.md).
 - The verifier contract must follow the `ITreeVerifier` interface, otherwise the proposers won't be able to calculate the correct response.
