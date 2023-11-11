@@ -192,10 +192,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-a1d2cc55":
-  version "0.0.0-a1d2cc55"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-a1d2cc55.tgz#e0bba63cdb143ffba6721049d2b0577eb39329fb"
-  integrity sha512-gl+8QvkzPd144yESzXhl2ceJ5blZczKh7HLioSfJ1uZnrJAR90z/MJD1fCb/1Q3oDyaq6WMWnJSK9VvMkadTtQ==
+"@defi-wonderland/prophet-core-contracts@0.0.0-1ae08a81":
+  version "0.0.0-1ae08a81"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-1ae08a81.tgz#77d8f91303c8496556c0cedc12eeaa7abaa5f6fb"
+  integrity sha512-hMOBUsXR39NXfhExV3+xDBaUYv/6EYdyTrS/VMMSh0Gpbeqql4cIlUHnJzhmc6b+sbIgREq1K44v++8Aminrvw==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-3e9c8e8b"
     "@openzeppelin/contracts" "^4.9.3"
@@ -3261,9 +3261,9 @@ solhint@3.5.1:
     prettier "^2.8.3"
 
 solidity-ast@^0.4.38:
-  version "0.4.52"
-  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.52.tgz#9f1a9abc7e5ba28bbf91146ecd07aec7e70f3c85"
-  integrity sha512-iOya9BSiB9jhM8Vf40n8lGELGzwrUc57rl5BhfNtJ5cvAaMvRcNlHeAMNvqJJyjoUnczqRbHqdivEqK89du3Cw==
+  version "0.4.53"
+  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.53.tgz#098259472fccd234ff00f050afaf7843a7ccd635"
+  integrity sha512-/7xYF//mAt4iP9S21fCFSLMouYXzXJqrd84jbI1LHL1rq7XhyFLUXxVcRkl9KqEEQmI+DmDbTeS6W5cEwcJ2wQ==
   dependencies:
     array.prototype.findlast "^1.2.2"
 
