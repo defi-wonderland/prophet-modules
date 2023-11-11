@@ -10,7 +10,7 @@ The `ContractCallRequestModule` is a module for requesting on-chain information.
 
 ### Key Methods
 
-- `decodeRequestData(bytes calldata _data)`: This method decodes the request data for a given request ID. It returns the target contract address, the function selector, the encoded arguments of the function to call, the accounting extension to bond and release funds, the payment token, and the payment amount.
+- `decodeRequestData`: This method decodes the request data for a given request ID. It returns the target contract address, the function selector, the encoded arguments of the function to call, the accounting extension to bond and release funds, the payment token, and the payment amount.
 - `finalizeRequest`: This method finalizes a request by paying the response proposer. It is only callable by the oracle.
 
 ### Request Parameters
