@@ -40,7 +40,7 @@ contract BaseTest is Test, Helpers {
   MockVerifier public mockVerifier;
 
   // Events
-  event DisputeStatusChanged(bytes32 _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
+  event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event ResponseDisputed(
     bytes32 indexed _requestId,
     bytes32 indexed _responseId,
