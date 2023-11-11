@@ -25,18 +25,6 @@ contract BaseTest is Test, Helpers {
   SparseMerkleTreeRequestModule public sparseMerkleTreeRequestModule;
   // A mock oracle
   IOracle public oracle;
-  // A mock accounting extension
-  IAccountingExtension public accounting;
-  // A mock tree verifier
-  ITreeVerifier public treeVerifier;
-  // Create a new dummy response
-  IOracle.Response public mockResponse;
-  // Create a new dummy dispute
-  IOracle.Dispute public mockDispute;
-  // 100% random sequence of bytes representing request, response, or dispute id
-  bytes32 public mockId = bytes32('69');
-  address internal _disputer = makeAddr('disputer');
-  address internal _proposer = makeAddr('proposer');
 
   // Mock data for the request
   bytes32[32] internal _treeBranches = [
@@ -77,8 +65,6 @@ contract BaseTest is Test, Helpers {
   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
 
-  event RequestFinalized(bytes32 indexed _requestId, address _finalizer);
-
   /**
    * @notice Deploy the target and mock oracle+accounting extension
    */
@@ -86,15 +72,7 @@ contract BaseTest is Test, Helpers {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    accounting = IAccountingExtension(makeAddr('AccountingExtension'));
-    vm.etch(address(accounting), hex'069420');
-    treeVerifier = ITreeVerifier(makeAddr('TreeVerifier'));
-    vm.etch(address(accounting), hex'069420');
-
     sparseMerkleTreeRequestModule = new SparseMerkleTreeRequestModule(oracle);
-
-    mockDispute = IOracle.Dispute({disputer: _disputer, responseId: mockId, proposer: _proposer, requestId: mockId});
-    mockResponse = IOracle.Response({proposer: _proposer, requestId: mockId, response: bytes('')});
   }
 }
 
@@ -110,7 +88,6 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
    * @notice Test that the decodeRequestData function returns the correct values
    */
   function test_decodeRequestData(
-    bytes32 _requestId,
     IERC20 _paymentToken,
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
@@ -151,24 +128,16 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
 
 contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
   /**
-   * @notice Test that finalizeRequest calls:
-   *          - oracle get request
-   *          - oracle get response
-   *          - accounting extension pay
-   *          - accounting extension release
+   * @notice Test that the proposer gets paid for a correct response
    */
-  function test_makesCalls(
-    bytes32 _requestId,
-    address _requester,
-    address _proposer,
+  function test_paysProposer(
     IERC20 _paymentToken,
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
-    ITreeVerifier _treeVerifier,
-    IOracle.Request calldata _request
+    ITreeVerifier _treeVerifier
   ) public assumeFuzzable(address(_accounting)) {
     // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(
+    mockRequest.requestModuleData = abi.encode(
       ISparseMerkleTreeRequestModule.RequestParameters({
         treeData: _treeData,
         leavesToInsert: _leavesToInsert,
@@ -179,88 +148,84 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
       })
     );
 
-    IOracle.Request memory _fullRequest;
-    _fullRequest.requester = _requester;
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
 
-    IOracle.Response memory _fullResponse;
-    _fullResponse.proposer = _proposer;
+    // Oracle confirms that the response has been created
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+    );
 
     // Mock and expect IAccountingExtension.pay to be called
-    vm.mockCall(
+    _mockAndExpect(
       address(_accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _paymentToken, _paymentAmount)),
+      abi.encodeCall(
+        IAccountingExtension.pay,
+        (_requestId, mockRequest.requester, mockResponse.proposer, _paymentToken, _paymentAmount)
+      ),
       abi.encode()
-    );
-
-    vm.startPrank(address(oracle));
-    sparseMerkleTreeRequestModule.finalizeRequest(_request, mockResponse, address(oracle));
-
-    // Mock and expect IAccountingExtension.release to be called
-    _mockAndExpect(
-      address(_accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount)),
-      abi.encode(true)
-    );
-
-    sparseMerkleTreeRequestModule.finalizeRequest(_request, mockResponse, address(this));
-  }
-
-  function test_emitsEvent(
-    bytes32 _requestId,
-    address _requester,
-    address _proposer,
-    IERC20 _paymentToken,
-    uint256 _paymentAmount,
-    IAccountingExtension _accounting,
-    ITreeVerifier _treeVerifier,
-    IOracle.Request calldata _request
-  ) public assumeFuzzable(address(_accounting)) {
-    // Use the correct accounting parameters
-    bytes memory _requestData = abi.encode(
-      ISparseMerkleTreeRequestModule.RequestParameters({
-        treeData: _treeData,
-        leavesToInsert: _leavesToInsert,
-        treeVerifier: _treeVerifier,
-        accountingExtension: _accounting,
-        paymentToken: _paymentToken,
-        paymentAmount: _paymentAmount
-      })
-    );
-
-    // Mock and expect pay to be called
-    _mockAndExpect(
-      address(_accounting),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _requester, _proposer, _paymentToken, _paymentAmount)),
-      abi.encode()
-    );
-
-    vm.startPrank(address(oracle));
-    sparseMerkleTreeRequestModule.finalizeRequest(_request, mockResponse, address(oracle));
-
-    // Mock and expect release to be called
-    _mockAndExpect(
-      address(_accounting),
-      abi.encodeCall(IAccountingExtension.release, (_requester, _requestId, _paymentToken, _paymentAmount)),
-      abi.encode(true)
     );
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(sparseMerkleTreeRequestModule));
-    emit RequestFinalized(_requestId, address(this));
+    emit RequestFinalized(_requestId, mockResponse, address(this));
 
-    sparseMerkleTreeRequestModule.finalizeRequest(_request, mockResponse, address(this));
+    vm.prank(address(oracle));
+    sparseMerkleTreeRequestModule.finalizeRequest(mockRequest, mockResponse, address(this));
+  }
+
+  /**
+   * @notice Test that the requester gets a refund in case of no responses
+   */
+  function test_refundsRequester(
+    IERC20 _paymentToken,
+    uint256 _paymentAmount,
+    IAccountingExtension _accounting,
+    ITreeVerifier _treeVerifier
+  ) public assumeFuzzable(address(_accounting)) {
+    // Use the correct accounting parameters
+    mockRequest.requestModuleData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: _treeVerifier,
+        accountingExtension: _accounting,
+        paymentToken: _paymentToken,
+        paymentAmount: _paymentAmount
+      })
+    );
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+
+    // Oracle returns no createdAt value - finalizing without a response
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(0));
+
+    // Mock and expect IAccountingExtension.release to be called
+    _mockAndExpect(
+      address(_accounting),
+      abi.encodeCall(IAccountingExtension.release, (mockRequest.requester, _requestId, _paymentToken, _paymentAmount)),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(sparseMerkleTreeRequestModule));
+    emit RequestFinalized(_requestId, mockResponse, address(this));
+
+    vm.prank(address(oracle));
+    sparseMerkleTreeRequestModule.finalizeRequest(mockRequest, mockResponse, address(this));
   }
 
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_revertsIfWrongCaller(IOracle.Request calldata _request, address _caller) public {
+  function test_revertsIfWrongCaller(address _caller) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
 
     vm.prank(_caller);
-    sparseMerkleTreeRequestModule.finalizeRequest(_request, mockResponse, address(_caller));
+    sparseMerkleTreeRequestModule.finalizeRequest(mockRequest, mockResponse, address(_caller));
   }
 }
