@@ -105,22 +105,36 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Returns the escalation data for a dispute
-   * @param _disputeId The id of the dispute
-   * @return _startTime The timestamp at which the dispute was escalated
-   * @return _totalVotes The total amount of votes cast for the dispute
+   *
+   * @param _disputeId    The id of the dispute
+   * @return _startTime   The timestamp at which the dispute was escalated
+   * @return _totalVotes  The total amount of votes cast for the dispute
    */
   function escalations(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
 
+  /**
+   * @notice Returns the amount of votes the given voter has cast for the given dispute
+   *
+   * @param _disputeId  The id of the dispute
+   * @param _voter      The address of the voter
+   * @return _votes     The amount of votes the voter has cast
+   */
   function votes(bytes32 _disputeId, address _voter) external view returns (uint256 _votes);
 
   /**
    * @notice Returns the decoded data for a request
-   * @param _data The encoded request parameters
-   * @return _params The struct containing the parameters for the request
+   *
+   * @param _data     The encoded request parameters
+   * @return _params  The struct containing the parameters for the request
    */
   function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
-  /// @inheritdoc IResolutionModule
+  /**
+   * @notice Casts a vote in favor of a dispute
+   *
+   * @param _request  The request for which the dispute was created
+   * @param _dispute  The dispute for which the vote is being cast
+   */
   function startResolution(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
@@ -130,7 +144,10 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Casts a vote in favor of a dispute
-   * @param _numberOfVotes The number of votes to cast
+   *
+   * @param _request        The request for which the dispute was created
+   * @param _dispute        The dispute for which the vote is being cast
+   * @param _numberOfVotes  The number of votes to cast
    */
   function castVote(
     IOracle.Request calldata _request,
@@ -138,7 +155,14 @@ interface IERC20ResolutionModule is IResolutionModule {
     uint256 _numberOfVotes
   ) external;
 
-  /// @inheritdoc IResolutionModule
+  /**
+   * @notice Settles the dispute, transferring the funds back to the voters
+   *
+   * @param _disputeId  The id of the dispute
+   * @param _request    The request for which the dispute was created
+   * @param _response   The disputed response
+   * @param _dispute    The dispute that is being resolved
+   */
   function resolveDispute(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
@@ -148,8 +172,9 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Gets the voters of a dispute
-   * @param _disputeId The id of the dispute
-   * @return _voters The addresses of the voters
+   *
+   * @param _disputeId  The id of the dispute
+   * @return _voters    The addresses of the voters
    */
   function getVoters(bytes32 _disputeId) external view returns (address[] memory _voters);
 }

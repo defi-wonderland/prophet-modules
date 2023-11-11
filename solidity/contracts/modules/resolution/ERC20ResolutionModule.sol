@@ -22,7 +22,10 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   /// @inheritdoc IERC20ResolutionModule
   mapping(bytes32 _disputeId => mapping(address _voter => uint256 _numOfVotes)) public votes;
 
-  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) private _voters;
+  /**
+   * @notice The list of voters for each dispute
+   */
+  mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
   constructor(IOracle _oracle) Module(_oracle) {}
 
