@@ -1181,14 +1181,10 @@ dotgitignore@^2.1.0:
     find-up "^3.0.0"
     minimatch "^3.0.4"
 
-"ds-test@git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
-  version "1.0.0"
-  resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
-
-"ds-test@https://github.com/dapphub/ds-test":
+"ds-test@git+https://github.com/dapphub/ds-test.git", "ds-test@git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
   version "1.0.0"
   uid e282159d5170298eb2455a6c05280ab5a73a4ef0
-  resolved "https://github.com/dapphub/ds-test#e282159d5170298eb2455a6c05280ab5a73a4ef0"
+  resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
 
 "ds-test@https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
   version "1.0.0"
@@ -1570,13 +1566,13 @@ for-each@^0.3.3:
   dependencies:
     is-callable "^1.1.3"
 
+"forge-std@git+https://github.com/foundry-rs/forge-std.git":
+  version "1.7.1"
+  resolved "git+https://github.com/foundry-rs/forge-std.git#37a37ab73364d6644bfe11edf88a07880f99bd56"
+
 "forge-std@git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e":
   version "1.5.6"
   resolved "git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e"
-
-"forge-std@https://github.com/foundry-rs/forge-std":
-  version "1.7.1"
-  resolved "https://github.com/foundry-rs/forge-std#37a37ab73364d6644bfe11edf88a07880f99bd56"
 
 "forge-std@https://github.com/foundry-rs/forge-std.git#f73c73d2018eb6a111f35e4dae7b4f27401e9421":
   version "1.7.1"
@@ -3265,9 +3261,9 @@ solhint@3.5.1:
     prettier "^2.8.3"
 
 solidity-ast@^0.4.38:
-  version "0.4.52"
-  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.52.tgz#9f1a9abc7e5ba28bbf91146ecd07aec7e70f3c85"
-  integrity sha512-iOya9BSiB9jhM8Vf40n8lGELGzwrUc57rl5BhfNtJ5cvAaMvRcNlHeAMNvqJJyjoUnczqRbHqdivEqK89du3Cw==
+  version "0.4.53"
+  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.53.tgz#098259472fccd234ff00f050afaf7843a7ccd635"
+  integrity sha512-/7xYF//mAt4iP9S21fCFSLMouYXzXJqrd84jbI1LHL1rq7XhyFLUXxVcRkl9KqEEQmI+DmDbTeS6W5cEwcJ2wQ==
   dependencies:
     array.prototype.findlast "^1.2.2"
 
