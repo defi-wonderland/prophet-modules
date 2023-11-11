@@ -149,40 +149,4 @@
 //     assertEq(_deletedResponse.createdAt, 0);
 //     assertEq(_deletedResponse.disputeId, bytes32(0));
 //   }
-
-//   function test_deleteResponse_afterDeadline(bytes memory _responseData, uint256 _timestamp) public {
-//     vm.assume(_timestamp > _expectedDeadline);
-
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
-//     vm.stopPrank();
-
-//     vm.warp(_timestamp);
-
-//     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToDelete.selector);
-
-//     vm.prank(proposer);
-//     oracle.deleteResponse(_responseId);
-//   }
-
-//   function test_proposeResponse_finalizedRequest(bytes memory _responseData, uint256 _timestamp) public {
-//     vm.assume(_timestamp > _expectedDeadline + _baseDisputeWindow);
-
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
-
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
-//     vm.stopPrank();
-
-//     vm.warp(_timestamp);
-//     oracle.finalize(_requestId, _responseId);
-
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _requestId));
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_requestId, _responseData);
-//   }
 // }
