@@ -49,8 +49,15 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
   /**
    * @notice Test that finalizeRequests calls the _target.callback with the correct data
    */
-  function test_finalizeRequest(address[] calldata _targets, bytes[] calldata _data) public {
-    vm.assume(_targets.length == _data.length);
+  function test_finalizeRequest(address[10] calldata _fuzzedTargets, bytes[10] calldata _fuzzedData) public {
+    address[] memory _targets = new address[](_fuzzedTargets.length);
+    bytes[] memory _data = new bytes[](_fuzzedTargets.length);
+
+    // Copying the values to fresh arrays that we can use to build `RequestParameters`
+    for (uint256 _i; _i < _fuzzedTargets.length; _i++) {
+      _targets[_i] = _fuzzedTargets[_i];
+      _data[_i] = _fuzzedData[_i];
+    }
 
     mockRequest.finalityModuleData =
       abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
@@ -59,7 +66,7 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
 
     for (uint256 _i; _i < _targets.length; _i++) {
       address _target = _targets[_i];
-      bytes calldata _calldata = _data[_i];
+      bytes memory _calldata = _data[_i];
 
       // Skip precompiles, VM, console.log addresses, etc
       _assumeFuzzable(_target);
