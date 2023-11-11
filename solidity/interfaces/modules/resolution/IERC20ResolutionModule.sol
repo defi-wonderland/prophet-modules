@@ -44,7 +44,7 @@ interface IERC20ResolutionModule is IResolutionModule {
   error ERC20ResolutionModule_OnlyDisputeModule();
 
   /**
-   * @notice Throws if the dispute has not been escalated
+   * @notice Throws if the dispute doesn't exist or has not been escalated
    */
   error ERC20ResolutionModule_DisputeNotEscalated();
 
@@ -62,11 +62,6 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @notice Throws if the voting phase is ongoing
    */
   error ERC20ResolutionModule_OnGoingVotingPhase();
-
-  /**
-   * @notice Throws if the dispute does not exist
-   */
-  error ERC20ResolutionModule_NonExistentDispute();
 
   /**
    * @notice Throws if the dispute has already been resolved
