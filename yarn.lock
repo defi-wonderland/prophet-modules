@@ -192,10 +192,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-48b0248d":
-  version "0.0.0-48b0248d"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-48b0248d.tgz#16d0473360074f17b66199c8e3660b71a3d72ad4"
-  integrity sha512-bEufdaPkLcg1VuYpTWRB5Xf4pmpV3wi0487taGI4A+YtwhMsIh9ZCNPdgWssqLvIfMPlB4FdGOM936l1yqAKYQ==
+"@defi-wonderland/prophet-core-contracts@0.0.0-a1d2cc55":
+  version "0.0.0-a1d2cc55"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-a1d2cc55.tgz#e0bba63cdb143ffba6721049d2b0577eb39329fb"
+  integrity sha512-gl+8QvkzPd144yESzXhl2ceJ5blZczKh7HLioSfJ1uZnrJAR90z/MJD1fCb/1Q3oDyaq6WMWnJSK9VvMkadTtQ==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-3e9c8e8b"
     "@openzeppelin/contracts" "^4.9.3"
@@ -274,9 +274,9 @@
     antlr4ts "^0.5.0-alpha.4"
 
 "@solidity-parser/parser@^0.16.0":
-  version "0.16.1"
-  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.16.1.tgz#f7c8a686974e1536da0105466c4db6727311253c"
-  integrity sha512-PdhRFNhbTtu3x8Axm0uYpqOy/lODYQK+MlYSgqIsq2L8SFYEHJPHNUiOTAJbDGzNjjr1/n9AcIayxafR/fWmYw==
+  version "0.16.2"
+  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.16.2.tgz#42cb1e3d88b3e8029b0c9befff00b634cd92d2fa"
+  integrity sha512-PI9NfoA3P8XK2VBkK5oIfRgKDsicwDZfkVq9ZTBCQYGOP1N2owgY2dyLGyU5/J/hQs8KRk55kdmvTLjy3Mu3vg==
   dependencies:
     antlr4ts "^0.5.0-alpha.4"
 
@@ -1568,7 +1568,7 @@ for-each@^0.3.3:
 
 "forge-std@git+https://github.com/foundry-rs/forge-std.git":
   version "1.7.1"
-  resolved "git+https://github.com/foundry-rs/forge-std.git#267acd30a625086b3f16e1a28cfe0c5097fa46b8"
+  resolved "git+https://github.com/foundry-rs/forge-std.git#37a37ab73364d6644bfe11edf88a07880f99bd56"
 
 "forge-std@git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e":
   version "1.5.6"
@@ -3261,9 +3261,9 @@ solhint@3.5.1:
     prettier "^2.8.3"
 
 solidity-ast@^0.4.38:
-  version "0.4.52"
-  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.52.tgz#9f1a9abc7e5ba28bbf91146ecd07aec7e70f3c85"
-  integrity sha512-iOya9BSiB9jhM8Vf40n8lGELGzwrUc57rl5BhfNtJ5cvAaMvRcNlHeAMNvqJJyjoUnczqRbHqdivEqK89du3Cw==
+  version "0.4.53"
+  resolved "https://registry.yarnpkg.com/solidity-ast/-/solidity-ast-0.4.53.tgz#098259472fccd234ff00f050afaf7843a7ccd635"
+  integrity sha512-/7xYF//mAt4iP9S21fCFSLMouYXzXJqrd84jbI1LHL1rq7XhyFLUXxVcRkl9KqEEQmI+DmDbTeS6W5cEwcJ2wQ==
   dependencies:
     array.prototype.findlast "^1.2.2"
 

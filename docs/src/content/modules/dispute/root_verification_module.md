@@ -10,10 +10,9 @@ The Root Verification Module is a pre-dispute module that allows disputers to ca
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
-- `disputeResponse(bytes32 _requestId, bytes32 _responseId, address _disputer, address _proposer)`: Calculates the correct root and compares it to the proposed one. Updates the dispute status after checking if the disputed response is indeed wrong.
-- `onDisputeStatusChange(bytes32 _requestId, IOracle.Dispute memory _dispute)`: Updates the status of the dispute and resolves it by proposing the correct root as a response and finalizing the request.
-- `disputeEscalated(bytes32 _disputeId)`: This function is present to comply with the module interface but it is not implemented since this is a pre-dispute module.
+- `decodeRequestData`: Returns the decoded data for a request.
+- `disputeResponse`: Calculates the correct root and compares it to the proposed one. Updates the dispute status after checking if the disputed response is indeed wrong.
+- `onDisputeStatusChange`: Updates the status of the dispute and resolves it by proposing the correct root as a response and finalizing the request.
 
 ### Request Parameters
 
