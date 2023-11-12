@@ -1,64 +1,62 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// // solhint-disable-next-line no-unused-import
-// import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-// import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+// solhint-disable-next-line no-unused-import
+import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
-// import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
+import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
 
-// contract ContractCallRequestModule is Module, IContractCallRequestModule {
-//   constructor(IOracle _oracle) Module(_oracle) {}
+contract ContractCallRequestModule is Module, IContractCallRequestModule {
+  constructor(IOracle _oracle) Module(_oracle) {}
 
-//   /// @inheritdoc IModule
-//   function moduleName() public pure returns (string memory _moduleName) {
-//     _moduleName = 'ContractCallRequestModule';
-//   }
+  /// @inheritdoc IModule
+  function moduleName() public pure returns (string memory _moduleName) {
+    _moduleName = 'ContractCallRequestModule';
+  }
 
-//   /// @inheritdoc IContractCallRequestModule
-//   function decodeRequestData(bytes32 _requestId) public view returns (RequestParameters memory _params) {
-//     _params = abi.decode(requestData[_requestId], (RequestParameters));
-//   }
+  /// @inheritdoc IContractCallRequestModule
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+    _params = abi.decode(_data, (RequestParameters));
+  }
 
-//   /**
-//    * @notice Bonds the requester's funds through the accounting extension
-//    * @param _requestId The id of the request being set up
-//    */
-//   function _afterSetupRequest(bytes32 _requestId, bytes calldata) internal override {
-//     RequestParameters memory _params = decodeRequestData(_requestId);
-//     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
-//     _params.accountingExtension.bond({
-//       _bonder: _request.requester,
-//       _requestId: _requestId,
-//       _token: _params.paymentToken,
-//       _amount: _params.paymentAmount
-//     });
-//   }
+  /// @inheritdoc IContractCallRequestModule
+  function createRequest(bytes32 _requestId, bytes calldata _data, address _requester) external onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_data);
 
-//   /// @inheritdoc IContractCallRequestModule
-//   function finalizeRequest(
-//     bytes32 _requestId,
-//     address _finalizer
-//   ) external override(IContractCallRequestModule, Module) onlyOracle {
-//     IOracle.Request memory _request = ORACLE.getRequest(_requestId);
-//     IOracle.Response memory _response = ORACLE.getFinalizedResponse(_requestId);
-//     RequestParameters memory _params = decodeRequestData(_requestId);
-//     if (_response.createdAt != 0) {
-//       _params.accountingExtension.pay({
-//         _requestId: _requestId,
-//         _payer: _request.requester,
-//         _receiver: _response.proposer,
-//         _token: _params.paymentToken,
-//         _amount: _params.paymentAmount
-//       });
-//     } else {
-//       _params.accountingExtension.release({
-//         _bonder: _request.requester,
-//         _requestId: _requestId,
-//         _token: _params.paymentToken,
-//         _amount: _params.paymentAmount
-//       });
-//     }
-//     emit RequestFinalized(_requestId, _finalizer);
-//   }
-// }
+    _params.accountingExtension.bond({
+      _bonder: _requester,
+      _requestId: _requestId,
+      _token: _params.paymentToken,
+      _amount: _params.paymentAmount
+    });
+  }
+
+  /// @inheritdoc IContractCallRequestModule
+  function finalizeRequest(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    address _finalizer
+  ) external override(IContractCallRequestModule, Module) onlyOracle {
+    RequestParameters memory _params = decodeRequestData(_request.requestModuleData);
+
+    if (ORACLE.createdAt(_getId(_response)) != 0) {
+      _params.accountingExtension.pay({
+        _requestId: _response.requestId,
+        _payer: _request.requester,
+        _receiver: _response.proposer,
+        _token: _params.paymentToken,
+        _amount: _params.paymentAmount
+      });
+    } else {
+      _params.accountingExtension.release({
+        _bonder: _request.requester,
+        _requestId: _response.requestId,
+        _token: _params.paymentToken,
+        _amount: _params.paymentAmount
+      });
+    }
+
+    emit RequestFinalized(_response.requestId, _response, _finalizer);
+  }
+}
