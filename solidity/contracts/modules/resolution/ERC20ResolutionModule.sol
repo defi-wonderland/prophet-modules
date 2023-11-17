@@ -126,4 +126,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   function getVoters(bytes32 _disputeId) external view returns (address[] memory __voters) {
     __voters = _voters[_disputeId].values();
   }
+
+  function validateParameters(bytes calldata _data) external pure returns (bool _valid) {
+    abi.decode(_data, (RequestParameters));
+    _valid = true;
+  }
 }

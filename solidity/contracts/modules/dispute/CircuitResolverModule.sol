@@ -90,4 +90,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
   }
+
+  function validateParameters(bytes calldata _data) external pure returns (bool _valid) {
+    abi.decode(_data, (RequestParameters));
+    _valid = true;
+  }
 }

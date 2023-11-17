@@ -103,4 +103,9 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
 
     emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
   }
+
+  function validateParameters(bytes calldata _data) external pure returns (bool _valid) {
+    abi.decode(_data, (RequestParameters));
+    _valid = true;
+  }
 }

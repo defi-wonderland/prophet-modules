@@ -66,4 +66,9 @@ contract ArbitratorModule is Module, IArbitratorModule {
 
     emit DisputeResolved(_dispute.requestId, _disputeId, _status);
   }
+
+  function validateParameters(bytes calldata _data) external pure returns (bool _valid) {
+    abi.decode(_data, (RequestParameters));
+    _valid = true;
+  }
 }

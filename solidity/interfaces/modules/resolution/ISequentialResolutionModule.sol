@@ -72,11 +72,11 @@
 //   function requestIdForDispute(bytes32 _disputeId) external view returns (bytes32 _requestId);
 
 //   /**
-//    * @notice Returns the decoded data for a request
-//    * @param _requestId The ID of the request
-//    * @return _params The struct containing the parameters for the request
+//    * @notice  Returns the decoded data for a request
+//    * @param   _data The encoded request parameters
+//    * @return  _params The struct containing the parameters for the request
 //    */
-//   function decodeRequestData(bytes32 _requestId) external view returns (RequestParameters memory _params);
+//   function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
 //   /*///////////////////////////////////////////////////////////////
 //                               FUNCTIONS

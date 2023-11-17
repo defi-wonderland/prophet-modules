@@ -31,4 +31,9 @@ contract CallbackModule is Module, ICallbackModule {
     emit Callback(_response.requestId, _params.target, _params.data);
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
+
+  function validateParameters(bytes calldata _data) external pure returns (bool _valid) {
+    abi.decode(_data, (RequestParameters));
+    _valid = true;
+  }
 }
