@@ -27,30 +27,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     return 'BondEscalationModule';
   }
 
-  // TODO: Remove and instead use onDisputeStatusChanged
-  /// @inheritdoc IBondEscalationModule
-  // function disputeEscalated(bytes32 _disputeId, IOracle.Dispute calldata _dispute) external onlyOracle {
-  //   bytes32 _requestId = _dispute.requestId;
-  //   BondEscalation storage _escalation = _escalations[_dispute.requestId];
-
-  //   if (_requestId == bytes32(0)) revert BondEscalationModule_DisputeDoesNotExist();
-
-  //   if (_disputeId == _escalation.disputeId) {
-  //     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
-  //     if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
-
-  //     if (
-  //       _escalation.status != BondEscalationStatus.Active
-  //         || _escalation.amountOfPledgesForDispute != _escalation.amountOfPledgesAgainstDispute
-  //     ) {
-  //       revert BondEscalationModule_NotEscalatable();
-  //     }
-
-  //     _escalation.status = BondEscalationStatus.Escalated;
-  //     emit BondEscalationStatusUpdated(_requestId, _disputeId, BondEscalationStatus.Escalated);
-  //   }
-  // }
-
   /// @inheritdoc IBondEscalationModule
   function disputeResponse(
     IOracle.Request calldata _request,
@@ -96,10 +72,29 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   function onDisputeStatusChange(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
+
+    if (ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Escalated) {
+      if (_disputeId == _escalation.disputeId) {
+        if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
+
+        if (
+          _escalation.status != BondEscalationStatus.Active
+            || _escalation.amountOfPledgesForDispute != _escalation.amountOfPledgesAgainstDispute
+        ) {
+          revert BondEscalationModule_NotEscalatable();
+        }
+
+        _escalation.status = BondEscalationStatus.Escalated;
+        emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
+        return;
+      }
+    }
 
     bool _won = ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Won;
 
@@ -119,8 +114,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _amount: _params.bondSize
       });
     }
-
-    BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId == _escalation.disputeId) {
       // The dispute has been escalated to the Resolution module

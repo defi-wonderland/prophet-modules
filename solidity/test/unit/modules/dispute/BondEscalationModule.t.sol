@@ -202,7 +202,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Setting this dispute as the one going through the bond escalation process, as the user can only
@@ -249,7 +249,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     );
 
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Set the dispute to be the one that went through the bond escalation process for the given requestId
@@ -270,28 +270,23 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
    *             - The dispute has to have gone or be going through the bond escalation process
    *             - The pledges must not be tied
    */
-  function test_revertIfEscalatingDisputeIsNotTied(
-    bytes32 _disputeId,
-    bytes32 _requestId,
-    IOracle.Request calldata _request
-  ) public {
-    // Assume _requestId is not zero
-    vm.assume(_requestId > 0);
-
-    mockDispute.requestId = _requestId;
-
+  function test_revertIfEscalatingDisputeIsNotTied(IBondEscalationModule.RequestParameters memory _params) public {
     // Set a tying buffer to make the test more explicit
-    uint256 _tyingBuffer = 1000;
-
+    _params.tyingBuffer = 1000;
     // Set bond escalation deadline to be the current timestamp. We will warp this.
-    uint256 _bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = block.timestamp;
+    mockRequest.disputeModuleData = abi.encode(_params);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set the number of pledgers to be different
     uint256 _numForPledgers = 1;
     uint256 _numAgainstPledgers = 2;
 
     // Warp the current timestamp so we are past the tyingBuffer
-    vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
+    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     // Set the bond escalation status of the given requestId to Active
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
@@ -302,10 +297,14 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     // Set the number of pledgers for both sides
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
+    );
+
     // Check: does it revert if the dispute is not escalatable?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
     vm.prank(address(oracle));
-    bondEscalationModule.onDisputeStatusChange(_disputeId, _request, mockResponse, mockDispute);
+    bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
   /**
@@ -358,34 +357,20 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
 
     // Check: is the event emitted?
-    // vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    // emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Escalated);
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Escalated);
 
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
-    );
-
-    _mockAndExpect(
-      address(_params.accountingExtension),
-      abi.encodeCall(IAccountingExtension.pay, (_requestId, _disputer, _proposer, _params.bondToken, _params.bondSize)),
-      abi.encode()
-    );
-
-    _mockAndExpect(
-      address(_params.accountingExtension),
-      abi.encodeCall(
-        IBondEscalationAccounting.onSettleBondEscalation, (_requestId, _disputeId, false, _params.bondToken, 2, 2)
-      ),
-      abi.encode()
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     vm.prank(address(oracle));
     bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
 
-    // IBondEscalationModule.BondEscalation memory _escalation = bondEscalationModule.getEscalation(_requestId);
+    IBondEscalationModule.BondEscalation memory _escalation = bondEscalationModule.getEscalation(_requestId);
     // Check: is the bond escalation status properly updated?
-    // assertEq(uint256(_escalation.status), uint256(IBondEscalationModule.BondEscalationStatus.Escalated));
+    assertEq(uint256(_escalation.status), uint256(IBondEscalationModule.BondEscalationStatus.Escalated));
   }
 }
 
