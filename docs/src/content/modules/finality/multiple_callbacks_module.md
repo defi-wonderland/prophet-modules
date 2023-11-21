@@ -10,8 +10,8 @@ The `MultipleCallbacksModule` is a finality module that allows users to make mul
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request. The returned data includes the target addresses for the callback and the calldata forwarded to the targets.
-- `finalizeRequest(bytes32 _requestId, address)`: Finalizes the request by executing the callback calls on the targets.
+- `decodeRequestData`: Returns the decoded data for a request. The returned data includes the target addresses for the callback and the calldata forwarded to the targets.
+- `finalizeRequest`: Finalizes the request by executing the callback calls on the targets.
 
 ### Request Parameters
 
