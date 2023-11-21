@@ -71,7 +71,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     if (_escalation.status == BondEscalationStatus.None) {
       if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
 
-      // Note: this imitates the way _disputeId is calculated on the Oracle, it must always match
       _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
@@ -85,6 +84,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     });
 
     emit ResponseDisputed({
+      _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _disputeId,
       _dispute: _dispute,
@@ -164,11 +164,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     }
 
     // TODO: Emit event
-    // emit DisputeStatusChanged({
-    //   _disputeId: _disputeId,
-    //   _dispute: _dispute,
-    //   _status: _status
-    // });
+    // emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -256,8 +252,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Dispute calldata _dispute,
     bool _forDispute
   ) internal view returns (RequestParameters memory _params) {
-    if (_disputeId == 0) revert BondEscalationModule_DisputeDoesNotExist();
-
     BondEscalation memory _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId != _escalation.disputeId) {

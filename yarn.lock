@@ -192,10 +192,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-d05a00d0":
-  version "0.0.0-d05a00d0"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-d05a00d0.tgz#1357d917fe46a5a12faa67f557e990255dda14fd"
-  integrity sha512-F/y0r/qDLFACzsN7Y2VRAPIS9Yhx2btU/m7cQT7T84TbIxAmBGVw6/7nb+HeIbXh+QDO90RP6vHAdQOow/q1Xw==
+"@defi-wonderland/prophet-core-contracts@0.0.0-1ae08a81":
+  version "0.0.0-1ae08a81"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-1ae08a81.tgz#77d8f91303c8496556c0cedc12eeaa7abaa5f6fb"
+  integrity sha512-hMOBUsXR39NXfhExV3+xDBaUYv/6EYdyTrS/VMMSh0Gpbeqql4cIlUHnJzhmc6b+sbIgREq1K44v++8Aminrvw==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-3e9c8e8b"
     "@openzeppelin/contracts" "^4.9.3"
@@ -1183,16 +1183,15 @@ dotgitignore@^2.1.0:
 
 "ds-test@git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
   version "1.0.0"
+  uid e282159d5170298eb2455a6c05280ab5a73a4ef0
   resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
 
 "ds-test@https://github.com/dapphub/ds-test":
   version "1.0.0"
-  uid e282159d5170298eb2455a6c05280ab5a73a4ef0
   resolved "https://github.com/dapphub/ds-test#e282159d5170298eb2455a6c05280ab5a73a4ef0"
 
 "ds-test@https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
   version "1.0.0"
-  uid e282159d5170298eb2455a6c05280ab5a73a4ef0
   resolved "https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
 
 eastasianwidth@^0.2.0:
@@ -3285,7 +3284,6 @@ solidity-docgen@0.6.0-beta.35:
 
 "solmate@https://github.com/transmissions11/solmate.git#bfc9c25865a274a7827fea5abf6e4fb64fc64e6c":
   version "6.1.0"
-  uid bfc9c25865a274a7827fea5abf6e4fb64fc64e6c
   resolved "https://github.com/transmissions11/solmate.git#bfc9c25865a274a7827fea5abf6e4fb64fc64e6c"
 
 sort-object-keys@^1.1.3:
