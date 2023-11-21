@@ -535,7 +535,6 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that `resolveDispute` reverts if called during committing or revealing time window.
    */
-  // asdf
   function test_revertIfWrongPhase(uint256 _timestamp) public {
     _timestamp = bound(_timestamp, 1, 1_000_000);
 
