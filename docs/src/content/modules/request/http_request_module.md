@@ -10,8 +10,8 @@ The `HttpRequestModule` is a contract that allows users to request HTTP calls.
 
 ### Key Methods
 
-- `decodeRequestData(bytes32 _requestId)`: This method decodes the data for a request given its ID. It returns the URL, HTTP method, body, accounting extension, payment token, and payment amount associated with the request.
-- `finalizeRequest(bytes32 _requestId, address)`: This method finalizes a request by paying the proposer if there is a valid response, or releases the requester bond if no valid response was provided.
+- `decodeRequestData`: This method decodes request parameters. It returns the URL, HTTP method, body, accounting extension, payment token, and payment amount from the given data.
+- `finalizeRequest`: This method finalizes a request by paying the proposer if there is a valid response, or releases the requester bond if no valid response was provided.
 
 ### Request Parameters
 
