@@ -16,7 +16,7 @@ contract Helpers is DSTestPlus, TestConstants {
   address public disputer = makeAddr('disputer');
   address public proposer = makeAddr('proposer');
 
-  // Mocks objects
+  // Mock objects
   IOracle.Request public mockRequest;
   IOracle.Response public mockResponse = IOracle.Response({proposer: proposer, requestId: mockId, response: bytes('')});
   IOracle.Dispute public mockDispute =
