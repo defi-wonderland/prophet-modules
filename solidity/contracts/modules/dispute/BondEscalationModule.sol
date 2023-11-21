@@ -156,8 +156,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       }
     }
 
-    // TODO: Emit event
-    // emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
+    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
+    emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
   }
 
   ////////////////////////////////////////////////////////////////////
