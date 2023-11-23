@@ -78,10 +78,6 @@ contract BaseTest is Test, Helpers {
   IBondEscalationAccounting public accounting;
   // A mock token
   IERC20 public token;
-  // Mock EOA proposer
-  address public proposer = makeAddr('proposer');
-  // Mock EOA disputer
-  address public disputer = makeAddr('disputer');
   // Mock EOA pledgerFor
   address public pledgerFor = makeAddr('pledgerFor');
   // Mock EOA pledgerAgainst
@@ -94,11 +90,6 @@ contract BaseTest is Test, Helpers {
   uint256 public timeUntilDeadline;
   // Mock time to break inequality
   uint256 public timeToBreakInequality;
-
-  // Mock dispute
-  IOracle.Dispute public mockDispute;
-  // Mock response
-  IOracle.Response public mockResponse;
 
   // Events
   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
@@ -172,7 +163,6 @@ contract BaseTest is Test, Helpers {
 
 contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
   function test_decodeRequestDataReturnTheCorrectData(
-    bytes32 _requestId,
     uint256 _percentageDiff,
     uint256 _pledgeThreshold,
     uint256 _timeUntilDeadline,
@@ -201,8 +191,15 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
-  function test_startResolution(bytes32 _disputeId, bytes32 _requestId, IOracle.Request calldata _request) public {
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
+  function test_startResolution(IOracle.Request calldata _request) public {
+    bytes32 _requestId = _getId(_request);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Check: does it revert if the caller is not the Oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
@@ -222,27 +219,44 @@ contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
-  function test_reverts(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _pledgeAmount,
-    IOracle.Request calldata _request
-  ) public {
+  function test_reverts(uint256 _pledgeAmount, IBondEscalationResolutionModule.RequestParameters memory _params) public {
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Mock escalation with start time 0
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseOver
+
+    _params.timeUntilDeadline = block.timestamp - 1;
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    _disputeId = _getId(mockDispute);
 
     // Mock escalation with start time 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
 
-    uint256 _timeUntilDeadline = block.timestamp - 1;
-
     // Check: does it revert if the pledging phase is over?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_MustBeResolved
+
+    _params.timeUntilDeadline = 10_000;
+    _params.timeToBreakInequality = 5000;
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    _disputeId = _getId(mockDispute);
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
@@ -253,51 +267,55 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
     );
 
-    _timeUntilDeadline = 10_000;
-    uint256 _timeToBreakInequality = 5000;
-
-    vm.warp(block.timestamp + _timeToBreakInequality);
+    vm.warp(block.timestamp + _params.timeToBreakInequality);
 
     // Check: does it revert if inequality timer has passed?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AgainstTurnToEqualize
+
+    vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
     // Mock and expect the pledge call
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+      ),
       abi.encode()
     );
 
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
     vm.prank(pledgerFor);
-    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
   }
 
   function test_earlyReturnIfThresholdNotSurpassed(
-    bytes32 _requestId,
-    bytes32 _disputeId,
     uint256 _pledgeAmount,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     // block.timestamp < _startTime + _timeUntilDeadline
     uint128 _startTime = uint128(block.timestamp - 1000);
-    uint256 _timeUntilDeadline = 1001;
+    _params.timeUntilDeadline = 1001;
 
     // _pledgeThreshold > _updatedTotalVotes;
     uint256 _pledgesFor = 1000;
     uint256 _pledgesAgainst = 1000;
-    uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
+    _params.pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
 
     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-    uint256 _timeToBreakInequality = 5000;
+    _params.timeToBreakInequality = 5000;
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // assuming the threshold has not passed, this is the only valid state
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
@@ -309,8 +327,10 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+      ),
       abi.encode()
     );
 
@@ -319,7 +339,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerFor);
-    module.pledgeForDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
@@ -476,27 +496,44 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
-  function test_reverts(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _pledgeAmount,
-    IOracle.Request calldata _request
-  ) public {
+  function test_reverts(uint256 _pledgeAmount, IBondEscalationResolutionModule.RequestParameters memory _params) public {
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Set mock escalation with no pledges and start time 0
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseOver
+
+    _params.timeUntilDeadline = block.timestamp - 1;
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    _disputeId = _getId(mockDispute);
     // Set mock escalation with no pledges and start time 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
 
-    uint256 _timeUntilDeadline = block.timestamp - 1;
-
     // Check: does it revert if the pledging phase is over?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_MustBeResolved
+
+    _params.timeUntilDeadline = 10_000;
+    _params.timeToBreakInequality = 5000;
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    _disputeId = _getId(mockDispute);
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
@@ -507,51 +544,55 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, uint128(block.timestamp), 0, 0
     );
 
-    _timeUntilDeadline = 10_000;
-    uint256 _timeToBreakInequality = 5000;
-
-    vm.warp(block.timestamp + _timeToBreakInequality);
+    vm.warp(block.timestamp + _params.timeToBreakInequality);
 
     // Check: does it revert if inequality timer has passed?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    vm.warp(block.timestamp - _timeToBreakInequality - 1); // Not past the deadline anymore
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AgainstTurnToEqualize
+
+    vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
     // Mock and expect the pledge call
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+      ),
       abi.encode()
     );
 
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
     vm.prank(pledgerAgainst);
-    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
   }
 
   function test_earlyReturnIfThresholdNotSurpassed(
-    bytes32 _requestId,
-    bytes32 _disputeId,
     uint256 _pledgeAmount,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     // block.timestamp < _startTime + _timeUntilDeadline
     uint128 _startTime = uint128(block.timestamp - 1000);
-    uint256 _timeUntilDeadline = 1001;
+    _params.timeUntilDeadline = 1001;
 
     // _pledgeThreshold > _updatedTotalVotes;
     uint256 _pledgesFor = 1000;
     uint256 _pledgesAgainst = 1000;
-    uint256 _pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
+    _params.pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
 
     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-    uint256 _timeToBreakInequality = 5000;
+    _params.timeToBreakInequality = 5000;
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Assuming the threshold has not passed, this is the only valid state
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
@@ -563,8 +604,10 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+      ),
       abi.encode()
     );
 
@@ -573,11 +616,10 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerAgainst);
-    module.pledgeAgainstDispute(_request, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
-    // asdf
 
     // Check: is the pledge amount added to the total?
     assertEq(_realPledgesAgainst, _pledgesAgainst + _pledgeAmount);
@@ -745,7 +787,18 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_reverts(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params) public {
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AlreadyResolved
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Set mock escalation with resolution == DisputerWon
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, 0, 0);
 
@@ -753,7 +806,21 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AlreadyResolved.selector);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
+
+    _params.timeUntilDeadline = 100_000;
+    _params.timeToBreakInequality = 100_000;
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    _disputeId = _getId(mockDispute);
 
     // Set mock escalation with resolution == Unresolved
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
@@ -762,13 +829,9 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
-    // Revert if we have not yet reached the deadline and the timer has not passed
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
-    uint256 _timeUntilDeadline = 100_000;
-    uint256 _timeToBreakInequality = 100_000;
+    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseNotOver
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
@@ -783,35 +846,46 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseNotOver.selector);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_thresholdNotReached(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+  function test_thresholdNotReached(IBondEscalationResolutionModule.RequestParameters memory _params) public {
     // START OF SETUP TO AVOID REVERTS
+    _params.percentageDiff = percentageDiff;
+    _params.pledgeThreshold = pledgeThreshold;
+    _params.timeUntilDeadline = timeUntilDeadline;
+    _params.timeToBreakInequality = timeToBreakInequality;
+    _params.pledgeThreshold = 1000;
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Set a mock escalation with resolution == Unresolved and start time == 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
-
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
       abi.encodeCall(
-        IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+        IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
       ),
       abi.encode()
     );
     // END OF SETUP TO AVOID REVERTS
-
-    // START OF TEST THRESHOLD NOT REACHED
-    uint256 _pledgeThreshold = 1000;
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(module));
     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
@@ -821,18 +895,31 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // END OF TEST THRESHOLD NOT REACHED
   }
 
-  function test_tiedPledges(bytes32 _requestId, bytes32 _disputeId, IOracle.Request calldata _request) public {
+  function test_tiedPledges(IBondEscalationResolutionModule.RequestParameters memory _params) public {
     // START OF SETUP TO AVOID REVERTS
+    _params.percentageDiff = percentageDiff;
+    _params.pledgeThreshold = pledgeThreshold;
+    _params.timeUntilDeadline = timeUntilDeadline;
+    _params.timeToBreakInequality = timeToBreakInequality;
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Set mock escalation with tied pledges
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 2000, 2000);
-
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
       abi.encodeCall(
-        IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+        IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
       ),
       abi.encode()
     );
@@ -846,7 +933,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.NoResolution);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
 
@@ -857,23 +944,33 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
   }
 
   function test_forPledgesWon(
-    bytes32 _requestId,
-    bytes32 _disputeId,
     uint256 _pledgesAgainst,
     uint256 _pledgesFor,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     vm.assume(_pledgesAgainst < _pledgesFor);
     vm.assume(_pledgesFor < type(uint128).max);
     // START OF SETUP TO AVOID REVERTS
+    _params.percentageDiff = percentageDiff;
+    _params.pledgeThreshold = pledgeThreshold;
+    _params.timeUntilDeadline = timeUntilDeadline;
+    _params.timeToBreakInequality = timeToBreakInequality;
+
+    // START OF SETUP TO AVOID REVERTS
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set mock escalation with pledgers for dispute winning
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
     );
-
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
-
     // END OF SETUP TO AVOID REVERTS
 
     // START OF FOR PLEDGES WON
@@ -881,7 +978,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.Won)),
+      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won)),
       abi.encode()
     );
 
@@ -890,7 +987,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
     // Check: is the status of the escalation == DisputerWon?
@@ -900,22 +997,33 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
   }
 
   function test_againstPledgesWon(
-    bytes32 _requestId,
-    bytes32 _disputeId,
     uint256 _pledgesFor,
     uint256 _pledgesAgainst,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     vm.assume(_pledgesAgainst > _pledgesFor);
     vm.assume(_pledgesAgainst < type(uint128).max);
+
+    _params.percentageDiff = percentageDiff;
+    _params.pledgeThreshold = pledgeThreshold;
+    _params.timeUntilDeadline = timeUntilDeadline;
+    _params.timeToBreakInequality = timeToBreakInequality;
+
     // START OF SETUP TO AVOID REVERTS
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set mock escalation with pledgers against dispute winning
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
     );
-
-    IOracle.Dispute memory _mockDispute = _getMockDispute(_requestId, disputer, proposer);
 
     // END OF SETUP TO AVOID REVERTS
 
@@ -924,7 +1032,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (_request, mockResponse, mockDispute, IOracle.DisputeStatus.Lost)),
+      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost)),
       abi.encode()
     );
 
@@ -933,7 +1041,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
 
     vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, _request, mockResponse, mockDispute);
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
     (IBondEscalationResolutionModule.Resolution _trueResStatus,,,) = module.escalations(_disputeId);
     // Check: is the status of the escalation == DisputerLost?
@@ -946,7 +1054,6 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
 contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
   function test_reverts(
     bytes32 _disputeId,
-    bytes32 _requestId,
     uint256 _pledgesFor,
     uint256 _pledgesAgainst,
     uint128 _startTime,
@@ -967,13 +1074,11 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
   }
 
   function test_disputerWon(
-    bytes32 _disputeId,
-    bytes32 _requestId,
     uint256 _totalPledgesFor,
     uint256 _totalPledgesAgainst,
     uint256 _userForPledge,
     address _randomPledger,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
@@ -981,6 +1086,12 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _userForPledge = bound(_userForPledge, 0, type(uint192).max);
     vm.assume(_totalPledgesFor > _totalPledgesAgainst);
     vm.assume(_totalPledgesFor >= _userForPledge);
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set mock escalation with resolution == DisputerWon
     module.forTest_setEscalation(
@@ -995,8 +1106,10 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
 
     // Mock and expect IBondEscalationAccounting.releasePledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _amountToRelease)
+      ),
       abi.encode(true)
     );
 
@@ -1006,26 +1119,24 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
       _requestId,
       _disputeId,
       _randomPledger,
-      token,
+      _params.bondToken,
       _amountToRelease,
       IBondEscalationResolutionModule.Resolution.DisputerWon
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(_request, mockDispute);
+    module.claimPledge(mockRequest, mockDispute);
 
     // Check: are the pledges for dispute for the dispute and pledger set to 0?
     assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
   }
 
   function test_disputerLost(
-    bytes32 _disputeId,
-    bytes32 _requestId,
     uint256 _totalPledgesFor,
     uint256 _totalPledgesAgainst,
     uint256 _userAgainstPledge,
     address _randomPledger,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
@@ -1033,6 +1144,12 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _userAgainstPledge = bound(_userAgainstPledge, 0, type(uint192).max);
     vm.assume(_totalPledgesAgainst > _totalPledgesFor);
     vm.assume(_totalPledgesAgainst >= _userAgainstPledge);
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set mock escalation with resolution == DisputerLost
     module.forTest_setEscalation(
@@ -1047,8 +1164,10 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
 
     // Mock and expect IBondEscalationAccounting.releasePledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _amountToRelease)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _amountToRelease)
+      ),
       abi.encode(true)
     );
 
@@ -1058,28 +1177,32 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
       _requestId,
       _disputeId,
       _randomPledger,
-      token,
+      _params.bondToken,
       _amountToRelease,
       IBondEscalationResolutionModule.Resolution.DisputerLost
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(_request, mockDispute);
+    module.claimPledge(mockRequest, mockDispute);
 
     // Check: is the pledges against dispute for this dispute and pledger set to 0?
     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
   }
 
   function test_noResolution(
-    bytes32 _disputeId,
-    bytes32 _requestId,
     uint256 _userForPledge,
     uint256 _userAgainstPledge,
     address _randomPledger,
-    IOracle.Request calldata _request
+    IBondEscalationResolutionModule.RequestParameters memory _params
   ) public {
     vm.assume(_userForPledge > 0);
     vm.assume(_userAgainstPledge > 0);
+
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    bytes32 _requestId = _getId(mockRequest);
+
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Set mock escalation with resolution == NoResolution
     module.forTest_setEscalation(
@@ -1091,15 +1214,19 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
 
     // Mock and expect IBondEscalationAccounting.releasePledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userForPledge)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _userForPledge)
+      ),
       abi.encode(true)
     );
 
     // Mock and expect IBondEscalationAccounting.releasePledge to be called
     _mockAndExpect(
-      address(accounting),
-      abi.encodeCall(accounting.releasePledge, (_requestId, _disputeId, _randomPledger, token, _userAgainstPledge)),
+      address(_params.accountingExtension),
+      abi.encodeCall(
+        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _userAgainstPledge)
+      ),
       abi.encode(true)
     );
 
@@ -1109,7 +1236,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
       _requestId,
       _disputeId,
       _randomPledger,
-      token,
+      _params.bondToken,
       _userForPledge,
       IBondEscalationResolutionModule.Resolution.NoResolution
     );
@@ -1120,13 +1247,13 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
       _requestId,
       _disputeId,
       _randomPledger,
-      token,
+      _params.bondToken,
       _userAgainstPledge,
       IBondEscalationResolutionModule.Resolution.NoResolution
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(_request, mockDispute);
+    module.claimPledge(mockRequest, mockDispute);
 
     // Check: is the pledges against dispute for this dispute and pledger set to 0?
     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);

@@ -48,8 +48,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   /// @inheritdoc IResolutionModule
   function startResolution(
     bytes32 _disputeId,
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Request calldata,
+    IOracle.Response calldata,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     escalations[_disputeId].startTime = uint128(block.timestamp);
