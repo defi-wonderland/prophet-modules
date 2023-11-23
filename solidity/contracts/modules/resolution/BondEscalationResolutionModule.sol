@@ -140,26 +140,50 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesFor);
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _claimPledge(_requestId, _disputeId, _amountToRelease, _escalation.resolution, _params);
+      _claimPledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _amountToRelease: _amountToRelease,
+        _resolution: _escalation.resolution,
+        _params: _params
+      });
     } else if (_escalation.resolution == Resolution.DisputerLost) {
       _pledgerBalanceBefore = pledgesAgainstDispute[_disputeId][msg.sender];
       pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceBefore;
       _pledgerProportion = FixedPointMathLib.mulDivDown(_pledgerBalanceBefore, BASE, _escalation.pledgesAgainst);
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
-      _claimPledge(_requestId, _disputeId, _amountToRelease, _escalation.resolution, _params);
+      _claimPledge({
+        _requestId: _requestId,
+        _disputeId: _disputeId,
+        _amountToRelease: _amountToRelease,
+        _resolution: _escalation.resolution,
+        _params: _params
+      });
     } else if (_escalation.resolution == Resolution.NoResolution) {
       uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
       uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
 
       if (_pledgerBalanceFor > 0) {
         pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
-        _claimPledge(_requestId, _disputeId, _pledgerBalanceFor, _escalation.resolution, _params);
+        _claimPledge({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _amountToRelease: _pledgerBalanceFor,
+          _resolution: _escalation.resolution,
+          _params: _params
+        });
       }
 
       if (_pledgerBalanceAgainst > 0) {
         pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
-        _claimPledge(_requestId, _disputeId, _pledgerBalanceAgainst, _escalation.resolution, _params);
+        _claimPledge({
+          _requestId: _requestId,
+          _disputeId: _disputeId,
+          _amountToRelease: _pledgerBalanceAgainst,
+          _resolution: _escalation.resolution,
+          _params: _params
+        });
       }
     }
   }
