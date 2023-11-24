@@ -10,12 +10,12 @@ The `PrivateERC20ResolutionModule` is a contract that allows users to vote on a 
 
 ### Key methods
 
-- `decodeRequestData(bytes32 _requestId)`: Returns the decoded data for a request.
-- `startResolution(bytes32 _disputeId)`: Starts the committing phase for a dispute.
-- `commitVote(bytes32 _requestId, bytes32 _disputeId, bytes32 _commitment)`: Stores a commitment for a vote cast by a voter.
-- `revealVote(bytes32 _requestId, bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt)`: Reveals a vote cast by a voter.
-- `resolveDispute(bytes32 _disputeId)`: Resolves a dispute by tallying the votes and executing the winning outcome.
-- `computeCommitment(bytes32 _disputeId, uint256 _numberOfVotes, bytes32 _salt)`: Computes a valid commitment for the revealing phase.
+- `decodeRequestData`: Returns the decoded data for a request.
+- `startResolution`: Starts the committing phase for a dispute.
+- `commitVote`: Stores a commitment for a vote cast by a voter.
+- `revealVote`: Reveals a vote cast by a voter.
+- `resolveDispute`: Resolves a dispute by tallying the votes and executing the winning outcome.
+- `computeCommitment`: Computes a valid commitment for the revealing phase.
 
 ### Request Parameters
 
@@ -36,4 +36,3 @@ The `PrivateERC20ResolutionModule` is a contract that allows users to vote on a 
 - It is implied that the voters are incentivized to vote either because they're the governing entity of the ERC20 and have a stake in the outcome of the dispute or because they expect to be rewarded by such an entity.
 - The `commitVote` function allows committing multiple times and overwriting a previous commitment.
 - The `revealVote` function requires the user to have previously approved the module to transfer the tokens.
-
