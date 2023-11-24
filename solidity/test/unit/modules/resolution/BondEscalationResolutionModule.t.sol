@@ -219,7 +219,10 @@ contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
-  function test_reverts(uint256 _pledgeAmount, IBondEscalationResolutionModule.RequestParameters memory _params) public {
+  function test_reverts(
+    uint256 _pledgeAmount,
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
 
     mockRequest.resolutionModuleData = abi.encode(_params);
@@ -296,7 +299,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   function test_earlyReturnIfThresholdNotSurpassed(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
@@ -496,7 +499,10 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
-  function test_reverts(uint256 _pledgeAmount, IBondEscalationResolutionModule.RequestParameters memory _params) public {
+  function test_reverts(
+    uint256 _pledgeAmount,
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
 
     mockRequest.resolutionModuleData = abi.encode(_params);
@@ -573,7 +579,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   function test_earlyReturnIfThresholdNotSurpassed(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
     IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
@@ -787,7 +793,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params) public {
+  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params)
+    public
+    assumeFuzzable(address(_params.accountingExtension))
+  {
     /////////////////////////////////////////////////////// BondEscalationResolutionModule_AlreadyResolved
     mockRequest.resolutionModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -849,7 +858,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_thresholdNotReached(IBondEscalationResolutionModule.RequestParameters memory _params) public {
+  function test_thresholdNotReached(IBondEscalationResolutionModule.RequestParameters memory _params)
+    public
+    assumeFuzzable(address(_params.accountingExtension))
+  {
     // START OF SETUP TO AVOID REVERTS
     _params.percentageDiff = percentageDiff;
     _params.pledgeThreshold = pledgeThreshold;
@@ -895,7 +907,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // END OF TEST THRESHOLD NOT REACHED
   }
 
-  function test_tiedPledges(IBondEscalationResolutionModule.RequestParameters memory _params) public {
+  function test_tiedPledges(IBondEscalationResolutionModule.RequestParameters memory _params)
+    public
+    assumeFuzzable(address(_params.accountingExtension))
+  {
     // START OF SETUP TO AVOID REVERTS
     _params.percentageDiff = percentageDiff;
     _params.pledgeThreshold = pledgeThreshold;
@@ -947,7 +962,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     uint256 _pledgesAgainst,
     uint256 _pledgesFor,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_pledgesAgainst < _pledgesFor);
     vm.assume(_pledgesFor < type(uint128).max);
     // START OF SETUP TO AVOID REVERTS
@@ -1000,7 +1015,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     uint256 _pledgesFor,
     uint256 _pledgesAgainst,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_pledgesAgainst > _pledgesFor);
     vm.assume(_pledgesAgainst < type(uint128).max);
 
@@ -1079,7 +1094,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     uint256 _userForPledge,
     address _randomPledger,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
     // no single pledger should surpass a balance of type(uint192).max
@@ -1137,7 +1152,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     uint256 _userAgainstPledge,
     address _randomPledger,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Im bounding to type(uint192).max because it has 58 digits and base has 18, so multiplying results in
     // 77 digits, which is slightly less than uint256 max, which has 78 digits. Seems fair? Unless it's a very stupid token
     // no single pledger should surpass a balance of type(uint192).max
@@ -1194,7 +1209,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     uint256 _userAgainstPledge,
     address _randomPledger,
     IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public {
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_userForPledge > 0);
     vm.assume(_userAgainstPledge > 0);
 
