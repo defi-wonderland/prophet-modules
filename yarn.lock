@@ -192,10 +192,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-1ae08a81":
-  version "0.0.0-1ae08a81"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-1ae08a81.tgz#77d8f91303c8496556c0cedc12eeaa7abaa5f6fb"
-  integrity sha512-hMOBUsXR39NXfhExV3+xDBaUYv/6EYdyTrS/VMMSh0Gpbeqql4cIlUHnJzhmc6b+sbIgREq1K44v++8Aminrvw==
+"@defi-wonderland/prophet-core-contracts@0.0.0-5fbc6720":
+  version "0.0.0-5fbc6720"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-5fbc6720.tgz#5fef99e5a9064289566c8b7eec3e754c20c67166"
+  integrity sha512-tXiSGhSFW/QJhW4eLKJ7MCUXEG+NvJvOPteFHlri+GEiXfQRQztpWBQYSngI68C+rourOTVCbXSm0bDJK2UfMw==
   dependencies:
     "@defi-wonderland/solidity-utils" "0.0.0-3e9c8e8b"
     "@openzeppelin/contracts" "^4.9.3"
@@ -1181,10 +1181,14 @@ dotgitignore@^2.1.0:
     find-up "^3.0.0"
     minimatch "^3.0.4"
 
-"ds-test@git+https://github.com/dapphub/ds-test.git", "ds-test@git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
+"ds-test@git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
+  version "1.0.0"
+  resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
+
+"ds-test@https://github.com/dapphub/ds-test":
   version "1.0.0"
   uid e282159d5170298eb2455a6c05280ab5a73a4ef0
-  resolved "git+https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0"
+  resolved "https://github.com/dapphub/ds-test#e282159d5170298eb2455a6c05280ab5a73a4ef0"
 
 "ds-test@https://github.com/dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0":
   version "1.0.0"
@@ -1566,13 +1570,13 @@ for-each@^0.3.3:
   dependencies:
     is-callable "^1.1.3"
 
-"forge-std@git+https://github.com/foundry-rs/forge-std.git":
-  version "1.7.3"
-  resolved "git+https://github.com/foundry-rs/forge-std.git#2f112697506eab12d433a65fdc31a639548fe365"
-
 "forge-std@git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e":
   version "1.5.6"
   resolved "git+https://github.com/foundry-rs/forge-std.git#e8a047e3f40f13fa37af6fe14e6e06283d9a060e"
+
+"forge-std@https://github.com/foundry-rs/forge-std":
+  version "1.7.3"
+  resolved "https://github.com/foundry-rs/forge-std#2f112697506eab12d433a65fdc31a639548fe365"
 
 "forge-std@https://github.com/foundry-rs/forge-std.git#f73c73d2018eb6a111f35e4dae7b4f27401e9421":
   version "1.7.1"
