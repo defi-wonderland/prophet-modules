@@ -373,7 +373,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
     module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
 
-    // Expect the event to be emitted
+    // Expect an error to be thrown
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_OnGoingVotingPhase.selector);
 
     // Claim the refund
