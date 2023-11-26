@@ -72,7 +72,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     _voters[_disputeId].add(msg.sender);
     escalations[_disputeId].totalVotes += _numberOfVotes;
 
-    _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
+    _params.accountingExtension.bond(msg.sender, _dispute.requestId, _params.votingToken, _numberOfVotes);
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
@@ -111,15 +111,17 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   /// @inheritdoc IERC20ResolutionModule
   function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
+    bytes32 _disputeId = _getId(_dispute);
+    Escalation memory _escalation = escalations[_disputeId];
+
     // Check that voting deadline is over
     RequestParameters memory _params = decodeRequestData(_request.resolutionModuleData);
     uint256 _deadline = _escalation.startTime + _params.timeUntilDeadline;
     if (block.timestamp < _deadline) revert ERC20ResolutionModule_OnGoingVotingPhase();
 
     // Transfer the tokens back to the voter
-    bytes32 _disputeId = _getId(_dispute);
     uint256 _amount = votes[_disputeId][msg.sender];
-    _params.votingToken.safeTransfer(msg.sender, _amount);
+    _params.accountingExtension.release(msg.sender, _dispute.requestId, _params.votingToken, _amount);
 
     emit VoteClaimed(msg.sender, _disputeId, _amount);
   }
