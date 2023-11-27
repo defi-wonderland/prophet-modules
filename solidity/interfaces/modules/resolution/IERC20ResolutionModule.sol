@@ -6,6 +6,8 @@ import {IResolutionModule} from
   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
+
 /**
  * @title ERC20ResolutionModule
  * @notice This contract allows for disputes to be resolved by a voting process.
@@ -33,6 +35,11 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @param _disputeId The ID of the dispute
    */
   event VotingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
+
+  /**
+   * @notice Emitted when the voter gets back their bond
+   */
+  event VoteClaimed(address _voter, bytes32 _disputeId, uint256 _amount);
 
   /*///////////////////////////////////////////////////////////////
                               ERRORS
@@ -79,6 +86,7 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @param timeUntilDeadline The time until the voting phase ends
    */
   struct RequestParameters {
+    IAccountingExtension accountingExtension;
     IERC20 votingToken;
     uint256 minVotesForQuorum;
     uint256 timeUntilDeadline;
@@ -164,6 +172,14 @@ interface IERC20ResolutionModule is IResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external;
+
+  /**
+   * @notice Releases the voter's bond
+   *
+   * @param _request  The request for which the dispute was created
+   * @param _dispute  The resolved dispute
+   */
+  function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external;
 
   /**
    * @notice Gets the voters of a dispute

@@ -97,4 +97,24 @@ contract Helpers is DSTestPlus, TestConstants {
   function _getId(IOracle.Dispute memory _dispute) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_dispute));
   }
+
+  /**
+   * @notice Creates a mock contract, labels it and erases the bytecode
+   *
+   * @param _label The label to use for the mock contract
+   * @return _contract The address of the mock contract
+   */
+  function _mockContract(string memory _label) internal returns (address _contract) {
+    _contract = makeAddr(_label);
+    vm.etch(_contract, hex'69');
+  }
+
+  /**
+   * @notice Sets an expectation for an event to be emitted
+   *
+   * @param _contract The contract to expect the event on
+   */
+  function _expectEmit(address _contract) internal {
+    vm.expectEmit(true, true, true, true, _contract);
+  }
 }

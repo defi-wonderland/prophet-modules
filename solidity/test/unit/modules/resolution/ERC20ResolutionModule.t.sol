@@ -16,6 +16,8 @@ import {
   IERC20ResolutionModule
 } from '../../../../contracts/modules/resolution/ERC20ResolutionModule.sol';
 
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
+
 contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -43,9 +45,11 @@ contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_ERC20ResolutionModule public module;
   // A mock oracle
-  IOracle public oracle;
+  IOracle public oracle = IOracle(_mockContract('Oracle'));
   // A mock token
-  IERC20 public token;
+  IERC20 public token = IERC20(_mockContract('Token'));
+  // Mock accounting extension
+  IAccountingExtension public accountingExtension = IAccountingExtension(_mockContract('AccountingExtension'));
 
   uint256 public votingTimeWindow = 40_000;
 
@@ -53,17 +57,12 @@ contract BaseTest is Test, Helpers {
   event VoteCast(address _voter, bytes32 _disputeId, uint256 _numberOfVotes);
   event VotingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
+  event VoteClaimed(address _voter, bytes32 _disputeId, uint256 _amount);
 
   /**
    * @notice Deploy the target and mock oracle extension
    */
-  function setUp() public {
-    oracle = IOracle(makeAddr('Oracle'));
-    vm.etch(address(oracle), hex'069420');
-
-    token = IERC20(makeAddr('ERC20'));
-    vm.etch(address(token), hex'069420');
-
+  function setUp() public virtual {
     module = new ForTest_ERC20ResolutionModule(oracle);
   }
 
@@ -95,12 +94,13 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
     uint256 _votingTimeWindow
   ) public {
     // Mock data
-    bytes memory _requestData = abi.encode(_token, _minVotesForQuorum, _votingTimeWindow);
+    bytes memory _requestData = abi.encode(address(accountingExtension), _token, _minVotesForQuorum, _votingTimeWindow);
 
     // Test: decode the given request data
     IERC20ResolutionModule.RequestParameters memory _params = module.decodeRequestData(_requestData);
 
     // Check: decoded values match original values?
+    assertEq(address(_params.accountingExtension), address(accountingExtension));
     assertEq(address(_params.votingToken), _token);
     assertEq(_params.minVotesForQuorum, _minVotesForQuorum);
     assertEq(_params.timeUntilDeadline, _votingTimeWindow);
@@ -145,6 +145,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
 
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
         timeUntilDeadline: votingTimeWindow
@@ -156,9 +157,13 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     // Store mock escalation data with startTime 100_000
     module.forTest_setStartTime(_disputeId, 100_000);
 
-    // Mock and expect IERC20.transferFrom to be called
+    // Mock and expect the bond to be placed
     _mockAndExpect(
-      address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)), abi.encode()
+      address(accountingExtension),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)', _voter, mockDispute.requestId, token, _amountOfVotes
+      ),
+      abi.encode()
     );
 
     _mockAndExpect(
@@ -201,6 +206,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   function test_revertIfAlreadyResolved(uint256 _amountOfVotes, uint256 _votingTimeWindow) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
         votingToken: token,
         minVotesForQuorum: _amountOfVotes,
         timeUntilDeadline: _votingTimeWindow
@@ -230,6 +236,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
 
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
         timeUntilDeadline: votingTimeWindow
@@ -262,6 +269,7 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   function test_resolveDispute(uint16 _minVotesForQuorum) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
         timeUntilDeadline: votingTimeWindow
@@ -283,14 +291,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     // Warp to resolving phase
     vm.warp(150_000);
-
-    // Mock and expect token transfers (should happen always)
-    for (uint256 _i = 1; _i <= _votersAmount;) {
-      _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
-      unchecked {
-        ++_i;
-      }
-    }
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -330,6 +330,7 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
         timeUntilDeadline: _votingTimeWindow
@@ -351,6 +352,72 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_OnGoingVotingPhase.selector);
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+}
+
+contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
+  /**
+   * @notice Reverts if the vote is still ongoing
+   */
+  function test_revertIfVoteIsOnGoing(address _voter, uint256 _amount) public {
+    mockRequest.resolutionModuleData = abi.encode(
+      IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
+        votingToken: token,
+        minVotesForQuorum: 1,
+        timeUntilDeadline: 1000
+      })
+    );
+
+    mockDispute.requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+    module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
+
+    // Expect an error to be thrown
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_OnGoingVotingPhase.selector);
+
+    // Claim the refund
+    vm.prank(_voter);
+    module.claimVote(mockRequest, mockDispute);
+  }
+
+  /**
+   * @notice Releases the funds
+   */
+  function test_releasesFunds(address _voter, uint256 _amount) public {
+    mockRequest.resolutionModuleData = abi.encode(
+      IERC20ResolutionModule.RequestParameters({
+        accountingExtension: accountingExtension,
+        votingToken: token,
+        minVotesForQuorum: 1,
+        timeUntilDeadline: 1
+      })
+    );
+
+    // Prepare the dispute
+    mockDispute.requestId = _getId(mockRequest);
+    module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
+    module.forTest_setVotes(_getId(mockDispute), _voter, _amount);
+
+    // Expect the bond to be released
+    _mockAndExpect(
+      address(accountingExtension),
+      abi.encodeCall(accountingExtension.release, (_voter, mockDispute.requestId, token, _amount)),
+      abi.encode()
+    );
+
+    vm.warp(block.timestamp + 1000);
+
+    bytes32 _disputeId = _getId(mockDispute);
+    module.forTest_setVotes(_disputeId, _voter, _amount);
+
+    // Expect the event to be emitted
+    _expectEmit(address(module));
+    emit VoteClaimed(_voter, _disputeId, _amount);
+
+    // Claim the refund
+    vm.prank(_voter);
+    module.claimVote(mockRequest, mockDispute);
   }
 }
 
