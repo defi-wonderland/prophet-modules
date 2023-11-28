@@ -88,4 +88,30 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
+
+  /// @inheritdoc IBondedResponseModule
+  function releaseUncalledResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external {
+    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Won) {
+      revert BondedResponseModule_InvalidReleaseParameters();
+    }
+
+    bytes32 _finalizedResponseId = ORACLE.getFinalizedResponseId(_response.requestId);
+    if (_finalizedResponseId == _dispute.responseId || _finalizedResponseId == bytes32(0)) {
+      revert BondedResponseModule_InvalidReleaseParameters();
+    }
+
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
+    _params.accountingExtension.release({
+      _bonder: _response.proposer,
+      _requestId: _response.requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
+  }
 }
