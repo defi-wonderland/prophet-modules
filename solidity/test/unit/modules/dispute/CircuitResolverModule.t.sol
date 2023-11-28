@@ -288,10 +288,9 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
 
-    // TODO: fix this test
     // Check: is the event emitted?
-    // vm.expectEmit(true, true, true, true, address(circuitResolverModule));
-    // emit DisputeStatusChanged(_disputeId, mockDispute, _status);
+    vm.expectEmit(true, true, true, true, address(circuitResolverModule));
+    emit DisputeStatusChanged(_disputeId, mockDispute, _status);
 
     vm.prank(address(oracle));
     circuitResolverModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
