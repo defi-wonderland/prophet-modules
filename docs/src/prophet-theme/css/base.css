@@ -1,9 +1,9 @@
 /*
  * Side bar
  */
-.sidebar {
+/* .sidebar {
   width: var(--sidebar-width);
-}
+} */
 html.ayu .sidebar {
   border-right: 2px solid var(--border);
 }
@@ -46,7 +46,11 @@ html.light .sidebar {
   }
 }
 
-.no-js .page-wrapper,
+.sidebar-visible .page-wrapper {
+  transform: translateX(var(--sidebar-width));
+}
+
+/* .no-js .page-wrapper,
 .js:not(.sidebar-resizing) .page-wrapper {
   transition: margin-left 0.3s ease, transform 0.3s ease;
 }
@@ -65,7 +69,7 @@ html.light .sidebar {
   [dir="rtl"] #sidebar-toggle-anchor:checked ~ .page-wrapper {
     transform: none;
   }
-}
+} */
 
 /*
  * Search bar
