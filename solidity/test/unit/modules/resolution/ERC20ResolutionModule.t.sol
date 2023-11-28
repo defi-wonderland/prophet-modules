@@ -359,7 +359,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
    * @notice Reverts if the vote is still ongoing
    */
-  function test_revertIfVoteIsOnGoing(address _voter, uint256 _amount) public {
+  function test_revertIfVoteIsOnGoing(address _voter) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
         accountingExtension: accountingExtension,
@@ -370,7 +370,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     );
 
     mockDispute.requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(mockDispute);
     module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
 
     // Expect an error to be thrown

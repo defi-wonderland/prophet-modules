@@ -42,9 +42,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   /// @inheritdoc IERC20ResolutionModule
   function startResolution(
     bytes32 _disputeId,
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
-    IOracle.Dispute calldata _dispute
+    IOracle.Request calldata, /* _request */
+    IOracle.Response calldata, /* _response */
+    IOracle.Dispute calldata /* _dispute */
   ) external onlyOracle {
     escalations[_disputeId].startTime = block.timestamp;
     emit VotingPhaseStarted(block.timestamp, _disputeId);

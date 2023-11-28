@@ -123,10 +123,7 @@ contract BaseTest is Test, Helpers {
     bondEscalationModule = new ForTest_BondEscalationModule(oracle);
   }
 
-  function _getRandomDispute(
-    bytes32 _requestId,
-    IOracle.DisputeStatus _status
-  ) internal view returns (IOracle.Dispute memory _dispute) {
+  function _getRandomDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
     _dispute =
       IOracle.Dispute({disputer: disputer, responseId: bytes32('response'), proposer: proposer, requestId: _requestId});
   }
@@ -387,12 +384,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Tests that disputeResponse reverts the caller is not the oracle address.
    */
-  function test_revertIfCallerIsNotOracle(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    address _caller,
-    IOracle.Request calldata _request
-  ) public {
+  function test_revertIfCallerIsNotOracle(address _caller, IOracle.Request calldata _request) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
@@ -573,16 +565,12 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    */
   function test_revertIfCallerIsNotOracle(
     bytes32 _disputeId,
-    bytes32 _requestId,
     address _caller,
     uint8 _status,
     IOracle.Request calldata _request
   ) public {
     vm.assume(_caller != address(oracle));
     vm.assume(_status < 4);
-
-    IOracle.DisputeStatus _disputeStatus = IOracle.DisputeStatus(_status);
-    IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _disputeStatus);
 
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);

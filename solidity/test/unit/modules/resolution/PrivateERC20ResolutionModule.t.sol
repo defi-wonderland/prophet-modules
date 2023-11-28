@@ -78,7 +78,6 @@ contract BaseTest is Test, Helpers {
     uint256 _amountOfVotes
   ) internal returns (uint256 _totalVotesCast) {
     bytes32 _disputeId = _getId(_dispute);
-    bytes32 _requestId = _getId(_request);
 
     for (uint256 _i = 1; _i <= _amountOfVoters;) {
       vm.warp(120_000);
