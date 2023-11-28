@@ -1,9 +1,6 @@
 /*
  * Side bar
  */
-.sidebar {
-  width: var(--sidebar-width);
-}
 html.ayu .sidebar {
   border-right: 2px solid var(--border);
 }
@@ -46,25 +43,9 @@ html.light .sidebar {
   }
 }
 
-.no-js .page-wrapper,
-.js:not(.sidebar-resizing) .page-wrapper {
-  transition: margin-left 0.3s ease, transform 0.3s ease;
-  /* Animation: slide away */
-}
-
-@media only screen and (min-width: 620px) {
-  .sidebar-hidden .page-wrapper {
-    transform: none;
-  }
-}
-
-@media only screen and (min-width: 620px) {
-  #sidebar-toggle-anchor:checked ~ .page-wrapper {
-    transform: none;
-    margin-inline-start: var(--sidebar-width);
-  }
-  [dir="rtl"] #sidebar-toggle-anchor:checked ~ .page-wrapper {
-    transform: none;
+@media only screen and (max-width: 620px) {
+  .sidebar-visible .page-wrapper {
+    transform: translateX(var(--sidebar-width));
   }
 }
 
