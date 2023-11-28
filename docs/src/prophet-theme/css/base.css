@@ -42,7 +42,7 @@ html.light .sidebar {
 @media only screen and (min-width: 620px) {
   .sidebar-visible .page-wrapper {
     transform: none;
-    margin-left: var(--sidebar-width);
+    /* margin-left: var(--sidebar-width); */
   }
 }
 
