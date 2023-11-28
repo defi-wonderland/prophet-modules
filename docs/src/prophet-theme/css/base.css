@@ -53,6 +53,19 @@ html.light .sidebar {
 }
 
 @media only screen and (min-width: 620px) {
+  .sidebar-visible .page-wrapper {
+    transform: none;
+    margin-left: var(--sidebar-width);
+  }
+}
+
+@media only screen and (min-width: 620px) {
+  .sidebar-hidden .page-wrapper {
+    transform: none;
+  }
+}
+
+@media only screen and (min-width: 620px) {
   #sidebar-toggle-anchor:checked ~ .page-wrapper {
     transform: none;
     margin-inline-start: var(--sidebar-width);
