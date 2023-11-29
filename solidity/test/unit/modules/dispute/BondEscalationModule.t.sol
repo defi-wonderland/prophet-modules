@@ -413,7 +413,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _responseId;
 
     // Warp to a time after the disputeWindow is over.
-    vm.warp(block.timestamp + _disputeWindow + 1);
+    vm.roll(block.number + _disputeWindow + 1);
 
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
