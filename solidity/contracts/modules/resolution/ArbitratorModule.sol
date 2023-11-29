@@ -35,7 +35,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
   function startResolution(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.resolutionModuleData);

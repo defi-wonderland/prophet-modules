@@ -30,7 +30,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function disputeResponse(
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);

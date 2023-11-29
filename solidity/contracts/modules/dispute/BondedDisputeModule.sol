@@ -16,14 +16,14 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   /// @inheritdoc IBondedDisputeModule
-  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IBondedDisputeModule
   function disputeResponse(
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
@@ -48,7 +48,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   function onDisputeStatusChange(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
