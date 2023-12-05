@@ -56,8 +56,6 @@
 
 - [Interfaces]()
     - [❱ core](solidity/interfaces/core/README.md)
-      - [❱ external](solidity/interfaces/core/external/README.md)
-        - [IWETH9](solidity/interfaces/core/external/IWETH9.sol/interface.IWETH9.md)
       - [❱ modules](solidity/interfaces/core/modules/README.md)
         - [❱ dispute](solidity/interfaces/core/modules/dispute/README.md)
           - [IDisputeModule](solidity/interfaces/core/modules/dispute/IDisputeModule.sol/interface.IDisputeModule.md)
