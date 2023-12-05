@@ -98,15 +98,14 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     bool _won = ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Won;
 
-    _params.accountingExtension.pay({
-      _requestId: _dispute.requestId,
-      _payer: _won ? _dispute.proposer : _dispute.disputer,
-      _receiver: _won ? _dispute.disputer : _dispute.proposer,
-      _token: _params.bondToken,
-      _amount: _params.bondSize
-    });
-
     if (_won) {
+      _params.accountingExtension.pay({
+        _requestId: _dispute.requestId,
+        _payer: _dispute.proposer,
+        _receiver: _dispute.disputer,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
       _params.accountingExtension.release({
         _requestId: _dispute.requestId,
         _bonder: _dispute.disputer,
