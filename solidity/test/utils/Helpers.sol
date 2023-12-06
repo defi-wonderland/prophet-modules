@@ -38,7 +38,7 @@ contract Helpers is DSTestPlus, TestConstants {
   function _assumeFuzzable(address _address) internal pure {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
-    assumeNotPrecompile(_address);
+    assumeNotPrecompile(_address, 10); // using Optimsim chaind id for precompiles filtering
   }
 
   /**

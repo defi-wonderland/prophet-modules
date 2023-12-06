@@ -448,7 +448,17 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
 
+    // Mock and expect the accounting extension to be called
+    _mockAndExpect(
+      address(_params.accountingExtension),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)', mockDispute.disputer, _requestId, _params.bondToken, _params.bondSize
+      ),
+      abi.encode(true)
+    );
+
     vm.warp(_timestamp);
+
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     vm.prank(address(oracle));
@@ -491,10 +501,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
 
-    // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Active);
-
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit ResponseDisputed({
       _requestId: _requestId,
@@ -503,6 +509,10 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
       _dispute: mockDispute,
       _blockNumber: block.number
     });
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Active);
 
     vm.prank(address(oracle));
     bondEscalationModule.disputeResponse(mockRequest, mockResponse, mockDispute);

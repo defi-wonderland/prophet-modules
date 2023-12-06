@@ -42,18 +42,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
     bytes32 _disputeId = _getId(_dispute);
 
-    // Only the first dispute of a request should go through the bond escalation
-    // Consecutive disputes should be handled by the resolution module
-    if (_escalation.status == BondEscalationStatus.None) {
-      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
-
-      _escalation.status = BondEscalationStatus.Active;
-      _escalation.disputeId = _disputeId;
-      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
-    } else if (_disputeId != _escalation.disputeId) {
-      ORACLE.escalateDispute(_request, _response, _dispute);
-    }
-
     _params.accountingExtension.bond({
       _bonder: _dispute.disputer,
       _requestId: _dispute.requestId,
@@ -68,6 +56,17 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _dispute: _dispute,
       _blockNumber: block.number
     });
+
+    // Only the first dispute of a request should go through the bond escalation
+    // Consecutive disputes should be handled by the resolution module
+    if (_escalation.status == BondEscalationStatus.None) {
+      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
+      _escalation.status = BondEscalationStatus.Active;
+      _escalation.disputeId = _disputeId;
+      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
+    } else if (_disputeId != _escalation.disputeId) {
+      ORACLE.escalateDispute(_request, _response, _dispute);
+    }
   }
 
   /// @inheritdoc IBondEscalationModule

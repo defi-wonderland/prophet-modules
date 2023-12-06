@@ -155,7 +155,6 @@ contract Integration_BondEscalation is IntegrationBase {
     assertEq(_bondEscalationAccounting.balanceOf(disputer, usdc), 0, 'Mismatch: Disputer balance');
   }
 
-  //asdf
   function test_proposerLoses() public {
     // Step 1: Proposer pledges against the dispute
     _forBondDepositERC20(_bondEscalationAccounting, proposer, usdc, _pledgeSize, _pledgeSize);
