@@ -4,7 +4,7 @@ Prophet presents a versatile and fully adaptable optimistic oracle solution, tra
 
 ## Useful links
 - [Explorer](https://prophet.tech/)
-<!-- - Discord -->
+- [Discord](https://discord.gg/hhvA9CuQRR)
 - [Documentation](https://docs.prophet.tech)
 <!-- - SDK Documentation -->
 - [Dune Dashboard](https://dune.com/defi_wonderland/prophet-metrics)
