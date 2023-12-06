@@ -138,6 +138,7 @@ contract Integration_BondEscalation is IntegrationBase {
     assertEq(_bondEscalationAccounting.balanceOf(disputer, usdc), 0, 'Mismatch: Disputer balance');
 
     // Step 8: Finalize request and check balances again
+    vm.roll(_expectedDeadline + 1 days);
     oracle.finalize(_request, _response);
 
     // Test: The requester has no balance because he has paid the proposer
@@ -154,6 +155,7 @@ contract Integration_BondEscalation is IntegrationBase {
     assertEq(_bondEscalationAccounting.balanceOf(disputer, usdc), 0, 'Mismatch: Disputer balance');
   }
 
+  //asdf
   function test_proposerLoses() public {
     // Step 1: Proposer pledges against the dispute
     _forBondDepositERC20(_bondEscalationAccounting, proposer, usdc, _pledgeSize, _pledgeSize);
@@ -237,9 +239,9 @@ contract Integration_BondEscalation is IntegrationBase {
     vm.stopPrank();
 
     // Step 10: The dispute goes to the resolution module
-    oracle.escalateDispute(_request, _secondResponse, _secondDispute);
-    _disputeStatus = oracle.disputeStatus(_disputeId);
-    assertEq(uint256(_disputeStatus), uint256(IOracle.DisputeStatus.Escalated), 'Mismatch: Dispute status');
+    // oracle.escalateDispute(_request, _secondResponse, _secondDispute);
+    // _disputeStatus = oracle.disputeStatus(_disputeId);
+    // assertEq(uint256(_disputeStatus), uint256(IOracle.DisputeStatus.Escalated), 'Mismatch: Dispute status');
 
     // Step 11: Because Another proposer's answer is disputed, a third party can propose a new answer
     address _thirdProposer = makeAddr('thirdProposer');

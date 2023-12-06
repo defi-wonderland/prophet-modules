@@ -30,7 +30,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function disputeResponse(
     IOracle.Request calldata _request,
-    IOracle.Response calldata, /* _response */
+    IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
@@ -50,6 +50,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
+    } else if (_disputeId != _escalation.disputeId) {
+      ORACLE.escalateDispute(_request, _response, _dispute);
     }
 
     _params.accountingExtension.bond({
@@ -78,8 +80,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
+    IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
 
-    if (ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Escalated) {
+    if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
       if (_disputeId == _escalation.disputeId) {
         if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
@@ -93,19 +96,23 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _escalation.status = BondEscalationStatus.Escalated;
         emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
         return;
+      } else {
+        emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Escalated});
+        return;
       }
     }
 
-    bool _won = ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Won;
+    bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
+
+    _params.accountingExtension.pay({
+      _requestId: _dispute.requestId,
+      _payer: _won ? _dispute.proposer : _dispute.disputer,
+      _receiver: _won ? _dispute.disputer : _dispute.proposer,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
 
     if (_won) {
-      _params.accountingExtension.pay({
-        _requestId: _dispute.requestId,
-        _payer: _dispute.proposer,
-        _receiver: _dispute.disputer,
-        _token: _params.bondToken,
-        _amount: _params.bondSize
-      });
       _params.accountingExtension.release({
         _requestId: _dispute.requestId,
         _bonder: _dispute.disputer,
