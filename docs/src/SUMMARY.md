@@ -94,7 +94,6 @@
         - [IBondEscalationResolutionModule](solidity/interfaces/modules/resolution/IBondEscalationResolutionModule.sol/interface.IBondEscalationResolutionModule.md)
         - [IERC20ResolutionModule](solidity/interfaces/modules/resolution/IERC20ResolutionModule.sol/interface.IERC20ResolutionModule.md)
         - [IPrivateERC20ResolutionModule](solidity/interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol/interface.IPrivateERC20ResolutionModule.md)
-        - [ISequentialResolutionModule](solidity/interfaces/modules/resolution/ISequentialResolutionModule.sol/interface.ISequentialResolutionModule.md)
       - [❱ response](solidity/interfaces/modules/response/README.md)
         - [IBondedResponseModule](solidity/interfaces/modules/response/IBondedResponseModule.sol/interface.IBondedResponseModule.md)
     - [IArbitrator](solidity/interfaces/IArbitrator.sol/interface.IArbitrator.md)
