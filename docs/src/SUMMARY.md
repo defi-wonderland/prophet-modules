@@ -35,7 +35,6 @@
     - [BondEscalationResolutionModule](content/modules/resolution/bond_escalation_resolution_module.md)
     - [ERC20ResolutionModule](content/modules/resolution/erc20_resolution_module.md)
     - [PrivateERC20ResolutionModule](content/modules/resolution/private_erc20_resolution_module.md)
-    - [SequentialResolutionModule](content/modules/resolution/sequential_resolution_module.md)
 
   - [Finality](content/modules/finality.md)
     - [CallbackModule](content/modules/finality/callback_module.md)
