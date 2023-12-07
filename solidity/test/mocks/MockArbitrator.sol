@@ -10,7 +10,11 @@ contract MockArbitrator is IArbitrator {
     _answer = _disputeStatus;
   }
 
-  function resolve(bytes32 /* _dispute */ ) external pure returns (bytes memory _result) {
+  function resolve(
+    IOracle.Request memory,
+    IOracle.Response memory,
+    IOracle.Dispute memory
+  ) external pure returns (bytes memory _result) {
     _result = new bytes(0);
   }
 

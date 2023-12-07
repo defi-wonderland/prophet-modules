@@ -30,27 +30,17 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function disputeResponse(
     IOracle.Request calldata _request,
-    IOracle.Response calldata, /* _response */
+    IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
-    if (block.timestamp > ORACLE.createdAt(_dispute.responseId) + _params.disputeWindow) {
+    if (block.number > ORACLE.createdAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
     bytes32 _disputeId = _getId(_dispute);
-
-    // Only the first dispute of a request should go through the bond escalation
-    // Consecutive disputes should be handled by the resolution module
-    if (_escalation.status == BondEscalationStatus.None) {
-      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
-
-      _escalation.status = BondEscalationStatus.Active;
-      _escalation.disputeId = _disputeId;
-      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
-    }
 
     _params.accountingExtension.bond({
       _bonder: _dispute.disputer,
@@ -66,6 +56,17 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _dispute: _dispute,
       _blockNumber: block.number
     });
+
+    // Only the first dispute of a request should go through the bond escalation
+    // Consecutive disputes should be handled by the resolution module
+    if (_escalation.status == BondEscalationStatus.None) {
+      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
+      _escalation.status = BondEscalationStatus.Active;
+      _escalation.disputeId = _disputeId;
+      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
+    } else if (_disputeId != _escalation.disputeId) {
+      ORACLE.escalateDispute(_request, _response, _dispute);
+    }
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -78,8 +79,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
+    IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
 
-    if (ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Escalated) {
+    if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
       if (_disputeId == _escalation.disputeId) {
         if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
@@ -93,10 +95,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _escalation.status = BondEscalationStatus.Escalated;
         emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
         return;
+      } else {
+        emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Escalated});
+        return;
       }
     }
 
-    bool _won = ORACLE.disputeStatus(_disputeId) == IOracle.DisputeStatus.Won;
+    bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
 
     _params.accountingExtension.pay({
       _requestId: _dispute.requestId,

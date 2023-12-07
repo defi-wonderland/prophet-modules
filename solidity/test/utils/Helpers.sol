@@ -35,10 +35,10 @@ contract Helpers is DSTestPlus, TestConstants {
    *
    * @param _address The address to check
    */
-  function _assumeFuzzable(address _address) internal pure {
+  function _assumeFuzzable(address _address) internal view {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
-    assumeNotPrecompile(_address);
+    assumeNotPrecompile(_address, block.chainid); // using Optimsim chaind id for precompiles filtering
   }
 
   /**

@@ -104,7 +104,9 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // Mock and expect the callback to the arbitrator
-    _mockAndExpect(_arbitrator, abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
+    _mockAndExpect(
+      _arbitrator, abi.encodeCall(arbitrator.resolve, (mockRequest, mockResponse, mockDispute)), abi.encode(bytes(''))
+    );
 
     vm.prank(address(oracle));
     arbitratorModule.startResolution(_disputeId, mockRequest, mockResponse, mockDispute);
@@ -121,7 +123,9 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // Mock and expect the callback to the arbitrator
-    _mockAndExpect(_arbitrator, abi.encodeCall(arbitrator.resolve, (_disputeId)), abi.encode(bytes('')));
+    _mockAndExpect(
+      _arbitrator, abi.encodeCall(arbitrator.resolve, (mockRequest, mockResponse, mockDispute)), abi.encode(bytes(''))
+    );
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(arbitratorModule));

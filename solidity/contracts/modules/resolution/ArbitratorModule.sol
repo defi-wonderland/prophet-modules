@@ -35,14 +35,14 @@ contract ArbitratorModule is Module, IArbitratorModule {
   function startResolution(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata, /* _response */
+    IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.resolutionModuleData);
     if (_params.arbitrator == address(0)) revert ArbitratorModule_InvalidArbitrator();
 
     _disputeData[_disputeId] = ArbitrationStatus.Active;
-    IArbitrator(_params.arbitrator).resolve(_disputeId);
+    IArbitrator(_params.arbitrator).resolve(_request, _response, _dispute);
 
     emit ResolutionStarted(_dispute.requestId, _disputeId);
   }
