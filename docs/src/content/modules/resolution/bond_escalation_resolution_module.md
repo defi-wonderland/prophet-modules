@@ -10,9 +10,10 @@ The `BondEscalationResolutionModule` is a resolution module that handles the bon
 
 ### Key Methods
 
-- `pledgeForDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount)`: Allows users to pledge in favor of a given dispute.
-- `pledgeAgainstDispute(bytes32 _requestId, bytes32 _disputeId, uint256 _pledgeAmount)`: Allows users to pledge against a given dispute.
-- `claimPledge(bytes32 _requestId, bytes32 _disputeId)`: Allows user to claim his corresponding pledges after a dispute is resolved.
+- `decodeRequestData`: Decodes request parameters.
+- `pledgeForDispute`: Allows users to pledge in favor of a given dispute.
+- `pledgeAgainstDispute`: Allows users to pledge against a given dispute.
+- `claimPledge`: Allows user to claim his corresponding pledges after a dispute is resolved.
 
 ### Request Parameters
 

@@ -10,7 +10,7 @@ The `PrivateERC20ResolutionModule` is a contract that allows users to vote on a 
 
 ### Key methods
 
-- `decodeRequestData`: Returns the decoded data for a request.
+- `decodeRequestData`: Decodes request parameters.
 - `startResolution`: Starts the committing phase for a dispute.
 - `commitVote`: Stores a commitment for a vote cast by a voter.
 - `revealVote`: Reveals a vote cast by a voter.
