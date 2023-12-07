@@ -154,6 +154,7 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Test to check that finalizing a request with a ongoing dispute with revert.
    */
   function test_revertFinalizeInDisputeWindow(uint256 _block) public {
+    vm.assume(_block < _expectedDeadline + _baseDisputeWindow);
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
