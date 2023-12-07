@@ -102,7 +102,6 @@ contract Integration_Finalization is IntegrationBase {
 
     vm.prank(_finalizer);
 
-    //asdf
     // Check: reverts if request has no response?
     vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
 
@@ -112,7 +111,6 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Test to check that finalizing a request with a ongoing dispute with revert.
    */
-  //asdf
   function test_revertFinalizeWithDisputedResponse() public {
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');

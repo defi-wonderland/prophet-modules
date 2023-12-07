@@ -237,12 +237,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _bondEscalationModule.pledgeForDispute(_request, _secondDispute);
     vm.stopPrank();
 
-    // Step 10: The dispute goes to the resolution module
-    // oracle.escalateDispute(_request, _secondResponse, _secondDispute);
-    // _disputeStatus = oracle.disputeStatus(_disputeId);
-    // assertEq(uint256(_disputeStatus), uint256(IOracle.DisputeStatus.Escalated), 'Mismatch: Dispute status');
-
-    // Step 11: Because Another proposer's answer is disputed, a third party can propose a new answer
+    // Step 10: Because Another proposer's answer is disputed, a third party can propose a new answer
     address _thirdProposer = makeAddr('thirdProposer');
     IOracle.Response memory _thirdResponse =
       IOracle.Response({proposer: _thirdProposer, requestId: _requestId, response: abi.encode('third response')});
@@ -252,7 +247,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _responseId = oracle.proposeResponse(_request, _thirdResponse);
     vm.stopPrank();
 
-    // Step 12: It goes undisputed for three days, therefore it's deemed correct and final
+    // Step 11: It goes undisputed for three days, therefore it's deemed correct and final
     vm.roll(_expectedDeadline + 1);
     oracle.finalize(_request, _thirdResponse);
 
@@ -286,7 +281,7 @@ contract Integration_BondEscalation is IntegrationBase {
       'Mismatch: Second Disputer balance'
     );
 
-    // Step 13: Two days after the deadline, the resolution module says that Another proposer's answer was correct
+    // Step 12: Two days after the deadline, the resolution module says that Another proposer's answer was correct
     // So Another proposer gets paid Disputer's bond
     vm.roll(_expectedDeadline + 2 days);
     _mockArbitrator.setAnswer(IOracle.DisputeStatus.Lost);
