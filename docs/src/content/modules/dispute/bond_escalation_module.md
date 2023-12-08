@@ -30,7 +30,7 @@ The Bond Escalation Module is a contract that allows users to have the first dis
 
 ## 3. Key Mechanisms & Concepts
 
-- **Bond Escalation**: The process of rasing stakes and pledging for one of the sides of a dispute. The sides take turns bonding funds until the bond escalation deadline. If the number of pledges in favor of the dispute is not equal to the number of pledges against the dispute at the end of the bond escalation deadline plus the tying buffer, the bond escalation accountancy can settled. In case of a tie, the dispute must be escalated to the resolution module.
+- **Bond Escalation**: The process of raising stakes and pledging for one of the sides of a dispute. The sides take turns bonding funds until the bond escalation deadline is met. If the number of pledges in favor of the dispute is not equal to the number of pledges against the dispute at the end of the bond escalation deadline plus the tying buffer, the bond escalation accountancy can be settled. In case of a tie, the dispute must be escalated to the resolution module.
 - **Pledge**: Bonded funds that are used to support or oppose a dispute.
 
 ## 4. Gotchas

@@ -58,7 +58,7 @@ Modules are the lego blocks for requests. They're responsible for the logic of t
 
 Since building a module is permissionless, the users should pay extra attention to the contracts they choose to interact with, verify their safety and compatibility with other modules.
 
-Module-specific logic should be implemented in hooks such as `createRequest` and `finalizeRequest`, that are called by the oracle contract when  They can be used to implement custom logic, such as storing the data in a custom format or sending a notification to a user.
+Module-specific logic should be implemented in hooks such as `createRequest` and `finalizeRequest`, that are called by the oracle contract when setting up or finalizing a request.  They can be used to implement custom logic, such as storing the data in a custom format or sending a notification to a user.
 
 ### Extensions
 

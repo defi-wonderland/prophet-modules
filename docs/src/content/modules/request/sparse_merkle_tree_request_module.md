@@ -12,7 +12,7 @@ The `SparseMerkleTreeRequestModule` is a contract that allows a user to request 
 
 - `decodeRequestData`: Decodes request parameters. It returns a RequestParameters struct that contains the parameters for the request.
 - `createRequest`: Can be used to bond the requester's funds and validating the request parameters.
-- `finalizeRequest`: Finalizes a request by paying the proposer if there is a valid response, or releases the requester bond if no valid response was provided.
+- `finalizeRequest`: Finalizes a request by paying the proposer if there is a valid response, or releasing the requester's bond if no valid response was provided.
 
 ### Request Parameters
 

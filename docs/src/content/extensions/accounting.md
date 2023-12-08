@@ -22,7 +22,7 @@ The Accounting Extension is a contract that allows users to deposit and bond fun
 
 - **Withdrawals**: Users can withdraw their deposited tokens at any time, provided they have sufficient balance. The withdrawal operation reduces the user's balance in the Accounting Extension and transfers the tokens back to the user's address. Locked tokens can't be withdrawn until they're released by a module.
 
-- **Bonding**: Users can lock their tokens up for to be allowed to participate in a request. Tokens stay in the accounting extension but they cannot be withdrawn until the request is finalized or the tokens are released.
+- **Bonding**: Users can lock their tokens up to be allowed to participate in a request. Tokens stay in the accounting extension but they cannot be withdrawn until the request is finalized or the tokens are released.
 
 - **Payments**: The Accounting Extension allows for payments to be made from one user to another. This usually means rewards for correct proposers and disputers and slashing malicious actors. It's done by unlocking and transferring the bonded tokens from the payer to the receiver's balance. Payments can only be initiated by modules.
 
