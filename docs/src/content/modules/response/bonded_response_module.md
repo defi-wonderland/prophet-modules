@@ -10,9 +10,9 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ### Key Methods
 
-- `decodeRequestData`: Returns the decoded data for a request.
-- `propose`: Proposes a response for a request, bonding the proposer's tokens.
-- `finalizeRequest`: Finalizes the request.
+- `decodeRequestData`: Decodes request parameters.
+- `propose`: Proposes a response for a request, bonding the proposer's tokens. A response cannot be proposed after the deadline or if an undisputed response has already been proposed.
+- `finalizeRequest`: Finalizes the request, paying the proposer of the final response.
 
 ### Request Parameters
 
@@ -23,12 +23,5 @@ The Bonded Response Module is a contract that allows users to propose a response
 
 ## 3. Key Mechanisms & Concepts
 
-- Early finalization: It is possible for pre-dispute modules to atomically calculate the correct response on-chain, decide on the result of a dispute and finalize the request before its deadline.
-
-- Dispute window: Prevents proposers from submitting a response 1 block before the deadline and finalizing it in the next block, leaving disputers no time to dispute the response.
-
-## 4. Gotchas
-
-- In case of no valid responses, a request can be finalized after the deadline and the requester will get back their tokens.
-- Users cannot propose a response after the deadline for a request.
-- Users cannot propose a response if an undisputed response has already been proposed.
+- **Early finalization**: It is possible for pre-dispute modules to atomically calculate the correct response on-chain, decide on the result of a dispute and finalize the request before its deadline.
+- **Dispute window**: Prevents proposers from submitting a response 1 block before the deadline and finalizing it in the next block, leaving disputers no time to dispute the response.

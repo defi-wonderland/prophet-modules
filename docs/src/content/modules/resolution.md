@@ -10,3 +10,5 @@ In Prophet, examples of Resolution modules include:
 - [PrivateERC20ResolutionModule](./resolution/private_erc20_resolution_module.md) that allows users to vote on a dispute using ERC20 tokens following a commit/reveal pattern.
 - [BondEscalationResolutionModule](./resolution/bond_escalation_resolution_module.md) that follows a bond escalation-like process to resolve disputes.
 - [SequentialResolutionModule](./resolution/sequential_resolution_module.md) that leverages multiple resolution modules to obtain an answer.
+
+They all follow the [IResolutionModule](/solidity/interfaces/core/modules/resolution/IResolutionModule.sol/interface.IResolutionModule.md) interface.

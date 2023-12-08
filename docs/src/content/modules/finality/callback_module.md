@@ -10,7 +10,7 @@ The Callback Module is a finality module that allows users to call a function on
 
 ### Key Methods
 
-- `decodeRequestData`: Returns the decoded data for a request.
+- `decodeRequestData`: Decodes request parameters.
 - `finalizeRequest`: Executing the callback call on the target.
 
 ### Request Parameters

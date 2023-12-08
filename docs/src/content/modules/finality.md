@@ -10,4 +10,4 @@ Prophet's Finality modules:
 
 ## Creating a Finality Module
 
-To build a Finality module, inherit from `IFinalityModule` and the `Module` abstract contract, create the `RequestParameters` struct and define the logic in the `finalizeRequest` function. Most importantly, make sure to handle the finalization with and without a response.
+To build a Finality module, inherit from [`IFinalityModule`](/solidity/interfaces/core/modules/finality/IFinalityModule.sol/interface.IFinalityModule.md) and the `Module` abstract contract, create the `RequestParameters` struct and define the logic in the `finalizeRequest` function. Most importantly, make sure to handle the finalization with and without a response.

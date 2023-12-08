@@ -36,11 +36,11 @@ At any time, a request will be in one of the following states
 
 ### Response
 
-A response is a proposed answer to a request. The submission is open for anyone matching the criteria defined in the response module. For instance it could be an NFT holder, an address with a sufficient bond or an entity from a list of approved addresses. An undisputed response can be retracted by the proposer to give them a chance to correct a mistake.
+A response is a proposed answer to a request. The submission is open for anyone matching the criteria defined in the response module. For instance it could be an NFT holder, an address with a sufficient bond or an entity from a list of approved addresses.
 
 ### Dispute
 
-Disputes are the core mechanism of an optimistic oracle protecting it from malicious actors. A dispute can be raised by anyone meeting the requirements exposed by the dispute module of a particular request. A multitude of options is available for the dispute module, from simple voting to more complex mechanisms.
+Disputes are the core mechanism of an optimistic oracle protecting it from malicious actors. A dispute can be raised by anyone meeting the requirements imposed by the dispute module of a particular request. A multitude of options is available for the dispute module, from simple voting to more complex mechanisms.
 
 Dispute modules are designed to reduce the number of calls to the resolution modules, for instance by allowing a bond escalation period before the dispute is escalated to the resolution module.
 
@@ -58,11 +58,7 @@ Modules are the lego blocks for requests. They're responsible for the logic of t
 
 Since building a module is permissionless, the users should pay extra attention to the contracts they choose to interact with, verify their safety and compatibility with other modules.
 
-Module-specific logic should be implemented in hooks such as
-- `setupRequest`
-- `afterSetupRequest`
-- `finalizeRequest`
-- `deleteResponse`
+Module-specific logic should be implemented in hooks such as `createRequest` and `finalizeRequest`, that are called by the oracle contract when setting up or finalizing a request.  They can be used to implement custom logic, such as storing the data in a custom format or sending a notification to a user.
 
 ### Extensions
 
