@@ -92,7 +92,7 @@ contract ContractCallRequestModule_Unit_CreateRequest is BaseTest {
   function test_createRequest(
     address _requester,
     IContractCallRequestModule.RequestParameters memory _params
-  ) public assumeFuzzable(_requester) {
+  ) public assumeFuzzable(_requester) assumeFuzzable(address(_params.accountingExtension)) {
     mockRequest.requestModuleData = abi.encode(_params);
     mockRequest.requester = _requester;
 
