@@ -664,7 +664,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
   //   // Set all data
   //   module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
-  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
+  //   module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timesftamp);
 
   //   // Mock and expect IBondEscalationAccounting.pledge to be called
   //   _mockAndExpect(
