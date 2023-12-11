@@ -13,7 +13,6 @@ import {
 } from '../../../../contracts/extensions/BondEscalationAccounting.sol';
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
-import {IWETH9} from '../../../../interfaces/external/IWETH9.sol';
 
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
@@ -62,8 +61,6 @@ contract BaseTest is Test, Helpers {
   ForTest_BondEscalationAccounting public bondEscalationAccounting;
   // A mock oracle
   IOracle public oracle;
-  // Mock WETH
-  IWETH9 public weth;
   // A mock token
   IERC20 public token;
   // Mock EOA bonder
