@@ -18,7 +18,6 @@
 // import {MultipleCallbacksModule} from '../contracts/modules/finality/MultipleCallbacksModule.sol';
 // import {PrivateERC20ResolutionModule} from '../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
 // import {BondEscalationResolutionModule} from '../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-// import {SequentialResolutionModule} from '../contracts/modules/resolution/SequentialResolutionModule.sol';
 // import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
 // import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 // import {CircuitResolverModule} from '../contracts/modules/dispute/CircuitResolverModule.sol';
@@ -42,7 +41,6 @@
 
 //   PrivateERC20ResolutionModule privateErc20ResolutionModule;
 //   BondEscalationResolutionModule bondEscalationResolutionModule;
-//   SequentialResolutionModule sequentialResolutionModule;
 //   RootVerificationModule rootVerificationModule;
 //   SparseMerkleTreeRequestModule sparseMerkleTreeRequestModule;
 //   CircuitResolverModule circuitResolverModule;
@@ -122,11 +120,6 @@
 //     // Deploy bond escalation accounting
 //     bondEscalationAccounting = new BondEscalationAccounting(oracle);
 //     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
-
-//     // Deploy multiple callbacks module
-//     sequentialResolutionModule = new SequentialResolutionModule(oracle);
-//     console.log('SEQUENTIAL_RESOLUTION_MODULE:', address(sequentialResolutionModule));
-//     sequentialResolutionModule.addResolutionModuleSequence(resolutionModules);
 
 //     // Deploy circuit resolver module
 //     circuitResolverModule = new CircuitResolverModule(oracle);

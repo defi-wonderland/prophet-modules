@@ -296,7 +296,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_randomCaller);
     rootVerificationModule.disputeResponse(mockRequest, mockResponse, mockDispute);

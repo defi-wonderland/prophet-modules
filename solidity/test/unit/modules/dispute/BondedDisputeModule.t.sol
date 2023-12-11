@@ -207,7 +207,7 @@ contract BondedResponseModule_Unit_OnDisputeStatusChange is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);
@@ -247,7 +247,7 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);

@@ -139,7 +139,7 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if the caller is not the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     arbitratorModule.startResolution(_getId(mockDispute), mockRequest, mockResponse, mockDispute);
@@ -152,7 +152,7 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     mockDispute.requestId = _requestId;
 
     // Check: revert?
-    vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidArbitrator.selector));
+    vm.expectRevert(IArbitratorModule.ArbitratorModule_InvalidArbitrator.selector);
 
     // Test: escalate the dispute
     vm.prank(address(oracle));
@@ -215,7 +215,7 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
     );
 
     // Check: does it revert if the resolution status is invalid?
-    vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidResolutionStatus.selector));
+    vm.expectRevert(IArbitratorModule.ArbitratorModule_InvalidResolutionStatus.selector);
 
     vm.prank(address(oracle));
     arbitratorModule.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
@@ -268,7 +268,7 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
         address(oracle), abi.encodeCall(oracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus(_status))
       );
 
-      vm.expectRevert(abi.encodeWithSelector(IArbitratorModule.ArbitratorModule_InvalidDisputeId.selector));
+      vm.expectRevert(IArbitratorModule.ArbitratorModule_InvalidDisputeId.selector);
 
       vm.prank(address(oracle));
       arbitratorModule.resolveDispute(_disputeId, _request, mockResponse, mockDispute);

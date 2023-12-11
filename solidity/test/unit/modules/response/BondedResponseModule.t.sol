@@ -81,7 +81,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(address(_sender));
     bondedResponseModule.propose(mockRequest, mockResponse, _sender);
@@ -171,7 +171,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(address(_sender));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _sender);
