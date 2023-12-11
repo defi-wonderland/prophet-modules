@@ -698,9 +698,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     );
 
     // Check: is the event emitted?
-    // TODO: fix event emission in module
-    // vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    // emit DisputeStatusChanged(_disputeId, mockDispute, IOracle.DisputeStatus.Won);
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit DisputeStatusChanged(_disputeId, mockDispute, IOracle.DisputeStatus.Won);
 
     vm.prank(address(oracle));
     bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
