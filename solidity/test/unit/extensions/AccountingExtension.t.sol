@@ -116,7 +116,7 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
     extension.forTest_setBalanceOf(sender, token, _initialBalance);
 
     // Check: does it revert if balance is insufficient?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
     vm.prank(sender);
     extension.withdraw(token, _amount);
   }
@@ -186,7 +186,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     extension.forTest_setBalanceOf(_bonder, token, _initialBalance);
 
     // Check: does it revert if balance is insufficient?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
     vm.prank(_sender);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -205,7 +205,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
 
     // Check: does it revert if the module is not allowed?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
 
     vm.prank(_sender);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -227,7 +227,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the module is not approved?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
 
     vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -249,7 +249,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the caller is not approved?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
 
     vm.prank(_sender);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
@@ -322,7 +322,7 @@ contract AccountingExtension_Unit_Pay is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _payer, token, _initialBalance);
 
     // Check: does it revert if the payer has insufficient funds?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
     vm.prank(_sender);
     extension.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
@@ -345,7 +345,7 @@ contract AccountingExtension_Unit_Pay is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
 
     // Check: does it revert if the module calling is not approved?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
 
     vm.prank(_sender);
     extension.pay({_requestId: _requestId, _payer: _payer, _receiver: _receiver, _token: token, _amount: _amount});
@@ -410,7 +410,7 @@ contract AccountingExtension_Unit_Release is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _bonder, token, _initialBalance);
 
     // Check: does it revert if calling with insufficient balance?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_InsufficientFunds.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
     vm.prank(_sender);
     extension.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -429,7 +429,7 @@ contract AccountingExtension_Unit_Release is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(false));
 
     // Check: does it revert if the module is not approved?
-    vm.expectRevert(abi.encodeWithSelector(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector));
+    vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
 
     vm.prank(_sender);
     extension.release({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});

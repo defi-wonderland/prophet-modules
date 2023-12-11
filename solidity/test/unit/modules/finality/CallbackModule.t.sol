@@ -105,7 +105,7 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     mockResponse.requestId = _getId(mockRequest);
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     callbackModule.finalizeRequest(mockRequest, mockResponse, _caller);

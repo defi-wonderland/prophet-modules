@@ -200,7 +200,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     contractCallRequestModule.finalizeRequest(_request, mockResponse, address(_caller));
