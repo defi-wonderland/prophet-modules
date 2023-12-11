@@ -1,5 +1,6 @@
 # Prophet Modules
 
+[![Version](https://img.shields.io/npm/v/@defi-wonderland/prophet-modules-contracts?label=Version)](https://www.npmjs.com/package/@defi-wonderland/prophet-modules-contracts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/defi-wonderland/prophet-modules/blob/main/LICENSE)
 
 ⚠️ The code has not been audited yet, tread with caution.
