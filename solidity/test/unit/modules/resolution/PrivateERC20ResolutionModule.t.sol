@@ -500,6 +500,16 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Warp to resolving phase
     vm.warp(190_000);
 
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute status is != None?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+
     // Mock and expect token transfers (should happen always)
     for (uint256 _i = 1; _i <= _votersAmount;) {
       _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
@@ -517,6 +527,11 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
       address(oracle),
       abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _newStatus)),
       abi.encode()
+    );
+
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
     );
 
     // Check: is the event emitted?

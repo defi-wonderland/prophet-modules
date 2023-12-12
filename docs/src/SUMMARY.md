@@ -71,8 +71,6 @@
     - [❱ extensions](solidity/interfaces/extensions/README.md)
       - [IAccountingExtension](solidity/interfaces/extensions/IAccountingExtension.sol/interface.IAccountingExtension.md)
       - [IBondEscalationAccounting](solidity/interfaces/extensions/IBondEscalationAccounting.sol/interface.IBondEscalationAccounting.md)
-    - [❱ external](solidity/interfaces/external/README.md)
-      - [IWETH9](solidity/interfaces/external/IWETH9.sol/interface.IWETH9.md)
     - [❱ modules](solidity/interfaces/modules/README.md)
       - [❱ dispute](solidity/interfaces/modules/dispute/README.md)
         - [IBondEscalationModule](solidity/interfaces/modules/dispute/IBondEscalationModule.sol/interface.IBondEscalationModule.md)

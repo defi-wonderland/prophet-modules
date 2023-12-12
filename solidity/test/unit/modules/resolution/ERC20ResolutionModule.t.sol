@@ -292,6 +292,17 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Warp to resolving phase
     vm.warp(150_000);
 
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute status is != Escalated?
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+
+    // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );

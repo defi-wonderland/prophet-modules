@@ -153,7 +153,7 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Test to check that finalizing a request with a ongoing dispute with revert.
    */
   function test_revertFinalizeInDisputeWindow(uint256 _block) public {
-    vm.assume(_block < _expectedDeadline + _baseDisputeWindow);
+    _block = bound(_block, block.number, _expectedDeadline - _baseDisputeWindow - 1);
     address _callbackTarget = makeAddr('target');
     vm.etch(_callbackTarget, hex'069420');
 
@@ -179,9 +179,7 @@ contract Integration_Finalization is IntegrationBase {
 
     vm.roll(_block);
     vm.prank(_finalizer);
-    if (_block < _expectedDeadline + _baseDisputeWindow) {
-      vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
-    }
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
     oracle.finalize(_request, _response);
   }
   /**

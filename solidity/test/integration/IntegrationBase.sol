@@ -19,7 +19,7 @@ import {IResolutionModule} from
 import {IFinalityModule} from
   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
 
-import {IWETH9} from '../../interfaces/external/IWETH9.sol';
+import {IWETH9} from '../utils/external/IWETH9.sol';
 
 import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
 import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';

@@ -88,6 +88,32 @@ contract ContractCallRequestModule_Unit_ModuleData is BaseTest {
   }
 }
 
+contract ContractCallRequestModule_Unit_CreateRequest is BaseTest {
+  function test_createRequest(
+    address _requester,
+    IContractCallRequestModule.RequestParameters memory _params
+  ) public assumeFuzzable(_requester) assumeFuzzable(address(_params.accountingExtension)) {
+    mockRequest.requestModuleData = abi.encode(_params);
+    mockRequest.requester = _requester;
+
+    // Mock and expect the bond to be placed
+    _mockAndExpect(
+      address(_params.accountingExtension),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)',
+        _requester,
+        _getId(mockRequest),
+        _params.paymentToken,
+        _params.paymentAmount
+      ),
+      abi.encode()
+    );
+
+    vm.prank(address(oracle));
+    contractCallRequestModule.createRequest(_getId(mockRequest), mockRequest.requestModuleData, _requester);
+  }
+}
+
 contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that finalizeRequest calls:
