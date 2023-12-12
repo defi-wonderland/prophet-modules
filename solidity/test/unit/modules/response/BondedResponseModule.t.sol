@@ -221,7 +221,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(false)
     );
 
-    // Mock and expect IOracle.allowedModule to be called
+    // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(_responseCreationBlock)
     );
