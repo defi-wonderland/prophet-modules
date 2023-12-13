@@ -4,14 +4,16 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 
 contract Integration_BondEscalation is IntegrationBase {
-  address _secondDisputer = makeAddr('secondDisputer');
-  address _secondProposer = makeAddr('secondProposer');
-  address _thirdProposer = makeAddr('thirdProposer');
+  address internal _secondDisputer = makeAddr('secondDisputer');
+  address internal _secondProposer = makeAddr('secondProposer');
+  address internal _thirdProposer = makeAddr('thirdProposer');
 
   bytes internal _responseData = abi.encode('response');
+
   bytes32 internal _requestId;
   bytes32 internal _responseId;
   bytes32 internal _disputeId;
+
   uint256 internal _bondEscalationDeadline;
   uint256 internal _tyingBuffer = 1 days;
   uint256 internal _disputeWindow = 3 days;

@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
 import {
   IRootVerificationModule, RootVerificationModule
 } from '../../contracts/modules/dispute/RootVerificationModule.sol';
 import {
-  IOracle,
   ISparseMerkleTreeRequestModule,
   SparseMerkleTreeRequestModule
 } from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
@@ -56,7 +53,7 @@ contract Integration_RootVerification is IntegrationBase {
   uint256 internal _treeCount = 1;
   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
-  bytes32 _correctRoot;
+  bytes32 internal _correctRoot;
 
   function setUp() public override {
     super.setUp();
