@@ -14,6 +14,9 @@ contract Integration_RequestCreation is IntegrationBase {
     _deposit(_accountingExtension, requester, usdc, _expectedReward);
   }
 
+  /**
+   * @notice Test that the request is created correctly with only 3 modules
+   */
   function test_createRequest_withoutResolutionAndFinalityModules() public {
     // Request without resolution and finality modules.
     mockRequest.resolutionModule = address(0);
@@ -27,8 +30,25 @@ contract Integration_RequestCreation is IntegrationBase {
 
     // Check: saved the correct id?
     assertEq(_requestId, _getId(mockRequest));
+
+    // Check: saved the correct nonce?
+    assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
+
+    // Check: saved the correct creation block?
+    assertEq(oracle.createdAt(_requestId), block.number);
+
+    // Check: saved the allowed modules?
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.responseModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.disputeModule));
+
+    // Check: saved the participants?
+    assertTrue(oracle.isParticipant(_requestId, requester));
   }
 
+  /**
+   * @notice Test that the request is created correctly with all modules
+   */
   function test_createRequest_withAllModules() public {
     // Create the request
     vm.prank(requester);
@@ -36,14 +56,69 @@ contract Integration_RequestCreation is IntegrationBase {
 
     // Check: saved the correct id?
     assertEq(_requestId, _getId(mockRequest));
+
+    // Check: saved the correct nonce?
+    assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
+
+    // Check: saved the correct creation block?
+    assertEq(oracle.createdAt(_requestId), block.number);
+
+    // Check: saved the allowed modules?
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.responseModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.disputeModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.resolutionModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.finalityModule));
+
+    // Check: saved the participants?
+    assertTrue(oracle.isParticipant(_requestId, requester));
   }
 
-  function test_createRequest_withReward_UserHasBonded() public {
-    // Check: should not revert as user has bonded.
+  /**
+   * @notice Creating a request without a reward after depositing the bond
+   */
+  function test_createRequest_withoutReward_UserHasBonded() public {
+    // Request without rewards
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    // Check: should not revert as user has set no rewards and bonded?
     vm.prank(requester);
     oracle.createRequest(mockRequest, _ipfsHash);
   }
 
+  /**
+   * @notice Creating a request without a reward and not depositing a bond should not revert
+   */
+  function test_createRequest_withoutReward_UserHasNotBonded() public {
+    // Request without rewards
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: weth,
+        paymentAmount: 0
+      })
+    );
+
+    // Check: doesn't revert if the reward is 0 and the user has not bonded?
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
+
+  /**
+   * @notice Creating a request without any funds deposited to the accounting extension
+   */
   function test_createRequest_withReward_UserHasNotBonded() public {
     // Using WETH as the payment token and not depositing into the accounting extension
     mockRequest.requestModuleData = abi.encode(
@@ -63,42 +138,9 @@ contract Integration_RequestCreation is IntegrationBase {
     oracle.createRequest(mockRequest, _ipfsHash);
   }
 
-  function test_createRequest_withoutReward_UserHasBonded() public {
-    // Request without rewards
-    mockRequest.requestModuleData = abi.encode(
-      IHttpRequestModule.RequestParameters({
-        url: _expectedUrl,
-        method: _expectedMethod,
-        body: _expectedBody,
-        accountingExtension: _accountingExtension,
-        paymentToken: usdc,
-        paymentAmount: 0
-      })
-    );
-
-    // Check: should not revert as user has set no rewards and bonded?
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
-  }
-
-  function test_createRequest_withoutReward_UserHasNotBonded() public {
-    // Request without rewards
-    mockRequest.requestModuleData = abi.encode(
-      IHttpRequestModule.RequestParameters({
-        url: _expectedUrl,
-        method: _expectedMethod,
-        body: _expectedBody,
-        accountingExtension: _accountingExtension,
-        paymentToken: usdc,
-        paymentAmount: 0
-      })
-    );
-
-    // Check: doesn't revert if the reward is 0 and the user has not bonded?
-    vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
-  }
-
+  /**
+   * @notice Creating 2 request with the same parameters
+   */
   function test_createRequest_duplicate() public {
     // Double token amount as each request is a unique bond.
     _deposit(_accountingExtension, requester, usdc, _expectedReward * 2);
@@ -135,6 +177,9 @@ contract Integration_RequestCreation is IntegrationBase {
     oracle.createRequest(mockRequest, _ipfsHash);
   }
 
+  /**
+   * @notice Reverts if the request module cannot be called
+   */
   function test_createRequest_withDisallowedModule() public {
     mockRequest.requestModule = address(_responseModule);
     mockRequest.responseModule = address(_requestModule);
