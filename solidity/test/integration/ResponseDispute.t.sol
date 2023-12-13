@@ -7,23 +7,44 @@ contract Integration_ResponseDispute is IntegrationBase {
   function setUp() public override {
     super.setUp();
 
+    // Create request
     _deposit(_accountingExtension, requester, usdc, _expectedBondSize);
     _createRequest();
 
+    // Propose a response
     _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
     _proposeResponse();
 
+    // Disputer approves the dispute module
     vm.prank(disputer);
     _accountingExtension.approveModule(address(_bondedDisputeModule));
   }
 
+  /**
+   * @notice Disputing a response should be reflected the oracle's state
+   */
   function test_disputeResponse() public {
     _deposit(_accountingExtension, disputer, usdc, _expectedBondSize);
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    bytes32 _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+
+    // Check: the disputer is a participant now?
+    assertTrue(oracle.isParticipant(_getId(mockRequest), disputer));
+
+    // Check: the dispute status is Active?
+    assertEq(uint256(oracle.disputeStatus(_disputeId)), uint256(IOracle.DisputeStatus.Active));
+
+    // Check: dispute id is stored?
+    assertEq(oracle.disputeOf(_getId(mockResponse)), _disputeId);
+
+    // Check: creation time is correct?
+    assertEq(oracle.createdAt(_disputeId), block.number);
   }
 
+  /**
+   * @notice Disputing a non-existent response should revert
+   */
   function test_disputeResponse_nonExistentResponse(bytes32 _nonExistentResponseId) public {
     vm.assume(_nonExistentResponseId != _getId(mockResponse));
     mockDispute.responseId = _nonExistentResponseId;
@@ -34,20 +55,13 @@ contract Integration_ResponseDispute is IntegrationBase {
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 
-  function test_disputeResponse_requestAndResponseMismatch() public {
-    _deposit(_accountingExtension, requester, usdc, _expectedBondSize);
+  /**
+   * @notice Sending an an invalid dispute in should revert
+   */
+  function test_disputeResponse_requestAndResponseMismatch(bytes32 _requestId) public {
+    vm.assume(_requestId != _getId(mockRequest));
 
-    // Second request
-    mockRequest.nonce += 1;
-    _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
-
-    vm.prank(requester);
-    bytes32 _secondRequestId = oracle.createRequest(mockRequest, _ipfsHash);
-
-    mockResponse.requestId = _secondRequestId;
-
-    vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    mockDispute.requestId = _requestId;
 
     vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
 
@@ -55,6 +69,9 @@ contract Integration_ResponseDispute is IntegrationBase {
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 
+  /**
+   * @notice Revert if the disputer has no funds to bond
+   */
   function test_disputeResponse_noBondedFunds() public {
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
@@ -62,6 +79,9 @@ contract Integration_ResponseDispute is IntegrationBase {
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 
+  /**
+   * @notice Disputing a finalized response should revert
+   */
   function test_disputeResponse_alreadyFinalized() public {
     vm.roll(_expectedDeadline + _baseDisputeWindow);
     oracle.finalize(mockRequest, mockResponse);
@@ -72,6 +92,9 @@ contract Integration_ResponseDispute is IntegrationBase {
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
 
+  /**
+   * @notice Disputing a response that has already been disputed should revert
+   */
   function test_disputeResponse_alreadyDisputed() public {
     _deposit(_accountingExtension, disputer, usdc, _expectedBondSize);
 
@@ -82,14 +105,4 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _getId(mockResponse)));
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
   }
-
-  // TODO: discuss and decide on the implementation of a dispute deadline
-  //   function test_disputeResponse_afterDeadline(uint256 _timestamp) public {
-  //     vm.assume(_timestamp > _expectedDeadline);
-  //     _bondDisputerFunds();
-  //     vm.warp(_timestamp);
-  //     vm.prank(disputer);
-  //     vm.expectRevert(abi.encodeWithSelector(IBondedDisputeModule.BondedDisputeModule_TooLateToDispute.selector, _responseId));
-  //     oracle.disputeResponse(_requestId, _responseId);
-  //   }
 }
