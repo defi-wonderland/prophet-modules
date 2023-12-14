@@ -7,6 +7,9 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 // solhint-disable-next-line no-unused-import
+import {IResolutionModule} from
+  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
+// solhint-disable-next-line no-unused-import
 import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
