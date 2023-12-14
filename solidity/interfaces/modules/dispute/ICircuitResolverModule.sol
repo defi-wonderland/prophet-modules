@@ -21,6 +21,15 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
  */
 interface ICircuitResolverModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when the verification of a response fails
+   */
+  error CircuitResolverModule_VerificationFailed();
+
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
@@ -40,15 +49,6 @@ interface ICircuitResolverModule is IDisputeModule {
     IERC20 bondToken;
     uint256 bondSize;
   }
-
-  /*///////////////////////////////////////////////////////////////
-                              ERRORS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Thrown when the verification of a response fails
-   */
-  error CircuitResolverModule_VerificationFailed();
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
