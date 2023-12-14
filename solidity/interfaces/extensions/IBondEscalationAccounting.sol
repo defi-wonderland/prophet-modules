@@ -1,8 +1,8 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IAccountingExtension} from './IAccountingExtension.sol';
 import {IBondEscalationModule} from '../modules/dispute/IBondEscalationModule.sol';
+import {IAccountingExtension} from './IAccountingExtension.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**

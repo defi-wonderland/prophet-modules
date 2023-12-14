@@ -1,16 +1,16 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IOracle, IBondEscalationModule} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {
-  IBondEscalationAccounting,
-  BondEscalationAccounting
+  BondEscalationAccounting,
+  IBondEscalationAccounting
 } from '../../../../contracts/extensions/BondEscalationAccounting.sol';
+import {IBondEscalationModule, IOracle} from '../../../../contracts/modules/dispute/BondEscalationModule.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
