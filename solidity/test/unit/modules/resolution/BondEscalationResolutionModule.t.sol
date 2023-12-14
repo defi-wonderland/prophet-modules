@@ -843,7 +843,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     2. Should revert if the main deadline has not be reached and the inequality timer has not culminated - done
 
     3. After resolve, if the pledges from both sides never reached the threshold, or if the pledges of both sides end up tied
-       it should set the resolution status to NoResolution. TODO: and do the appropriate calls.
+       it should set the resolution status to NoResolution.
     4. After resolve, if the pledges for the disputer were more than the pledges against him, then it should
        set the resolution state to DisputerWon and call the oracle to update the status with Won. Also emit event.
     5. Same as 4 but with DisputerLost, and Lost when the pledges against the disputer were more than the pledges in favor of

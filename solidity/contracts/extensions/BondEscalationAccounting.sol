@@ -49,7 +49,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
   ) external onlyAllowedModule(_requestId) {
-    // TODO: check that flooring at _amountPerPledger calculation doesn't mess with this check
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
       revert BondEscalationAccounting_InsufficientFunds();
     }

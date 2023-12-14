@@ -16,18 +16,6 @@ FOUNDRY_PROFILE=docs forge doc --out "$temp_folder"
 rm -rf ./solidity/contracts/core
 rm -rf ./solidity/interfaces/core
 
-# edit generated summary not to have container pages
-# - [jobs](solidity/interfaces/jobs/README.md)
-# should become
-# - [jobs]()
-# TODO
-
-# edit generated summary titles to start with an uppercase letter
-# - [jobs]()
-# should become
-# - [Jobs]()
-# TODO
-
 # edit the SUMMARY after the Interfaces section
 # https://stackoverflow.com/questions/67086574/no-such-file-or-directory-when-using-sed-in-combination-with-find
 if [[ "$OSTYPE" == "darwin"* ]]; then

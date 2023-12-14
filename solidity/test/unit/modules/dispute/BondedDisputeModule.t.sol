@@ -27,7 +27,13 @@ contract BaseTest is Test, Helpers {
   IOracle public oracle;
 
   event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
-  // TODO: event ResponseDisputed(bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Dispute _dispute, uint256 _blockNumber);
+  event ResponseDisputed(
+    bytes32 indexed _requestId,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    IOracle.Dispute _dispute,
+    uint256 _blockNumber
+  );
 
   /**
    * @notice Deploy the target and mock oracle
@@ -224,7 +230,9 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
     mockRequest.disputeModuleData =
       abi.encode(IBondedDisputeModule.RequestParameters(accountingExtension, _token, _bondSize));
     bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _getId(mockResponse);
 
     // Mock and expect the call to the accounting extension, initiating the bond
     _mockAndExpect(
@@ -234,6 +242,10 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
       ),
       abi.encode()
     );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute, block.number);
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
