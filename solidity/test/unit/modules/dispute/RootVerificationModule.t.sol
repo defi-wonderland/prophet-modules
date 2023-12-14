@@ -30,7 +30,7 @@ contract BaseTest is Test, Helpers {
   // A mock tree verifier
   ITreeVerifier public treeVerifier;
   // Mock addresses
-  IERC20 public _token = IERC20(makeAddr('token'));
+  IERC20 public token = IERC20(makeAddr('token'));
 
   // Mock request data
   bytes32[32] internal _treeBranches = [
@@ -162,7 +162,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );
@@ -202,7 +202,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );
@@ -258,7 +258,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );

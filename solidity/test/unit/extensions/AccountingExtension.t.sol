@@ -5,7 +5,7 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../utils/Helpers.sol';
 
-import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
 import {
   AccountingExtension, IAccountingExtension, IERC20
 } from '../../../contracts/extensions/AccountingExtension.sol';

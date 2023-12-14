@@ -219,15 +219,15 @@ contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
-  uint256 _percentageDiff = 20;
-  uint256 _timeUntilDeadline = 1001;
+  uint256 internal _percentageDiff = 20;
+  uint256 internal _timeUntilDeadline = 1001;
 
   // block.timestamp < _inequalityData.time + _timeToBreakInequality
-  uint256 _timeToBreakInequality = 5000;
-  uint128 _startTime;
+  uint256 internal _timeToBreakInequality = 5000;
+  uint128 internal _startTime;
 
-  bytes32 _disputeId;
-  bytes32 _requestId;
+  bytes32 internal _disputeId;
+  bytes32 internal _requestId;
 
   function setUp() public override {
     super.setUp();
@@ -525,15 +525,15 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
-  uint256 _percentageDiff = 20;
-  uint256 _timeUntilDeadline = 1001;
+  uint256 internal _percentageDiff = 20;
+  uint256 internal _timeUntilDeadline = 1001;
 
   // block.timestamp < _inequalityData.time + _timeToBreakInequality
-  uint256 _timeToBreakInequality = 5000;
-  uint128 _startTime;
+  uint256 internal _timeToBreakInequality = 5000;
+  uint128 internal _startTime;
 
-  bytes32 _disputeId;
-  bytes32 _requestId;
+  bytes32 internal _disputeId;
+  bytes32 internal _requestId;
 
   function setUp() public override {
     super.setUp();
