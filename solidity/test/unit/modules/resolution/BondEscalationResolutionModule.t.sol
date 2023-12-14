@@ -468,6 +468,10 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
     );
 
+    module.forTest_setInequalityData(
+      _disputeId, IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize, block.timestamp
+    );
+
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
@@ -726,7 +730,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   }
 
   /**
-   * @notice Testing _status == forTurnToEqualize && both diffs < percentageDiff
+   * @notice Testing _status == againstTurnToEqualize && both diffs < percentageDiff
    */
   function test_changesStatusIfSidesAreEqual(uint256 _pledgeAmount) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
@@ -738,6 +742,10 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Resetting the pledges values
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
+    );
+
+    module.forTest_setInequalityData(
+      _disputeId, IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize, block.timestamp
     );
 
     // Mock and expect IBondEscalationAccounting.pledge to be called
