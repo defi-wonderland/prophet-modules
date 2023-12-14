@@ -61,15 +61,6 @@ contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModul
  */
 
 contract BaseTest is Test, Helpers {
-  struct FakeDispute {
-    bytes32 requestId;
-    bytes32 test;
-  }
-
-  struct FakeRequest {
-    address disputeModule;
-  }
-
   // The target contract
   ForTest_BondEscalationResolutionModule public module;
   // A mock oracle
@@ -83,13 +74,15 @@ contract BaseTest is Test, Helpers {
   // Mock EOA pledgerAgainst
   address public pledgerAgainst = makeAddr('pledgerAgainst');
   // Mock percentageDiff
-  uint256 public percentageDiff;
+  uint256 public percentageDiff = 20;
   // Mock pledge threshold
-  uint256 public pledgeThreshold;
+  uint256 public pledgeThreshold = 1;
   // Mock time until main deadline
-  uint256 public timeUntilDeadline;
+  uint256 public timeUntilDeadline = 1001;
   // Mock time to break inequality
-  uint256 public timeToBreakInequality;
+  uint256 public timeToBreakInequality = 5000;
+  // Mock the request parameters
+  IBondEscalationResolutionModule.RequestParameters public requestParameters;
 
   // Events
   event DisputeResolved(bytes32 indexed _requestId, bytes32 indexed _disputeId, IOracle.DisputeStatus _status);
@@ -127,15 +120,12 @@ contract BaseTest is Test, Helpers {
 
     module = new ForTest_BondEscalationResolutionModule(oracle);
 
-    mockDispute = IOracle.Dispute({
-      disputer: disputer,
-      responseId: bytes32('response'),
-      proposer: proposer,
-      requestId: bytes32('69')
-    });
-
-    mockResponse =
-      IOracle.Response({proposer: proposer, requestId: bytes32('69'), response: abi.encode(bytes32('response'))});
+    requestParameters.accountingExtension = accounting;
+    requestParameters.bondToken = token;
+    requestParameters.percentageDiff = percentageDiff;
+    requestParameters.pledgeThreshold = pledgeThreshold;
+    requestParameters.timeUntilDeadline = timeUntilDeadline;
+    requestParameters.timeToBreakInequality = timeToBreakInequality;
   }
 
   function _createPledgers(
@@ -158,6 +148,21 @@ contract BaseTest is Test, Helpers {
     }
 
     return (_pledgers, _pledgedAmounts);
+  }
+
+  function _setResolutionModuleData(IBondEscalationResolutionModule.RequestParameters memory _params)
+    internal
+    returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId)
+  {
+    mockRequest.resolutionModuleData = abi.encode(_params);
+    _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    _responseId = _getId(mockResponse);
+
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+    _disputeId = _getId(mockDispute);
   }
 }
 
@@ -219,50 +224,28 @@ contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
-  uint256 _percentageDiff = 20;
-  uint256 _timeUntilDeadline = 1001;
-
-  // block.timestamp < _inequalityData.time + _timeToBreakInequality
-  uint256 _timeToBreakInequality = 5000;
-  uint128 _startTime;
-
-  bytes32 _disputeId;
-  bytes32 _requestId;
+  uint128 internal _startTime;
+  bytes32 internal _disputeId;
+  bytes32 internal _requestId;
 
   function setUp() public override {
     super.setUp();
 
     // Start at a later time to be able to travel back
-    vm.warp(block.timestamp + _timeToBreakInequality + 1);
+    vm.warp(block.timestamp + timeToBreakInequality + 1);
 
     // block.timestamp < _startTime + _timeUntilDeadline
-    _startTime = uint128(block.timestamp - 1000);
+    _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
 
-    mockRequest.resolutionModuleData = abi.encode(
-      IBondEscalationResolutionModule.RequestParameters({
-        accountingExtension: accounting,
-        bondToken: token,
-        percentageDiff: _percentageDiff,
-        pledgeThreshold: 1,
-        timeUntilDeadline: _timeUntilDeadline,
-        timeToBreakInequality: _timeToBreakInequality
-      })
-    );
-
-    _disputeId = _getId(mockDispute);
-    _requestId = mockDispute.requestId;
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
   }
 
   function test_reverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
-
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    // 1. BondEscalationResolutionModule_NotEscalated
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     // Mock escalation with start time 0
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
@@ -271,13 +254,9 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseOver
-
+    // 2. BondEscalationResolutionModule_PledgingPhaseOver
     _params.timeUntilDeadline = block.timestamp - 1;
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     // Mock escalation with start time 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
@@ -286,14 +265,10 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_MustBeResolved
-
+    // 3. BondEscalationResolutionModule_MustBeResolved
     _params.timeUntilDeadline = 10_000;
-    _params.timeToBreakInequality = 5000;
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    _params.timeToBreakInequality = timeToBreakInequality;
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
@@ -310,8 +285,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AgainstTurnToEqualize
-
+    // 4. BondEscalationResolutionModule_AgainstTurnToEqualize
     vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -335,7 +309,6 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
-    IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     // _pledgeThreshold > _updatedTotalVotes;
     uint256 _pledgesFor = 1000;
@@ -343,16 +316,15 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     _params.pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
 
     // block.timestamp < _inequalityData.time + _timeToBreakInequality
-    _params.timeToBreakInequality = 5000;
-    _params.timeUntilDeadline = 1001;
+    _params.timeToBreakInequality = timeToBreakInequality;
+    _params.timeUntilDeadline = timeUntilDeadline;
 
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     // Set all data
-    module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
+    );
     module.forTest_setInequalityData(
       _disputeId, IBondEscalationResolutionModule.InequalityStatus.Equalized, block.timestamp
     );
@@ -496,6 +468,10 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
     );
 
+    module.forTest_setInequalityData(
+      _disputeId, IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize, block.timestamp
+    );
+
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
@@ -525,50 +501,28 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
-  uint256 _percentageDiff = 20;
-  uint256 _timeUntilDeadline = 1001;
-
-  // block.timestamp < _inequalityData.time + _timeToBreakInequality
-  uint256 _timeToBreakInequality = 5000;
-  uint128 _startTime;
-
-  bytes32 _disputeId;
-  bytes32 _requestId;
+  uint128 internal _startTime;
+  bytes32 internal _disputeId;
+  bytes32 internal _requestId;
 
   function setUp() public override {
     super.setUp();
 
     // Start at a later time to be able to travel back
-    vm.warp(block.timestamp + _timeToBreakInequality + 1);
+    vm.warp(block.timestamp + timeToBreakInequality + 1);
 
     // block.timestamp < _startTime + _timeUntilDeadline
-    _startTime = uint128(block.timestamp - 1000);
+    _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
 
-    mockRequest.resolutionModuleData = abi.encode(
-      IBondEscalationResolutionModule.RequestParameters({
-        accountingExtension: accounting,
-        bondToken: token,
-        percentageDiff: _percentageDiff,
-        pledgeThreshold: 1,
-        timeUntilDeadline: _timeUntilDeadline,
-        timeToBreakInequality: _timeToBreakInequality
-      })
-    );
-
-    _disputeId = _getId(mockDispute);
-    _requestId = mockDispute.requestId;
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
   }
 
   function test_reverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
-
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    // 1. BondEscalationResolutionModule_NotEscalated
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with no pledges and start time 0
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
@@ -577,13 +531,9 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseOver
-
+    // 2. BondEscalationResolutionModule_PledgingPhaseOver
     _params.timeUntilDeadline = block.timestamp - 1;
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
     // Set mock escalation with no pledges and start time 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
 
@@ -591,15 +541,11 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_MustBeResolved
-
+    // 3. BondEscalationResolutionModule_MustBeResolved
     _params.timeUntilDeadline = 10_000;
-    _params.timeToBreakInequality = 5000;
+    _params.timeToBreakInequality = timeToBreakInequality;
 
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.ForTurnToEqualize;
@@ -616,8 +562,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AgainstTurnToEqualize
-
+    // 4. BondEscalationResolutionModule_AgainstTurnToEqualize
     vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
@@ -636,43 +581,35 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
   }
 
-  function test_earlyReturnIfThresholdNotSurpassed(
-    uint256 _pledgeAmount,
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
+  function test_earlyReturnIfThresholdNotSurpassed(uint256 _pledgeAmount) public {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
-    IBondEscalationResolutionModule.Resolution _resolution = IBondEscalationResolutionModule.Resolution.Unresolved;
 
     // block.timestamp < _startTime + _timeUntilDeadline
-    _startTime = uint128(block.timestamp - 1000);
-    _params.timeUntilDeadline = 1001;
+    _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
 
     // _pledgeThreshold > _updatedTotalVotes;
     uint256 _pledgesFor = 1000;
     uint256 _pledgesAgainst = 1000;
-    _params.pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
+    requestParameters.pledgeThreshold = _pledgesFor + _pledgesAgainst + _pledgeAmount + 1;
 
-    // block.timestamp < _inequalityData.time + _timeToBreakInequality
-    _params.timeToBreakInequality = 5000;
-
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    _disputeId = _getId(mockDispute);
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Assuming the threshold has not passed, this is the only valid state
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.Equalized;
 
     // Set all data
-    module.forTest_setEscalation(_disputeId, _resolution, _startTime, _pledgesFor, _pledgesAgainst);
+    module.forTest_setEscalation(
+      _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
+    );
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
 
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
-      address(_params.accountingExtension),
+      address(requestParameters.accountingExtension),
       abi.encodeCall(
-        IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+        IBondEscalationAccounting.pledge,
+        (pledgerAgainst, _requestId, _disputeId, requestParameters.bondToken, _pledgeAmount)
       ),
       abi.encode()
     );
@@ -793,7 +730,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   }
 
   /**
-   * @notice Testing _status == forTurnToEqualize && both diffs < percentageDiff
+   * @notice Testing _status == againstTurnToEqualize && both diffs < percentageDiff
    */
   function test_changesStatusIfSidesAreEqual(uint256 _pledgeAmount) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
@@ -805,6 +742,10 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Resetting the pledges values
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
+    );
+
+    module.forTest_setInequalityData(
+      _disputeId, IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize, block.timestamp
     );
 
     // Mock and expect IBondEscalationAccounting.pledge to be called
@@ -843,7 +784,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     2. Should revert if the main deadline has not be reached and the inequality timer has not culminated - done
 
     3. After resolve, if the pledges from both sides never reached the threshold, or if the pledges of both sides end up tied
-       it should set the resolution status to NoResolution. TODO: and do the appropriate calls.
+       it should set the resolution status to NoResolution.
     4. After resolve, if the pledges for the disputer were more than the pledges against him, then it should
        set the resolution state to DisputerWon and call the oracle to update the status with Won. Also emit event.
     5. Same as 4 but with DisputerLost, and Lost when the pledges against the disputer were more than the pledges in favor of
@@ -854,16 +795,8 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     public
     assumeFuzzable(address(_params.accountingExtension))
   {
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_AlreadyResolved
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    bytes32 _disputeId = _getId(mockDispute);
+    // 1. BondEscalationResolutionModule_AlreadyResolved
+    (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == DisputerWon
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, 0, 0);
@@ -874,19 +807,11 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_NotEscalated
-
+    // 2. BondEscalationResolutionModule_NotEscalated
     _params.timeUntilDeadline = 100_000;
     _params.timeToBreakInequality = 100_000;
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    _requestId = _getId(mockRequest);
 
-    mockResponse.requestId = _requestId;
-    _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    _disputeId = _getId(mockDispute);
+    (_requestId, _responseId, _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == Unresolved
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 0, 0, 0);
@@ -897,8 +822,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
-    /////////////////////////////////////////////////////// BondEscalationResolutionModule_PledgingPhaseNotOver
-
+    // 3. BondEscalationResolutionModule_PledgingPhaseNotOver
     IBondEscalationResolutionModule.InequalityStatus _inequalityStatus =
       IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize;
     module.forTest_setInequalityData(_disputeId, _inequalityStatus, block.timestamp);
@@ -915,26 +839,9 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_thresholdNotReached(IBondEscalationResolutionModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_thresholdNotReached() public {
     // START OF SETUP TO AVOID REVERTS
-    _params.percentageDiff = percentageDiff;
-    _params.pledgeThreshold = pledgeThreshold;
-    _params.timeUntilDeadline = timeUntilDeadline;
-    _params.timeToBreakInequality = timeToBreakInequality;
-    _params.pledgeThreshold = 1000;
-
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Set a mock escalation with resolution == Unresolved and start time == 1
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 0, 0);
@@ -960,29 +867,11 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
 
     // Check: is the resolution status updated to NoResolution?
     assertEq(uint256(_trueResStatus), uint256(IBondEscalationResolutionModule.Resolution.NoResolution));
-
-    // END OF TEST THRESHOLD NOT REACHED
   }
 
-  function test_tiedPledges(IBondEscalationResolutionModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_tiedPledges() public {
     // START OF SETUP TO AVOID REVERTS
-    _params.percentageDiff = percentageDiff;
-    _params.pledgeThreshold = pledgeThreshold;
-    _params.timeUntilDeadline = timeUntilDeadline;
-    _params.timeToBreakInequality = timeToBreakInequality;
-
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Set mock escalation with tied pledges
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, 2000, 2000);
@@ -1015,29 +904,11 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // END OF TIED PLEDGES
   }
 
-  function test_forPledgesWon(
-    uint256 _pledgesAgainst,
-    uint256 _pledgesFor,
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
+  function test_forPledgesWon(uint256 _pledgesAgainst, uint256 _pledgesFor) public {
     vm.assume(_pledgesAgainst < _pledgesFor);
     vm.assume(_pledgesFor < type(uint128).max);
     // START OF SETUP TO AVOID REVERTS
-    _params.percentageDiff = percentageDiff;
-    _params.pledgeThreshold = pledgeThreshold;
-    _params.timeUntilDeadline = timeUntilDeadline;
-    _params.timeToBreakInequality = timeToBreakInequality;
-
-    // START OF SETUP TO AVOID REVERTS
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Set mock escalation with pledgers for dispute winning
     module.forTest_setEscalation(
@@ -1068,35 +939,17 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // END OF FOR PLEDGES WON
   }
 
-  function test_againstPledgesWon(
-    uint256 _pledgesFor,
-    uint256 _pledgesAgainst,
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
+  function test_againstPledgesWon(uint256 _pledgesFor, uint256 _pledgesAgainst) public {
     vm.assume(_pledgesAgainst > _pledgesFor);
     vm.assume(_pledgesAgainst < type(uint128).max);
 
-    _params.percentageDiff = percentageDiff;
-    _params.pledgeThreshold = pledgeThreshold;
-    _params.timeUntilDeadline = timeUntilDeadline;
-    _params.timeToBreakInequality = timeToBreakInequality;
-
     // START OF SETUP TO AVOID REVERTS
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockResponse.requestId = _requestId;
-    bytes32 _responseId = _getId(mockResponse);
-
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Set mock escalation with pledgers against dispute winning
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, 1, _pledgesFor, _pledgesAgainst
     );
-
     // END OF SETUP TO AVOID REVERTS
 
     // START OF FOR PLEDGES LOST
@@ -1159,11 +1012,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     vm.assume(_totalPledgesFor > _totalPledgesAgainst);
     vm.assume(_totalPledgesFor >= _userForPledge);
 
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == DisputerWon
     module.forTest_setEscalation(
@@ -1217,11 +1066,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     vm.assume(_totalPledgesAgainst > _totalPledgesFor);
     vm.assume(_totalPledgesAgainst >= _userAgainstPledge);
 
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == DisputerLost
     module.forTest_setEscalation(
@@ -1270,11 +1115,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     vm.assume(_userForPledge > 0);
     vm.assume(_userAgainstPledge > 0);
 
-    mockRequest.resolutionModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    (bytes32 _requestId,, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == NoResolution
     module.forTest_setEscalation(
