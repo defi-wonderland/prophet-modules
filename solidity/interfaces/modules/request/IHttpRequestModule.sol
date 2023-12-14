@@ -13,6 +13,18 @@ import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingEx
   */
 interface IHttpRequestModule is IRequestModule {
   /*///////////////////////////////////////////////////////////////
+                              ENUMS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Available HTTP methods
+   */
+  enum HttpMethod {
+    GET,
+    POST
+  }
+
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
@@ -32,18 +44,6 @@ interface IHttpRequestModule is IRequestModule {
     IAccountingExtension accountingExtension;
     IERC20 paymentToken;
     uint256 paymentAmount;
-  }
-
-  /*///////////////////////////////////////////////////////////////
-                              ENUMS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Available HTTP methods
-   */
-  enum HttpMethod {
-    GET,
-    POST
   }
 
   /*///////////////////////////////////////////////////////////////

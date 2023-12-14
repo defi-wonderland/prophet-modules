@@ -259,7 +259,7 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     IERC20 _randomToken,
     uint256 _bondSize,
     bytes memory _callData
-  ) public {
+  ) public assumeFuzzable(address(_accountingExtension)) {
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
@@ -279,14 +279,17 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     mockResponse.response = _encodedCorrectResponse;
     mockResponse.proposer = makeAddr('proposer');
 
-    // Mock and expect the call to the oracle, finalizing the request
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalize, (mockRequest, mockResponse)), abi.encode());
-
     // Populate the mock dispute with the correct values
     mockDispute.responseId = _getId(mockResponse);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
+
+    // Mock and expect the call to the oracle, getting the dispute status
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(_status));
+
+    // Mock and expect the call to the oracle, finalizing the request
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalize, (mockRequest, mockResponse)), abi.encode());
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(circuitResolverModule));
@@ -301,7 +304,7 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     IERC20 _randomToken,
     uint256 _bondSize,
     bytes memory _callData
-  ) public {
+  ) public assumeFuzzable(address(_accountingExtension)) {
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
@@ -326,6 +329,9 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
+
+    // Mock and expect the call to the oracle, getting the dispute status
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(_status));
 
     // Mock and expect the call to the accounting extension, paying the disputer
     _mockAndExpect(
