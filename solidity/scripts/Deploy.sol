@@ -7,20 +7,22 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 import {IResolutionModule} from
   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
 
-import {ArbitratorModule} from '../contracts/modules/resolution/ArbitratorModule.sol';
-import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
-import {BondedResponseModule} from '../contracts/modules/response/BondedResponseModule.sol';
 import {BondEscalationModule} from '../contracts/modules/dispute/BondEscalationModule.sol';
-import {CallbackModule} from '../contracts/modules/finality/CallbackModule.sol';
-import {HttpRequestModule} from '../contracts/modules/request/HttpRequestModule.sol';
-import {ContractCallRequestModule} from '../contracts/modules/request/ContractCallRequestModule.sol';
-import {ERC20ResolutionModule} from '../contracts/modules/resolution/ERC20ResolutionModule.sol';
-import {MultipleCallbacksModule} from '../contracts/modules/finality/MultipleCallbacksModule.sol';
-import {PrivateERC20ResolutionModule} from '../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
-import {BondEscalationResolutionModule} from '../contracts/modules/resolution/BondEscalationResolutionModule.sol';
-import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
-import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
+import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
+
 import {CircuitResolverModule} from '../contracts/modules/dispute/CircuitResolverModule.sol';
+import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
+import {CallbackModule} from '../contracts/modules/finality/CallbackModule.sol';
+import {MultipleCallbacksModule} from '../contracts/modules/finality/MultipleCallbacksModule.sol';
+import {ContractCallRequestModule} from '../contracts/modules/request/ContractCallRequestModule.sol';
+import {HttpRequestModule} from '../contracts/modules/request/HttpRequestModule.sol';
+
+import {SparseMerkleTreeRequestModule} from '../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
+import {ArbitratorModule} from '../contracts/modules/resolution/ArbitratorModule.sol';
+import {BondEscalationResolutionModule} from '../contracts/modules/resolution/BondEscalationResolutionModule.sol';
+import {ERC20ResolutionModule} from '../contracts/modules/resolution/ERC20ResolutionModule.sol';
+import {PrivateERC20ResolutionModule} from '../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
+import {BondedResponseModule} from '../contracts/modules/response/BondedResponseModule.sol';
 
 import {AccountingExtension} from '../contracts/extensions/AccountingExtension.sol';
 import {BondEscalationAccounting} from '../contracts/extensions/BondEscalationAccounting.sol';
