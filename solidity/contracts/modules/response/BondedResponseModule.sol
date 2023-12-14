@@ -89,19 +89,19 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function releaseUncalledResponse(
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
-    IOracle.Dispute calldata _dispute
-  ) external {
-    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+    bytes32 _responseId = _validateResponse(_request, _response);
+    bytes32 _disputeId = ORACLE.disputeOf(_responseId);
 
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Won) {
-      revert BondedResponseModule_InvalidReleaseParameters();
+    if (_disputeId > 0) {
+      IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
+      if (_disputeStatus != IOracle.DisputeStatus.Lost && _disputeStatus != IOracle.DisputeStatus.NoResolution) {
+        revert BondedResponseModule_InvalidReleaseParameters();
+      }
     }
 
-    bytes32 _finalizedResponseId = ORACLE.getFinalizedResponseId(_response.requestId);
-    if (_finalizedResponseId == _dispute.responseId || _finalizedResponseId == bytes32(0)) {
+    bytes32 _finalizedResponseId = ORACLE.finalizedResponseId(_response.requestId);
+    if (_finalizedResponseId == _responseId || _finalizedResponseId == bytes32(0)) {
       revert BondedResponseModule_InvalidReleaseParameters();
     }
 
@@ -112,5 +112,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       _token: _params.bondToken,
       _amount: _params.bondSize
     });
+
+    emit UnutilizedResponseReleased(_response.requestId, _responseId);
   }
 }
