@@ -159,4 +159,18 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   ) external view returns (bytes32 _commitment) {
     _commitment = keccak256(abi.encode(msg.sender, _disputeId, _numberOfVotes, _salt));
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = (
+      address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
+        || _params.minVotesForQuorum == 0 || _params.committingTimeWindow == 0 || _params.revealingTimeWindow == 0
+    ) ? false : true;
+  }
 }

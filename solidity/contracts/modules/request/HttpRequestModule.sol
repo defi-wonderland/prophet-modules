@@ -59,4 +59,19 @@ contract HttpRequestModule is Module, IHttpRequestModule {
 
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = (
+      address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
+        || _params.paymentAmount == 0 || keccak256(abi.encode(_params.url)) == keccak256(abi.encode(''))
+        || keccak256(abi.encode(_params.body)) == keccak256(abi.encode(''))
+    ) ? false : true;
+  }
 }

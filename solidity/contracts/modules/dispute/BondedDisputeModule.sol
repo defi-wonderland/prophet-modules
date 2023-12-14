@@ -103,4 +103,18 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
 
     emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0
+    ) ? false : true;
+  }
 }

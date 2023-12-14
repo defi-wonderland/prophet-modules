@@ -295,4 +295,19 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   function getEscalation(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
     _escalation = _escalations[_requestId];
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0 || _params.bondEscalationDeadline == 0 || _params.maxNumberOfEscalations == 0
+        || _params.tyingBuffer == 0 || _params.disputeWindow == 0
+    ) ? false : true;
+  }
 }
