@@ -5,17 +5,17 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
-  SparseMerkleTreeRequestModule,
-  ISparseMerkleTreeRequestModule
+  ISparseMerkleTreeRequestModule,
+  SparseMerkleTreeRequestModule
 } from '../../../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 
-import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {ITreeVerifier} from '../../../../interfaces/ITreeVerifier.sol';
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
 /**
  * @title Sparse Merkle Tree Request Module Unit tests
@@ -223,7 +223,7 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     sparseMerkleTreeRequestModule.finalizeRequest(mockRequest, mockResponse, address(_caller));

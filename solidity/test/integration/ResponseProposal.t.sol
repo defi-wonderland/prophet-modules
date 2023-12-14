@@ -1,152 +1,133 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import './IntegrationBase.sol';
+import './IntegrationBase.sol';
 
-// contract Integration_ResponseProposal is IntegrationBase {
-//   bytes32 internal _requestId;
+contract Integration_ResponseProposal is IntegrationBase {
+  bytes32 internal _requestId;
 
-//   function setUp() public override {
-//     super.setUp();
+  function setUp() public override {
+    super.setUp();
 
-//     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
+    // Requester and proposer deposit funds
+    _deposit(_accountingExtension, requester, usdc, _expectedReward);
+    _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
 
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    // Create the request
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    vm.stopPrank();
 
-//     IOracle.NewRequest memory _request = IOracle.NewRequest({
-//       requestModuleData: abi.encode(
-//         IHttpRequestModule.RequestParameters({
-//           url: _expectedUrl,
-//           method: _expectedMethod,
-//           body: _expectedBody,
-//           accountingExtension: _accountingExtension,
-//           paymentToken: IERC20(USDC_ADDRESS),
-//           paymentAmount: _expectedReward
-//         })
-//         ),
-//       responseModuleData: abi.encode(
-//         IBondedResponseModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize,
-//           deadline: _expectedDeadline,
-//           disputeWindow: _baseDisputeWindow
-//         })
-//         ),
-//       disputeModuleData: abi.encode(
-//         IBondedDisputeModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize
-//         })
-//         ),
-//       resolutionModuleData: abi.encode(_mockArbitrator),
-//       finalityModuleData: abi.encode(
-//         ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
-//         ),
-//       requestModule: _requestModule,
-//       responseModule: _responseModule,
-//       disputeModule: _bondedDisputeModule,
-//       resolutionModule: _arbitratorModule,
-//       finalityModule: IFinalityModule(_callbackModule),
-//       ipfsHash: _ipfsHash
-//     });
+    // Approve the response module on behalf of the proposer
+    vm.prank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
+  }
 
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
-//     _requestId = oracle.createRequest(_request);
-//   }
+  /**
+   * @notice Proposing a response updates the state of the oracle, including the list of participants and the response's creation time
+   */
+  function test_proposeResponse_validResponse(bytes memory _responseBytes) public {
+    mockResponse.response = _responseBytes;
 
-//   function test_proposeResponse_validResponse(bytes memory _response) public {
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _response);
-//     vm.stopPrank();
+    // Check: the proposer is a participant now?
+    assertTrue(oracle.isParticipant(_requestId, proposer));
 
-//     IOracle.Response memory _responseData = oracle.getResponse(_responseId);
+    // Check: the response id was added to the list?
+    bytes32[] memory _getResponseIds = oracle.getResponseIds(_requestId);
+    assertEq(_getResponseIds[0], _getId(mockResponse));
 
-//     // Check: response data is correctly stored?
-//     assertEq(_responseData.proposer, proposer);
-//     assertEq(_responseData.response, _response);
-//     assertEq(_responseData.createdAt, block.timestamp);
-//     assertEq(_responseData.disputeId, bytes32(0));
-//   }
+    // Check: the creation block is correct?
+    assertEq(oracle.createdAt(_getId(mockResponse)), block.number);
+  }
 
-//   function test_proposeResponse_afterDeadline(uint256 _timestamp, bytes memory _response) public {
-//     vm.assume(_timestamp > _expectedDeadline);
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+  /**
+   * @notice Proposing a response after the deadline reverts
+   */
+  function test_proposeResponse_afterDeadline(uint256 _timestamp, bytes memory _responseBytes) public {
+    vm.assume(_timestamp > _expectedDeadline);
 
-//     // Warp to timestamp after deadline
-//     vm.warp(_timestamp);
-//     // Check: does revert if deadline is passed?
-//     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToPropose.selector);
+    // Warp to timestamp after deadline
+    vm.warp(_timestamp);
 
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_requestId, _response);
-//   }
+    mockResponse.response = _responseBytes;
 
-//   function test_proposeResponse_alreadyResponded(bytes memory _response) public {
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    // Check: does revert if deadline is passed?
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToPropose.selector);
 
-//     // First response
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     oracle.proposeResponse(_requestId, _response);
-//     vm.stopPrank();
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
 
-//     // Check: does revert if already responded?
-//     vm.expectRevert(IBondedResponseModule.BondedResponseModule_AlreadyResponded.selector);
+  /**
+   * @notice Proposing a response to an already answered request reverts
+   */
+  function test_proposeResponse_alreadyResponded(bytes memory _responseBytes) public {
+    mockResponse.response = _responseBytes;
 
-//     // Second response
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_requestId, _response);
-//   }
+    // First response
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
-//   function test_proposeResponse_nonExistentRequest(bytes memory _response, bytes32 _nonExistentRequestId) public {
-//     vm.assume(_nonExistentRequestId != _requestId);
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    mockResponse.response = abi.encode('second response');
 
-//     // Check: does revert if request does not exist?
-//     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_InvalidRequestId.selector, _nonExistentRequestId));
+    // Check: does revert if already responded?
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_AlreadyResponded.selector);
 
-//     vm.prank(proposer);
-//     oracle.proposeResponse(_nonExistentRequestId, _response);
-//   }
-//   // Proposing without enough funds bonded (should revert insufficient funds)
+    // Second response
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
 
-//   function test_proposeResponse_insufficientFunds(bytes memory _response) public {
-//     // Check: does revert if proposer does not have enough funds bonded?
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
+  /**
+   * @notice Proposing a response with an invalid request id reverts
+   */
+  function test_proposeResponse_nonExistentRequest(bytes memory _responseBytes, bytes32 _nonExistentRequestId) public {
+    vm.assume(_nonExistentRequestId != _requestId);
 
-//     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-//     oracle.proposeResponse(_requestId, _response);
-//   }
+    mockResponse.response = _responseBytes;
+    mockResponse.requestId = _nonExistentRequestId;
 
-//   function test_deleteResponse(bytes memory _responseData) public {
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    // Check: does revert if request does not exist?
+    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
 
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, _responseData);
-//     vm.stopPrank();
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
 
-//     IOracle.Response memory _response = oracle.getResponse(_responseId);
-//     assertEq(_response.proposer, proposer);
-//     assertEq(_response.response, _responseData);
-//     assertEq(_response.createdAt, block.timestamp);
-//     assertEq(_response.disputeId, bytes32(0));
+  /**
+   * @notice Proposing without enough funds bonded reverts
+   */
+  function test_proposeResponse_insufficientFunds(bytes memory _responseBytes) public {
+    // Using WETH as the bond token
+    mockRequest.nonce += 1;
+    mockRequest.responseModuleData = abi.encode(
+      IBondedResponseModule.RequestParameters({
+        accountingExtension: _accountingExtension,
+        bondToken: weth,
+        bondSize: _expectedBondSize,
+        deadline: _expectedDeadline,
+        disputeWindow: _baseDisputeWindow
+      })
+    );
 
-//     vm.prank(proposer);
-//     oracle.deleteResponse(_responseId);
+    // Requester deposit funds
+    _deposit(_accountingExtension, requester, usdc, _expectedReward);
 
-//     // Check: response data is correctly deleted?
-//     IOracle.Response memory _deletedResponse = oracle.getResponse(_responseId);
-//     assertEq(_deletedResponse.proposer, address(0));
-//     assertEq(_deletedResponse.response.length, 0);
-//     assertEq(_deletedResponse.createdAt, 0);
-//     assertEq(_deletedResponse.disputeId, bytes32(0));
-//   }
-// }
+    // Creates the request
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+
+    mockResponse.response = _responseBytes;
+    _resetMockIds();
+
+    // Check: does revert if proposer does not have enough funds bonded?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
+
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
+}

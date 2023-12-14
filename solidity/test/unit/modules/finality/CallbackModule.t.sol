@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {CallbackModule, ICallbackModule} from '../../../../contracts/modules/finality/CallbackModule.sol';
 
@@ -105,7 +105,7 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     mockResponse.requestId = _getId(mockRequest);
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     callbackModule.finalizeRequest(mockRequest, mockResponse, _caller);

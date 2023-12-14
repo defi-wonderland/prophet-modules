@@ -5,9 +5,9 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
   BondedDisputeModule, IBondedDisputeModule
@@ -27,7 +27,13 @@ contract BaseTest is Test, Helpers {
   IOracle public oracle;
 
   event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
-  // TODO: event ResponseDisputed(bytes32 indexed _requestId, bytes32 indexed _responseId, IOracle.Dispute _dispute, uint256 _blockNumber);
+  event ResponseDisputed(
+    bytes32 indexed _requestId,
+    bytes32 indexed _responseId,
+    bytes32 indexed _disputeId,
+    IOracle.Dispute _dispute,
+    uint256 _blockNumber
+  );
 
   /**
    * @notice Deploy the target and mock oracle
@@ -207,7 +213,7 @@ contract BondedResponseModule_Unit_OnDisputeStatusChange is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);
@@ -224,7 +230,9 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
     mockRequest.disputeModuleData =
       abi.encode(IBondedDisputeModule.RequestParameters(accountingExtension, _token, _bondSize));
     bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _getId(mockResponse);
 
     // Mock and expect the call to the accounting extension, initiating the bond
     _mockAndExpect(
@@ -234,6 +242,10 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
       ),
       abi.encode()
     );
+
+    // Expect the event
+    vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
+    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute, block.number);
 
     // Test: call disputeResponse
     vm.prank(address(oracle));
@@ -247,7 +259,7 @@ contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     // Test: call disputeResponse from non-oracle address
     vm.prank(_randomCaller);

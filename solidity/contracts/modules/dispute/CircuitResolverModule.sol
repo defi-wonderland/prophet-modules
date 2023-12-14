@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
@@ -29,14 +29,10 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    // TODO: Call `disputeStatus` to check the current status instead of reading from `_correctResponses`
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
 
-    bytes memory _correctResponse = _correctResponses[_dispute.requestId];
-    bool _won = _response.response.length != _correctResponse.length
-      || keccak256(_response.response) != keccak256(_correctResponse);
-
-    if (_won) {
+    if (_status == IOracle.DisputeStatus.Won) {
       _params.accountingExtension.pay({
         _requestId: _dispute.requestId,
         _payer: _dispute.proposer,
@@ -45,8 +41,11 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
         _amount: _params.bondSize
       });
 
-      IOracle.Response memory _newResponse =
-        IOracle.Response({requestId: _dispute.requestId, proposer: _dispute.disputer, response: _correctResponse});
+      IOracle.Response memory _newResponse = IOracle.Response({
+        requestId: _dispute.requestId,
+        proposer: _dispute.disputer,
+        response: _correctResponses[_dispute.requestId]
+      });
 
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
 

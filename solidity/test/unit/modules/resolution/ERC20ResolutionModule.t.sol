@@ -5,11 +5,11 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {
   ERC20ResolutionModule,
@@ -292,6 +292,17 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Warp to resolving phase
     vm.warp(150_000);
 
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute status is != Escalated?
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+
+    // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
@@ -359,7 +370,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
    * @notice Reverts if the vote is still ongoing
    */
-  function test_revertIfVoteIsOnGoing(address _voter, uint256 _amount) public {
+  function test_revertIfVoteIsOnGoing(address _voter) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
         accountingExtension: accountingExtension,
@@ -370,7 +381,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     );
 
     mockDispute.requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(mockDispute);
     module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
 
     // Expect an error to be thrown

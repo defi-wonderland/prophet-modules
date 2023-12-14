@@ -5,17 +5,17 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
-  RootVerificationModule,
-  IRootVerificationModule
+  IRootVerificationModule,
+  RootVerificationModule
 } from '../../../../contracts/modules/dispute/RootVerificationModule.sol';
 
-import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {ITreeVerifier} from '../../../../interfaces/ITreeVerifier.sol';
+import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
 /**
  * @title Root Verification Module Unit tests
@@ -30,7 +30,7 @@ contract BaseTest is Test, Helpers {
   // A mock tree verifier
   ITreeVerifier public treeVerifier;
   // Mock addresses
-  IERC20 public _token = IERC20(makeAddr('token'));
+  IERC20 public token = IERC20(makeAddr('token'));
 
   // Mock request data
   bytes32[32] internal _treeBranches = [
@@ -162,7 +162,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );
@@ -202,7 +202,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );
@@ -258,7 +258,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
         leavesToInsert: _leavesToInsert,
         treeVerifier: treeVerifier,
         accountingExtension: _accountingExtension,
-        bondToken: _token,
+        bondToken: token,
         bondSize: _bondSize
       })
     );
@@ -296,7 +296,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_randomCaller);
     rootVerificationModule.disputeResponse(mockRequest, mockResponse, mockDispute);

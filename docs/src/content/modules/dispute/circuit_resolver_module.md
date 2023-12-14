@@ -10,7 +10,7 @@ The Circuit Resolver Module is a pre-dispute module that allows disputers to ver
 
 ### Key Methods
 
-- `decodeRequestData`: Returns the decoded data for a request.
+- `decodeRequestData`: Decodes request parameters.
 - `disputeResponse`: Verifies the ZK circuit and compares it to the proposed one. Updates the dispute status after checking if the disputed response is indeed wrong.
 - `onDisputeStatusChange`: Updates the status of the dispute and resolves it by proposing the correct circuit as a response and finalizing the request.
 
@@ -24,8 +24,8 @@ The Circuit Resolver Module is a pre-dispute module that allows disputers to ver
 
 ## 3. Key Mechanisms & Concepts
 
-- Verifier: A contract implementing the verification logic, which will be consulted in case of a dispute.
-- Atomical dispute: With this module, a dispute is initiated and resolved in the same transaction because the answer can be (somewhat expensively) calculated on-chain.
+- **Verifier**: A contract implementing the verification logic, which will be consulted in case of a dispute.
+- **Atomical dispute**: With this module, a dispute is initiated and resolved in the same transaction because the answer can be (somewhat expensively) calculated on-chain.
 
 ## 4. Gotchas
 

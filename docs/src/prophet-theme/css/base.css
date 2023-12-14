@@ -32,6 +32,23 @@ html.light .sidebar {
   color: var(--sidebar-active);
 }
 
+.sidebar-hidden .sidebar {
+  transform: translateX(calc(0px - var(--sidebar-width)));
+}
+
+@media only screen and (min-width: 620px) {
+  .sidebar-visible .page-wrapper {
+    transform: none;
+    margin-left: var(--sidebar-width);
+  }
+}
+
+@media only screen and (max-width: 620px) {
+  .sidebar-visible .page-wrapper {
+    transform: translateX(var(--sidebar-width));
+  }
+}
+
 /*
  * Search bar
  */

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {AccountingExtension} from './AccountingExtension.sol';
 
@@ -49,7 +49,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
   ) external onlyAllowedModule(_requestId) {
-    // TODO: check that flooring at _amountPerPledger calculation doesn't mess with this check
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
       revert BondEscalationAccounting_InsufficientFunds();
     }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line no-unused-import
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
+// solhint-disable-next-line no-unused-import
+import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
@@ -40,8 +40,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       // Allowing one undisputed response at a time
       if (_disputeId == bytes32(0)) revert BondedResponseModule_AlreadyResponded();
       IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
-      // TODO: leaving a note here to re-check this check if a new status is added
-      // If the dispute was lost, we assume the proposed answer was correct. DisputeStatus.None should not be reachable due to the previous check.
+      // If the dispute was lost, we assume the proposed answer was correct.
+      // DisputeStatus.None should not be reachable due to the previous check.
       if (_status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
     }
 
@@ -64,17 +64,16 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   ) external override(IBondedResponseModule, Module) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
-    // TODO: If deadline has passed, we can skip the caller validation
     bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
-    if (!_isModule && block.timestamp < _params.deadline) {
+    if (!_isModule && block.number < _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
     uint256 _responseCreatedAt = ORACLE.createdAt(_getId(_response));
 
     if (_responseCreatedAt != 0) {
-      if (!_isModule && block.timestamp < _responseCreatedAt + _params.disputeWindow) {
+      if (!_isModule && block.number < _responseCreatedAt + _params.disputeWindow) {
         revert BondedResponseModule_TooEarlyToFinalize();
       }
 

@@ -1,284 +1,203 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import './IntegrationBase.sol';
+import './IntegrationBase.sol';
 
-// contract Integration_RequestCreation is IntegrationBase {
-//   bytes32 internal _requestId;
+contract Integration_RequestCreation is IntegrationBase {
+  function setUp() public override {
+    super.setUp();
 
-//   function setUp() public override {
-//     super.setUp();
-//     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
-//   }
+    vm.prank(requester);
+    _accountingExtension.approveModule(address(_requestModule));
 
-//   function test_createRequestWithoutResolutionAndFinalityModules() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    // Deposit the bond
+    _deposit(_accountingExtension, requester, usdc, _expectedReward);
+  }
 
-//     // Request without resolution and finality modules.
-//     IOracle.NewRequest memory _request = _standardRequest();
-//     _request.resolutionModule = IResolutionModule(address(0));
-//     _request.finalityModule = IFinalityModule(address(0));
-//     _request.resolutionModuleData = bytes('');
-//     _request.finalityModuleData = bytes('');
+  /**
+   * @notice Test that the request is created correctly with only 3 modules
+   */
+  function test_createRequest_withoutResolutionAndFinalityModules() public {
+    // Request without resolution and finality modules.
+    mockRequest.resolutionModule = address(0);
+    mockRequest.finalityModule = address(0);
+    mockRequest.resolutionModuleData = bytes('');
+    mockRequest.finalityModuleData = bytes('');
 
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
+    // Create the request
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
-//     _requestId = oracle.createRequest(_request);
+    // Check: saved the correct id?
+    assertEq(_requestId, _getId(mockRequest));
 
-//     // Check: request data was stored in request module?
-//     IHttpRequestModule.RequestParameters memory _reqParams = _requestModule.decodeRequestData(_requestId);
+    // Check: saved the correct nonce?
+    assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
 
-//     assertEq(_reqParams.url, _expectedUrl);
-//     assertEq(uint256(_reqParams.method), uint256(_expectedMethod));
-//     assertEq(_reqParams.body, _expectedBody);
-//     assertEq(address(_reqParams.accountingExtension), address(_accountingExtension));
-//     assertEq(address(_reqParams.paymentToken), address(usdc));
-//     assertEq(_reqParams.paymentAmount, _expectedReward);
+    // Check: saved the correct creation block?
+    assertEq(oracle.createdAt(_requestId), block.number);
 
-//     // Check: request data was stored in response module?
-//     IBondedResponseModule.RequestParameters memory _params = _responseModule.decodeRequestData(_requestId);
-//     assertEq(address(_accountingExtension), address(_params.accountingExtension));
-//     assertEq(address(_params.bondToken), address(usdc));
-//     assertEq(_expectedBondSize, _params.bondSize);
-//     assertEq(_expectedDeadline, _params.deadline);
+    // Check: saved the allowed modules?
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.responseModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.disputeModule));
 
-//     // Check: request data was stored in dispute module?
-//     IBondedDisputeModule.RequestParameters memory _params2 = _bondedDisputeModule.decodeRequestData(_requestId);
+    // Check: saved the participants?
+    assertTrue(oracle.isParticipant(_requestId, requester));
+  }
 
-//     assertEq(address(_accountingExtension), address(_params2.accountingExtension));
-//     assertEq(address(_params.bondToken), address(_params2.bondToken));
-//     assertEq(_expectedBondSize, _params2.bondSize);
+  /**
+   * @notice Test that the request is created correctly with all modules
+   */
+  function test_createRequest_withAllModules() public {
+    // Create the request
+    vm.prank(requester);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
-//     // Check: is finality and resolution data stored as empty?
-//     IOracle.FullRequest memory _fullRequest = oracle.getFullRequest(_requestId);
-//     assertEq(_fullRequest.finalityModuleData, bytes(''));
-//     assertEq(_fullRequest.resolutionModuleData, bytes(''));
-//     assertEq(address(_fullRequest.finalityModule), address(0));
-//     assertEq(address(_fullRequest.resolutionModule), address(0));
-//   }
+    // Check: saved the correct id?
+    assertEq(_requestId, _getId(mockRequest));
 
-//   function test_createRequestWithAllModules() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    // Check: saved the correct nonce?
+    assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
 
-//     // Request with all modules.
-//     IOracle.NewRequest memory _request = _standardRequest();
+    // Check: saved the correct creation block?
+    assertEq(oracle.createdAt(_requestId), block.number);
 
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
-//     _requestId = oracle.createRequest(_request);
+    // Check: saved the allowed modules?
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.responseModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.disputeModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.resolutionModule));
+    assertTrue(oracle.allowedModule(_requestId, mockRequest.finalityModule));
 
-//     // Check: request data was stored in request module?
-//     IHttpRequestModule.RequestParameters memory _reqParams = _requestModule.decodeRequestData(_requestId);
+    // Check: saved the participants?
+    assertTrue(oracle.isParticipant(_requestId, requester));
+  }
 
-//     assertEq(_reqParams.url, _expectedUrl);
-//     assertEq(uint256(_reqParams.method), uint256(_expectedMethod));
-//     assertEq(_reqParams.body, _expectedBody);
-//     assertEq(address(_reqParams.accountingExtension), address(_accountingExtension));
-//     assertEq(address(_reqParams.paymentToken), address(usdc));
-//     assertEq(_reqParams.paymentAmount, _expectedReward);
+  /**
+   * @notice Creating a request without a reward after depositing the bond
+   */
+  function test_createRequest_withoutReward_UserHasBonded() public {
+    // Request without rewards
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
 
-//     // Check: request data was stored in response module?
-//     IBondedResponseModule.RequestParameters memory _params = _responseModule.decodeRequestData(_requestId);
+    // Check: should not revert as user has set no rewards and bonded?
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//     assertEq(address(_accountingExtension), address(_params.accountingExtension));
-//     assertEq(address(_params.bondToken), address(usdc));
-//     assertEq(_expectedBondSize, _params.bondSize);
-//     assertEq(_expectedDeadline, _params.deadline);
+  /**
+   * @notice Creating a request without a reward and not depositing a bond should not revert
+   */
+  function test_createRequest_withoutReward_UserHasNotBonded() public {
+    // Request without rewards
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: weth,
+        paymentAmount: 0
+      })
+    );
 
-//     // Check: request data was stored in dispute module?
-//     IBondedDisputeModule.RequestParameters memory _params2 = _bondedDisputeModule.decodeRequestData(_requestId);
+    // Check: doesn't revert if the reward is 0 and the user has not bonded?
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//     assertEq(address(_accountingExtension), address(_params2.accountingExtension));
-//     assertEq(address(_params.bondToken), address(_params2.bondToken));
-//     assertEq(_expectedBondSize, _params2.bondSize);
+  /**
+   * @notice Creating a request without any funds deposited to the accounting extension
+   */
+  function test_createRequest_withReward_UserHasNotBonded() public {
+    // Using WETH as the payment token and not depositing into the accounting extension
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: weth,
+        paymentAmount: _expectedReward
+      })
+    );
 
-//     // Check: request data was stored in resolution module?
-//     (address _arbitrator) = _arbitratorModule.decodeRequestData(_requestId);
-//     assertEq(_arbitrator, address(_mockArbitrator));
+    // Check: should revert with `InsufficientFunds` as user has not deposited?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//     // Check: request data was stored in finality module?
-//     ICallbackModule.RequestParameters memory _callbackParams = _callbackModule.decodeRequestData(_requestId);
-//     assertEq(_callbackParams.target, address(_mockCallback));
-//     assertEq(_callbackParams.data, abi.encode(_expectedCallbackValue));
-//   }
+  /**
+   * @notice Creating 2 request with the same parameters
+   */
+  function test_createRequest_duplicate() public {
+    // Double token amount as each request is a unique bond.
+    _deposit(_accountingExtension, requester, usdc, _expectedReward * 2);
 
-//   function test_createRequestWithReward_UserHasBonded() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    // Create the first request
+    vm.startPrank(requester);
+    bytes32 _firstRequestId = oracle.createRequest(mockRequest, _ipfsHash);
 
-//     // Request with rewards.
-//     IOracle.NewRequest memory _request = _standardRequest();
+    // Set the new nonce and create the second request
+    mockRequest.nonce += 1;
+    bytes32 _secondRequestId = oracle.createRequest(mockRequest, _ipfsHash);
+    vm.stopPrank();
 
-//     // Check: should not revert as user has bonded.
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
+    // Check: saved different ids?
+    assertTrue(_firstRequestId != _secondRequestId, 'Request IDs should not be equal');
+  }
 
-//     oracle.createRequest(_request);
-//   }
+  function test_createRequest_withInvalidParameters() public {
+    // Request with invalid token address.
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        method: _expectedMethod,
+        body: _expectedBody,
+        accountingExtension: _accountingExtension,
+        paymentToken: IERC20(address(0)),
+        paymentAmount: _expectedReward
+      })
+    );
 
-//   function test_createRequestWithReward_UserHasNotBonded() public {
-//     // Request with rewards.
-//     IOracle.NewRequest memory _request = _standardRequest();
+    // Check: reverts due to the invalid token address?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
+    vm.prank(requester);
+    oracle.createRequest(mockRequest, _ipfsHash);
+  }
 
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
+  /**
+   * @notice Reverts if the request module cannot be called
+   */
+  function test_createRequest_withDisallowedModule() public {
+    mockRequest.requestModule = address(_responseModule);
+    mockRequest.responseModule = address(_requestModule);
 
-//     // Check: should revert with `InsufficientFunds` as user has not deposited.
-//     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-//     _requestId = oracle.createRequest(_request);
-//   }
+    vm.startPrank(requester);
 
-//   function test_createRequestWithoutReward_UserHasBonded() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    // Check: reverts with `EVM error`?
+    vm.expectRevert();
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//     // Request without rewards.
-//     IOracle.NewRequest memory _request = _standardRequest();
-//     _request.requestModuleData = abi.encode(
-//       IHttpRequestModule.RequestParameters({
-//         url: _expectedUrl,
-//         method: _expectedMethod,
-//         body: _expectedBody,
-//         accountingExtension: _accountingExtension,
-//         paymentToken: IERC20(USDC_ADDRESS),
-//         paymentAmount: 0
-//       })
-//     );
-//     // Check: should not revert as user has set no rewards and bonded.
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
+    // Reset the modules back and configure an invalid dispute module.
+    mockRequest.requestModule = address(_requestModule);
+    mockRequest.responseModule = address(_responseModule);
+    mockRequest.disputeModule = makeAddr('NON-EXISTENT DISPUTE MODULE');
 
-//     oracle.createRequest(_request);
-//   }
+    // Check: doesn't revert if any module but the request module is invalid?
+    oracle.createRequest(mockRequest, _ipfsHash);
 
-//   function test_createRequestWithoutReward_UserHasNotBonded() public {
-//     // Request without rewards
-//     IOracle.NewRequest memory _request = _standardRequest();
-//     _request.requestModuleData = abi.encode(
-//       IHttpRequestModule.RequestParameters({
-//         url: _expectedUrl,
-//         method: _expectedMethod,
-//         body: _expectedBody,
-//         accountingExtension: _accountingExtension,
-//         paymentToken: IERC20(USDC_ADDRESS),
-//         paymentAmount: 0
-//       })
-//     );
-
-//     vm.startPrank(requester);
-//     // Approving the request module to bond the requester tokens
-//     _accountingExtension.approveModule(address(_requestModule));
-
-//     // Check: should not revert as user has set no rewards.
-//     oracle.createRequest(_request);
-//   }
-
-//   function test_createRequestDuplicate() public {
-//     // Double token amount as each request is a unique bond.
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward * 2, _expectedReward * 2);
-
-//     IOracle.NewRequest memory _request = _standardRequest();
-
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
-
-//     bytes32 _firstRequestId = oracle.createRequest(_request);
-//     bytes32 _secondRequestId = oracle.createRequest(_request);
-//     vm.stopPrank();
-
-//     assertTrue(_firstRequestId != _secondRequestId, 'Request IDs should not be equal');
-//   }
-
-//   function test_createRequestWithInvalidParameters() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
-//     // Request with invalid token address.
-//     IOracle.NewRequest memory _invalidTokenRequest = _standardRequest();
-//     _invalidTokenRequest.requestModuleData = abi.encode(
-//       IHttpRequestModule.RequestParameters({
-//         url: _expectedUrl,
-//         method: _expectedMethod,
-//         body: _expectedBody,
-//         accountingExtension: _accountingExtension,
-//         paymentToken: IERC20(address(0)),
-//         paymentAmount: _expectedReward
-//       })
-//     );
-
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_requestModule));
-
-//     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
-//     oracle.createRequest(_invalidTokenRequest);
-
-//     // Request with past deadline.
-//     IOracle.NewRequest memory _invalidDeadlineRequest = _standardRequest();
-//     _invalidDeadlineRequest.responseModuleData =
-//       abi.encode(_accountingExtension, USDC_ADDRESS, _expectedBondSize, block.timestamp - 1 hours);
-
-//     vm.expectRevert();
-//     oracle.createRequest(_invalidDeadlineRequest);
-//   }
-
-//   function test_createRequestWithDisallowedModule() public {
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
-
-//     IOracle.NewRequest memory _request = _standardRequest();
-//     _request.requestModule = IRequestModule(address(_responseModule));
-//     _request.responseModule = IResponseModule(address(_requestModule));
-
-//     vm.startPrank(requester);
-//     // Check: reverts with `EVM error`?
-//     vm.expectRevert();
-//     oracle.createRequest(_request);
-
-//     // Check: switch modules back and give a non-existent module. Reverts?
-//     vm.expectRevert();
-//     _request.requestModule = _requestModule;
-//     _request.responseModule = _responseModule;
-//     _request.disputeModule = IDisputeModule(makeAddr('NON-EXISTENT DISPUTE MODULE'));
-//     oracle.createRequest(_request);
-
-//     vm.stopPrank();
-//   }
-
-//   function _standardRequest() internal view returns (IOracle.NewRequest memory _request) {
-//     _request = IOracle.NewRequest({
-//       requestModuleData: abi.encode(
-//         IHttpRequestModule.RequestParameters({
-//           url: _expectedUrl,
-//           method: _expectedMethod,
-//           body: _expectedBody,
-//           accountingExtension: _accountingExtension,
-//           paymentToken: IERC20(USDC_ADDRESS),
-//           paymentAmount: _expectedReward
-//         })
-//         ),
-//       responseModuleData: abi.encode(
-//         IBondedResponseModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize,
-//           deadline: _expectedDeadline,
-//           disputeWindow: _baseDisputeWindow
-//         })
-//         ),
-//       disputeModuleData: abi.encode(
-//         IBondedDisputeModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize
-//         })
-//         ),
-//       resolutionModuleData: abi.encode(_mockArbitrator),
-//       finalityModuleData: abi.encode(
-//         ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
-//         ),
-//       requestModule: _requestModule,
-//       responseModule: _responseModule,
-//       disputeModule: _bondedDisputeModule,
-//       resolutionModule: _arbitratorModule,
-//       finalityModule: IFinalityModule(_callbackModule),
-//       ipfsHash: _ipfsHash
-//     });
-//   }
-// }
+    vm.stopPrank();
+  }
+}

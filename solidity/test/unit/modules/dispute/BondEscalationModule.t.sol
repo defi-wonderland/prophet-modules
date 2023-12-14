@@ -5,10 +5,10 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
+import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 
 import {
   BondEscalationModule, IBondEscalationModule
@@ -123,10 +123,7 @@ contract BaseTest is Test, Helpers {
     bondEscalationModule = new ForTest_BondEscalationModule(oracle);
   }
 
-  function _getRandomDispute(
-    bytes32 _requestId,
-    IOracle.DisputeStatus _status
-  ) internal view returns (IOracle.Dispute memory _dispute) {
+  function _getRandomDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
     _dispute =
       IOracle.Dispute({disputer: disputer, responseId: bytes32('response'), proposer: proposer, requestId: _requestId});
   }
@@ -387,12 +384,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Tests that disputeResponse reverts the caller is not the oracle address.
    */
-  function test_revertIfCallerIsNotOracle(
-    bytes32 _requestId,
-    bytes32 _responseId,
-    address _caller,
-    IOracle.Request calldata _request
-  ) public {
+  function test_revertIfCallerIsNotOracle(address _caller, IOracle.Request calldata _request) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
@@ -421,7 +413,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _responseId;
 
     // Warp to a time after the disputeWindow is over.
-    vm.warp(block.timestamp + _disputeWindow + 1);
+    vm.roll(block.number + _disputeWindow + 1);
 
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
@@ -456,7 +448,17 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
 
+    // Mock and expect the accounting extension to be called
+    _mockAndExpect(
+      address(_params.accountingExtension),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)', mockDispute.disputer, _requestId, _params.bondToken, _params.bondSize
+      ),
+      abi.encode(true)
+    );
+
     vm.warp(_timestamp);
+
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     vm.prank(address(oracle));
@@ -499,10 +501,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_responseId)), abi.encode(1));
 
-    // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Active);
-
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit ResponseDisputed({
       _requestId: _requestId,
@@ -511,6 +509,10 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
       _dispute: mockDispute,
       _blockNumber: block.number
     });
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Active);
 
     vm.prank(address(oracle));
     bondEscalationModule.disputeResponse(mockRequest, mockResponse, mockDispute);
@@ -573,16 +575,12 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    */
   function test_revertIfCallerIsNotOracle(
     bytes32 _disputeId,
-    bytes32 _requestId,
     address _caller,
     uint8 _status,
     IOracle.Request calldata _request
   ) public {
     vm.assume(_caller != address(oracle));
     vm.assume(_status < 4);
-
-    IOracle.DisputeStatus _disputeStatus = IOracle.DisputeStatus(_status);
-    IOracle.Dispute memory _dispute = _getRandomDispute(_requestId, _disputeStatus);
 
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
@@ -700,9 +698,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     );
 
     // Check: is the event emitted?
-    // TODO: fix event emission in module
-    // vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    // emit DisputeStatusChanged(_disputeId, mockDispute, IOracle.DisputeStatus.Won);
+    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    emit DisputeStatusChanged(_disputeId, mockDispute, IOracle.DisputeStatus.Won);
 
     vm.prank(address(oracle));
     bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);

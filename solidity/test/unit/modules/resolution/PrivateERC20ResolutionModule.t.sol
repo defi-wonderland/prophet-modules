@@ -5,13 +5,13 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
-  PrivateERC20ResolutionModule,
-  IPrivateERC20ResolutionModule
+  IPrivateERC20ResolutionModule,
+  PrivateERC20ResolutionModule
 } from '../../../../contracts/modules/resolution/PrivateERC20ResolutionModule.sol';
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
@@ -78,7 +78,6 @@ contract BaseTest is Test, Helpers {
     uint256 _amountOfVotes
   ) internal returns (uint256 _totalVotesCast) {
     bytes32 _disputeId = _getId(_dispute);
-    bytes32 _requestId = _getId(_request);
 
     for (uint256 _i = 1; _i <= _amountOfVoters;) {
       vm.warp(120_000);
@@ -357,7 +356,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     // Check: is totalVotes updated?
     assertEq(_totalVotes, _amountOfVotes);
 
-    // Check: is voter data proplerly updated?
+    // Check: is voter data properly updated?
     IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
     assertEq(_voterData.numOfVotes, _amountOfVotes);
   }
@@ -501,6 +500,16 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Warp to resolving phase
     vm.warp(190_000);
 
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute status is != None?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+
     // Mock and expect token transfers (should happen always)
     for (uint256 _i = 1; _i <= _votersAmount;) {
       _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (vm.addr(_i), 100)), abi.encode());
@@ -518,6 +527,11 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
       address(oracle),
       abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _newStatus)),
       abi.encode()
+    );
+
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
     );
 
     // Check: is the event emitted?

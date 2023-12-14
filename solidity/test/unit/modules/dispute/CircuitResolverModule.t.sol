@@ -5,9 +5,9 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
   CircuitResolverModule,
@@ -246,7 +246,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_randomCaller);
     circuitResolverModule.disputeResponse(mockRequest, mockResponse, mockDispute);
@@ -254,12 +254,12 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
 }
 
 contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
-  function test_emitsEvent(
+  function test_emitsEvent_lostDispute(
     IAccountingExtension _accountingExtension,
     IERC20 _randomToken,
     uint256 _bondSize,
     bytes memory _callData
-  ) public {
+  ) public assumeFuzzable(address(_accountingExtension)) {
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
@@ -277,10 +277,7 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
 
     mockResponse.requestId = _requestId;
     mockResponse.response = _encodedCorrectResponse;
-    mockResponse.proposer = mockDispute.disputer;
-
-    // Mock and expect the call to the oracle, finalizing the request
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalize, (mockRequest, mockResponse)), abi.encode());
+    mockResponse.proposer = makeAddr('proposer');
 
     // Populate the mock dispute with the correct values
     mockDispute.responseId = _getId(mockResponse);
@@ -288,10 +285,79 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
 
-    // TODO: fix this test
+    // Mock and expect the call to the oracle, getting the dispute status
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(_status));
+
+    // Mock and expect the call to the oracle, finalizing the request
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalize, (mockRequest, mockResponse)), abi.encode());
+
     // Check: is the event emitted?
-    // vm.expectEmit(true, true, true, true, address(circuitResolverModule));
-    // emit DisputeStatusChanged(_disputeId, mockDispute, _status);
+    vm.expectEmit(true, true, true, true, address(circuitResolverModule));
+    emit DisputeStatusChanged(_disputeId, mockDispute, _status);
+
+    vm.prank(address(oracle));
+    circuitResolverModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  function test_emitsEvent_wonDispute(
+    IAccountingExtension _accountingExtension,
+    IERC20 _randomToken,
+    uint256 _bondSize,
+    bytes memory _callData
+  ) public assumeFuzzable(address(_accountingExtension)) {
+    mockRequest.disputeModuleData = abi.encode(
+      ICircuitResolverModule.RequestParameters({
+        callData: _callData,
+        verifier: address(mockVerifier),
+        accountingExtension: _accountingExtension,
+        bondToken: _randomToken,
+        bondSize: _bondSize
+      })
+    );
+
+    bytes32 _requestId = _getId(mockRequest);
+    bytes memory _encodedCorrectResponse = abi.encode(true);
+
+    circuitResolverModule.forTest_setCorrectResponse(_requestId, _encodedCorrectResponse);
+
+    mockResponse.requestId = _requestId;
+    mockResponse.response = abi.encode(false);
+    mockResponse.proposer = makeAddr('proposer');
+
+    // Populate the mock dispute with the correct values
+    mockDispute.responseId = _getId(mockResponse);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
+
+    // Mock and expect the call to the oracle, getting the dispute status
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(_status));
+
+    // Mock and expect the call to the accounting extension, paying the disputer
+    _mockAndExpect(
+      address(_accountingExtension),
+      abi.encodeCall(
+        IAccountingExtension.pay, (_requestId, makeAddr('proposer'), mockDispute.disputer, _randomToken, _bondSize)
+      ),
+      abi.encode()
+    );
+
+    IOracle.Response memory _newResponse =
+      IOracle.Response({requestId: _requestId, response: _encodedCorrectResponse, proposer: mockDispute.disputer});
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(circuitResolverModule));
+    emit DisputeStatusChanged(_disputeId, mockDispute, _status);
+
+    // Mock and expect the call to the oracle, proposing the correct response
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.proposeResponse, (mockRequest, _newResponse)),
+      abi.encode(_getId(_newResponse))
+    );
+
+    // Mock and expect the call to the accounting extension, paying the disputer
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalize, (mockRequest, _newResponse)), abi.encode());
 
     vm.prank(address(oracle));
     circuitResolverModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);

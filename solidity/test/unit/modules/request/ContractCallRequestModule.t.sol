@@ -5,9 +5,9 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
   ContractCallRequestModule,
@@ -85,6 +85,32 @@ contract ContractCallRequestModule_Unit_ModuleData is BaseTest {
     assertEq(address(_params.accountingExtension), address(accounting), 'Mismatch: decoded accounting extension');
     assertEq(address(_params.paymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
     assertEq(_params.paymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
+  }
+}
+
+contract ContractCallRequestModule_Unit_CreateRequest is BaseTest {
+  function test_createRequest(
+    address _requester,
+    IContractCallRequestModule.RequestParameters memory _params
+  ) public assumeFuzzable(_requester) assumeFuzzable(address(_params.accountingExtension)) {
+    mockRequest.requestModuleData = abi.encode(_params);
+    mockRequest.requester = _requester;
+
+    // Mock and expect the bond to be placed
+    _mockAndExpect(
+      address(_params.accountingExtension),
+      abi.encodeWithSignature(
+        'bond(address,bytes32,address,uint256)',
+        _requester,
+        _getId(mockRequest),
+        _params.paymentToken,
+        _params.paymentAmount
+      ),
+      abi.encode()
+    );
+
+    vm.prank(address(oracle));
+    contractCallRequestModule.createRequest(_getId(mockRequest), mockRequest.requestModuleData, _requester);
   }
 }
 
@@ -200,7 +226,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(_caller);
     contractCallRequestModule.finalizeRequest(_request, mockResponse, address(_caller));

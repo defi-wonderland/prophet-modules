@@ -10,8 +10,9 @@ The `SparseMerkleTreeRequestModule` is a contract that allows a user to request 
 
 ### Key Methods
 
-- `decodeRequestData`: This function decodes the request data for a given request ID. It returns a RequestParameters struct that contains the parameters for the request.
-- `finalizeRequest`: This function is called by the Oracle to finalize the request. It either pays the proposer for the response or releases the requester's bond if no response was submitted.
+- `decodeRequestData`: Decodes request parameters. It returns a RequestParameters struct that contains the parameters for the request.
+- `createRequest`: Can be used to bond the requester's funds and validating the request parameters.
+- `finalizeRequest`: Finalizes a request by paying the proposer if there is a valid response, or releasing the requester's bond if no valid response was provided.
 
 ### Request Parameters
 
@@ -24,7 +25,8 @@ The `SparseMerkleTreeRequestModule` is a contract that allows a user to request 
 
 ## 3. Key Mechanisms & Concepts
 
-The `SparseMerkleTreeRequestModule` uses a Merkle tree to calculate the root from a set of leaves. The verified contract is used to calculate the Merkle root hash given a set of Merkle tree branches and Merkle tree leaves count.
+- The `SparseMerkleTreeRequestModule` uses a Merkle tree to calculate the root from a set of leaves. The verifier contract is used to calculate the Merkle root hash given a set of Merkle tree branches and Merkle tree leaves count.
+- Check out [Accounting Extension](../../extensions/accounting.md).
 
 ## 4. Gotchas
 

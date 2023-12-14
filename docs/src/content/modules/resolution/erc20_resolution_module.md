@@ -10,7 +10,7 @@ The `ERC20ResolutionModule` is a dispute resolution module that decides on the o
 
 ### Key Methods
 
-- `decodeRequestData`: Decodes the request data associated with a given request ID.
+- `decodeRequestData`: Decodes request parameters.
 - `startResolution`: Starts the resolution process for a given dispute.
 - `castVote`: Allows a user to cast votes for a dispute.
 - `resolveDispute`: Resolves a dispute based on the votes cast.

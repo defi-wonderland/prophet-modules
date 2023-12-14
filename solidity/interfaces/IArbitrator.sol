@@ -13,8 +13,14 @@ interface IArbitrator {
 
   /**
    * @notice Resolves a dispute
-   * @param _disputeId The ID of the dispute
+   * @param _request The request object
+   * @param _response The response object
+   * @param _dispute The dispute object
    * @return _data The data for the dispute resolution
    */
-  function resolve(bytes32 _disputeId) external returns (bytes memory _data);
+  function resolve(
+    IOracle.Request memory _request,
+    IOracle.Response memory _response,
+    IOracle.Dispute memory _dispute
+  ) external returns (bytes memory _data);
 }

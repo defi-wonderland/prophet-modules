@@ -81,7 +81,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(address(_sender));
     bondedResponseModule.propose(mockRequest, mockResponse, _sender);
@@ -171,26 +171,38 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
-    vm.expectRevert(abi.encodeWithSelector(IModule.Module_OnlyOracle.selector));
+    vm.expectRevert(IModule.Module_OnlyOracle.selector);
 
     vm.prank(address(_sender));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _sender);
   }
 
   function test_revertsBeforeDeadline(
-    IERC20 _token,
-    uint256 _bondSize,
+    uint256 _responseCreationBlock,
+    uint256 _finalizationBlock,
     uint256 _deadline,
-    uint256 _disputeWindow,
-    address _proposer
+    uint256 _disputeWindow
   ) public {
-    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
-    _disputeWindow = bound(_disputeWindow, 61, 365 days);
+    // Amount of blocks to wait before finalizing a response
+    _disputeWindow = bound(_disputeWindow, 10, 90_000);
+    // Last block in which a response can be proposed
+    _deadline = bound(_deadline, 100_000, type(uint128).max);
+    // Block in which the response was proposed
+    _responseCreationBlock = bound(_responseCreationBlock, _deadline - _disputeWindow + 1, _deadline - 1);
+    // Block in which the request will be tried to be finalized
+    _finalizationBlock = bound(_finalizationBlock, _deadline, _responseCreationBlock + _disputeWindow - 1);
 
     // Check revert if deadline has not passed
-    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    mockRequest.responseModuleData = abi.encode(
+      IBondedResponseModule.RequestParameters({
+        accountingExtension: accounting,
+        bondToken: IERC20(makeAddr('token')),
+        bondSize: 999_999,
+        deadline: _deadline,
+        disputeWindow: _disputeWindow
+      })
+    );
     mockResponse.requestId = _getId(mockRequest);
-    mockResponse.proposer = _proposer;
 
     // Mock and expect IOracle.allowedModule to be called
     _mockAndExpect(
@@ -200,6 +212,24 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     // Check: does it revert if it's too early to finalize?
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
 
+    vm.roll(_deadline - 1);
+    vm.prank(address(oracle));
+    bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
+
+    // Mock and expect IOracle.allowedModule to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(false)
+    );
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(_responseCreationBlock)
+    );
+
+    // Check: does it revert if it's too early to finalize?
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
+
+    vm.roll(_finalizationBlock);
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
   }
@@ -246,7 +276,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Check correct calls are made if deadline has passed
-    uint256 _deadline = block.timestamp;
+    uint256 _deadline = block.number;
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
@@ -258,9 +288,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     );
 
     // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
-    );
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.number));
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
@@ -273,7 +301,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
     emit RequestFinalized({_requestId: _getId(mockRequest), _response: mockResponse, _finalizer: address(this)});
 
-    vm.warp(block.timestamp + _disputeWindow);
+    vm.roll(block.number + _disputeWindow);
 
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));

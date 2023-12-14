@@ -35,7 +35,6 @@
     - [BondEscalationResolutionModule](content/modules/resolution/bond_escalation_resolution_module.md)
     - [ERC20ResolutionModule](content/modules/resolution/erc20_resolution_module.md)
     - [PrivateERC20ResolutionModule](content/modules/resolution/private_erc20_resolution_module.md)
-    - [SequentialResolutionModule](content/modules/resolution/sequential_resolution_module.md)
 
   - [Finality](content/modules/finality.md)
     - [CallbackModule](content/modules/finality/callback_module.md)
@@ -56,8 +55,6 @@
 
 - [Interfaces]()
     - [❱ core](solidity/interfaces/core/README.md)
-      - [❱ external](solidity/interfaces/core/external/README.md)
-        - [IWETH9](solidity/interfaces/core/external/IWETH9.sol/interface.IWETH9.md)
       - [❱ modules](solidity/interfaces/core/modules/README.md)
         - [❱ dispute](solidity/interfaces/core/modules/dispute/README.md)
           - [IDisputeModule](solidity/interfaces/core/modules/dispute/IDisputeModule.sol/interface.IDisputeModule.md)
@@ -74,8 +71,6 @@
     - [❱ extensions](solidity/interfaces/extensions/README.md)
       - [IAccountingExtension](solidity/interfaces/extensions/IAccountingExtension.sol/interface.IAccountingExtension.md)
       - [IBondEscalationAccounting](solidity/interfaces/extensions/IBondEscalationAccounting.sol/interface.IBondEscalationAccounting.md)
-    - [❱ external](solidity/interfaces/external/README.md)
-      - [IWETH9](solidity/interfaces/external/IWETH9.sol/interface.IWETH9.md)
     - [❱ modules](solidity/interfaces/modules/README.md)
       - [❱ dispute](solidity/interfaces/modules/dispute/README.md)
         - [IBondEscalationModule](solidity/interfaces/modules/dispute/IBondEscalationModule.sol/interface.IBondEscalationModule.md)
@@ -94,7 +89,6 @@
         - [IBondEscalationResolutionModule](solidity/interfaces/modules/resolution/IBondEscalationResolutionModule.sol/interface.IBondEscalationResolutionModule.md)
         - [IERC20ResolutionModule](solidity/interfaces/modules/resolution/IERC20ResolutionModule.sol/interface.IERC20ResolutionModule.md)
         - [IPrivateERC20ResolutionModule](solidity/interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol/interface.IPrivateERC20ResolutionModule.md)
-        - [ISequentialResolutionModule](solidity/interfaces/modules/resolution/ISequentialResolutionModule.sol/interface.ISequentialResolutionModule.md)
       - [❱ response](solidity/interfaces/modules/response/README.md)
         - [IBondedResponseModule](solidity/interfaces/modules/response/IBondedResponseModule.sol/interface.IBondedResponseModule.md)
     - [IArbitrator](solidity/interfaces/IArbitrator.sol/interface.IArbitrator.md)

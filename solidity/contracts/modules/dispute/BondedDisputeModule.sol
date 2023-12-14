@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
 import {IBondedDisputeModule} from '../../../interfaces/modules/dispute/IBondedDisputeModule.sol';
@@ -16,14 +16,14 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   /// @inheritdoc IBondedDisputeModule
-  function decodeRequestData(bytes calldata _data) public view returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IBondedDisputeModule
   function disputeResponse(
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
@@ -48,7 +48,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   function onDisputeStatusChange(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
+    IOracle.Response calldata, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IDisputeModule} from
   '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/dispute/IDisputeModule.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
 
@@ -20,6 +20,15 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
  * and the request is finalized.
  */
 interface ICircuitResolverModule is IDisputeModule {
+  /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when the verification of a response fails
+   */
+  error CircuitResolverModule_VerificationFailed();
+
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
@@ -40,15 +49,6 @@ interface ICircuitResolverModule is IDisputeModule {
     IERC20 bondToken;
     uint256 bondSize;
   }
-
-  /*///////////////////////////////////////////////////////////////
-                              ERRORS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Thrown when the verification of a response fails
-   */
-  error CircuitResolverModule_VerificationFailed();
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

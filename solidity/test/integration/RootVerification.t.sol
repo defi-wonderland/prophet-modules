@@ -1,195 +1,174 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.19;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-// import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {
+  IRootVerificationModule, RootVerificationModule
+} from '../../contracts/modules/dispute/RootVerificationModule.sol';
+import {
+  ISparseMerkleTreeRequestModule,
+  SparseMerkleTreeRequestModule
+} from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
+import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
+import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
+import './IntegrationBase.sol';
 
-// import './IntegrationBase.sol';
-// import {
-//   SparseMerkleTreeRequestModule,
-//   ISparseMerkleTreeRequestModule,
-//   IOracle
-// } from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
-// import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
-// import {
-//   RootVerificationModule, IRootVerificationModule
-// } from '../../contracts/modules/dispute/RootVerificationModule.sol';
-// import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
+contract Integration_RootVerification is IntegrationBase {
+  SparseMerkleTreeL32Verifier internal _treeVerifier;
 
-// contract Integration_RootVerification is IntegrationBase {
-//   SparseMerkleTreeL32Verifier internal _treeVerifier;
+  bytes32 internal _requestId;
+  bytes32[32] internal _treeBranches = [
+    bytes32('branch1'),
+    bytes32('branch2'),
+    bytes32('branch3'),
+    bytes32('branch4'),
+    bytes32('branch5'),
+    bytes32('branch6'),
+    bytes32('branch7'),
+    bytes32('branch8'),
+    bytes32('branch9'),
+    bytes32('branch10'),
+    bytes32('branch11'),
+    bytes32('branch12'),
+    bytes32('branch13'),
+    bytes32('branch14'),
+    bytes32('branch15'),
+    bytes32('branch16'),
+    bytes32('branch17'),
+    bytes32('branch18'),
+    bytes32('branch19'),
+    bytes32('branch20'),
+    bytes32('branch21'),
+    bytes32('branch22'),
+    bytes32('branch23'),
+    bytes32('branch24'),
+    bytes32('branch25'),
+    bytes32('branch26'),
+    bytes32('branch27'),
+    bytes32('branch28'),
+    bytes32('branch29'),
+    bytes32('branch30'),
+    bytes32('branch31'),
+    bytes32('branch32')
+  ];
+  uint256 internal _treeCount = 1;
+  bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
+  bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
+  bytes32 internal _correctRoot;
 
-//   bytes32 internal _requestId;
-//   bytes32[32] internal _treeBranches = [
-//     bytes32('branch1'),
-//     bytes32('branch2'),
-//     bytes32('branch3'),
-//     bytes32('branch4'),
-//     bytes32('branch5'),
-//     bytes32('branch6'),
-//     bytes32('branch7'),
-//     bytes32('branch8'),
-//     bytes32('branch9'),
-//     bytes32('branch10'),
-//     bytes32('branch11'),
-//     bytes32('branch12'),
-//     bytes32('branch13'),
-//     bytes32('branch14'),
-//     bytes32('branch15'),
-//     bytes32('branch16'),
-//     bytes32('branch17'),
-//     bytes32('branch18'),
-//     bytes32('branch19'),
-//     bytes32('branch20'),
-//     bytes32('branch21'),
-//     bytes32('branch22'),
-//     bytes32('branch23'),
-//     bytes32('branch24'),
-//     bytes32('branch25'),
-//     bytes32('branch26'),
-//     bytes32('branch27'),
-//     bytes32('branch28'),
-//     bytes32('branch29'),
-//     bytes32('branch30'),
-//     bytes32('branch31'),
-//     bytes32('branch32')
-//   ];
-//   uint256 internal _treeCount = 1;
-//   bytes internal _treeData = abi.encode(_treeBranches, _treeCount);
-//   bytes32[] internal _leavesToInsert = [bytes32('leave1'), bytes32('leave2')];
+  function setUp() public override {
+    super.setUp();
 
-//   function setUp() public override {
-//     super.setUp();
-//     _expectedDeadline = block.timestamp + BLOCK_TIME * 600;
+    SparseMerkleTreeRequestModule _sparseMerkleTreeModule = new SparseMerkleTreeRequestModule(oracle);
+    label(address(_sparseMerkleTreeModule), 'SparseMerkleTreeModule');
 
-//     SparseMerkleTreeRequestModule _sparseMerkleTreeModule = new SparseMerkleTreeRequestModule(oracle);
-//     label(address(_sparseMerkleTreeModule), 'SparseMerkleTreeModule');
+    RootVerificationModule _rootVerificationModule = new RootVerificationModule(oracle);
+    label(address(_rootVerificationModule), 'RootVerificationModule');
 
-//     RootVerificationModule _rootVerificationModule = new RootVerificationModule(oracle);
-//     label(address(_rootVerificationModule), 'RootVerificationModule');
+    _treeVerifier = new SparseMerkleTreeL32Verifier();
+    label(address(_treeVerifier), 'TreeVerifier');
 
-//     _treeVerifier = new SparseMerkleTreeL32Verifier();
-//     label(address(_treeVerifier), 'TreeVerifier');
+    mockRequest.requestModuleData = abi.encode(
+      ISparseMerkleTreeRequestModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: ITreeVerifier(_treeVerifier),
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: _expectedReward
+      })
+    );
 
-//     IOracle.NewRequest memory _request = IOracle.NewRequest({
-//       requestModuleData: abi.encode(
-//         ISparseMerkleTreeRequestModule.RequestParameters({
-//           treeData: _treeData,
-//           leavesToInsert: _leavesToInsert,
-//           treeVerifier: ITreeVerifier(_treeVerifier),
-//           accountingExtension: _accountingExtension,
-//           paymentToken: IERC20(USDC_ADDRESS),
-//           paymentAmount: _expectedReward
-//         })
-//         ),
-//       responseModuleData: abi.encode(
-//         IBondedResponseModule.RequestParameters({
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize,
-//           deadline: _expectedDeadline,
-//           disputeWindow: _baseDisputeWindow
-//         })
-//         ),
-//       disputeModuleData: abi.encode(
-//         IRootVerificationModule.RequestParameters({
-//           treeData: _treeData,
-//           leavesToInsert: _leavesToInsert,
-//           treeVerifier: ITreeVerifier(_treeVerifier),
-//           accountingExtension: _accountingExtension,
-//           bondToken: IERC20(USDC_ADDRESS),
-//           bondSize: _expectedBondSize
-//         })
-//         ),
-//       resolutionModuleData: abi.encode(_mockArbitrator),
-//       finalityModuleData: abi.encode(
-//         ICallbackModule.RequestParameters({target: address(_mockCallback), data: abi.encode(_expectedCallbackValue)})
-//         ),
-//       requestModule: _sparseMerkleTreeModule,
-//       responseModule: _responseModule,
-//       disputeModule: _rootVerificationModule,
-//       resolutionModule: _arbitratorModule,
-//       finalityModule: IFinalityModule(_callbackModule),
-//       ipfsHash: _ipfsHash
-//     });
+    mockRequest.disputeModuleData = abi.encode(
+      IRootVerificationModule.RequestParameters({
+        treeData: _treeData,
+        leavesToInsert: _leavesToInsert,
+        treeVerifier: ITreeVerifier(_treeVerifier),
+        accountingExtension: _accountingExtension,
+        bondToken: usdc,
+        bondSize: _expectedBondSize
+      })
+    );
 
-//     _forBondDepositERC20(_accountingExtension, requester, usdc, _expectedReward, _expectedReward);
+    mockRequest.requestModule = address(_sparseMerkleTreeModule);
+    mockRequest.disputeModule = address(_rootVerificationModule);
 
-//     vm.startPrank(requester);
-//     _accountingExtension.approveModule(address(_sparseMerkleTreeModule));
-//     _requestId = oracle.createRequest(_request);
-//     vm.stopPrank();
-//   }
+    _resetMockIds();
 
-//   function test_validResponse() public {
-//     bytes32 _correctRoot = ITreeVerifier(_treeVerifier).calculateRoot(_treeData, _leavesToInsert);
+    _deposit(_accountingExtension, requester, usdc, _expectedReward);
 
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.startPrank(requester);
+    _accountingExtension.approveModule(address(_sparseMerkleTreeModule));
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    vm.stopPrank();
 
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_correctRoot));
-//     vm.stopPrank();
+    vm.prank(proposer);
+    _accountingExtension.approveModule(address(_responseModule));
 
-//     vm.warp(_expectedDeadline + _baseDisputeWindow);
+    _correctRoot = ITreeVerifier(_treeVerifier).calculateRoot(_treeData, _leavesToInsert);
+  }
 
-//     oracle.finalize(_requestId, _responseId);
-//   }
+  function test_validResponse() public {
+    _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
 
-//   function test_disputeResponse_incorrectResponse(bytes32 _invalidRoot) public {
-//     bytes32 _correctRoot = ITreeVerifier(_treeVerifier).calculateRoot(_treeData, _leavesToInsert);
-//     vm.assume(_correctRoot != _invalidRoot);
+    mockResponse.response = abi.encode(_correctRoot);
 
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
 
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_invalidRoot));
-//     vm.stopPrank();
+    vm.roll(_expectedDeadline + _baseDisputeWindow);
 
-//     vm.startPrank(disputer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     oracle.disputeResponse(_requestId, _responseId);
-//     vm.stopPrank();
+    oracle.finalize(mockRequest, mockResponse);
+  }
 
-//     uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
-//     uint256 _proposerBondedBalance = _accountingExtension.bondedAmountOf(proposer, usdc, _requestId);
+  function test_disputeResponse_incorrectResponse(bytes32 _invalidRoot) public {
+    vm.assume(_correctRoot != _invalidRoot);
 
-//     uint256 _requesterVirtualBalance = _accountingExtension.balanceOf(requester, usdc);
-//     uint256 _proposerVirtualBalance = _accountingExtension.balanceOf(proposer, usdc);
-//     uint256 _disputerVirtualBalance = _accountingExtension.balanceOf(disputer, usdc);
+    _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
 
-//     assertEq(_requesterBondedBalance, 0);
-//     assertEq(_proposerBondedBalance, 0);
+    mockResponse.response = abi.encode(_invalidRoot);
 
-//     assertEq(_requesterVirtualBalance, 0);
-//     assertEq(_proposerVirtualBalance, 0);
-//     assertEq(_disputerVirtualBalance, _expectedBondSize + _expectedReward);
-//   }
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+    _resetMockIds();
 
-//   function test_disputeResponse_correctResponse() public {
-//     bytes32 _correctRoot = ITreeVerifier(_treeVerifier).calculateRoot(_treeData, _leavesToInsert);
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_responseModule));
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    vm.stopPrank();
 
-//     _forBondDepositERC20(_accountingExtension, proposer, usdc, _expectedBondSize, _expectedBondSize);
+    uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
+    assertEq(_requesterBondedBalance, 0);
 
-//     vm.startPrank(proposer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     bytes32 _responseId = oracle.proposeResponse(_requestId, abi.encode(_correctRoot));
-//     vm.stopPrank();
+    uint256 _proposerBondedBalance = _accountingExtension.bondedAmountOf(proposer, usdc, _requestId);
+    assertEq(_proposerBondedBalance, 0);
 
-//     vm.startPrank(disputer);
-//     _accountingExtension.approveModule(address(_responseModule));
-//     oracle.disputeResponse(_requestId, _responseId);
-//     vm.stopPrank();
-//     uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
-//     uint256 _proposerBondedBalance = _accountingExtension.bondedAmountOf(proposer, usdc, _requestId);
+    uint256 _requesterVirtualBalance = _accountingExtension.balanceOf(requester, usdc);
+    assertEq(_requesterVirtualBalance, 0);
 
-//     uint256 _requesterVirtualBalance = _accountingExtension.balanceOf(requester, usdc);
-//     uint256 _proposerVirtualBalance = _accountingExtension.balanceOf(proposer, usdc);
+    uint256 _proposerVirtualBalance = _accountingExtension.balanceOf(proposer, usdc);
+    assertEq(_proposerVirtualBalance, 0);
 
-//     assertEq(_requesterBondedBalance, 0);
-//     assertEq(_proposerBondedBalance, 0);
+    uint256 _disputerVirtualBalance = _accountingExtension.balanceOf(disputer, usdc);
+    assertEq(_disputerVirtualBalance, _expectedBondSize + _expectedReward);
+  }
 
-//     assertEq(_requesterVirtualBalance, 0);
-//     assertEq(_proposerVirtualBalance, _expectedBondSize + _expectedReward);
-//   }
-// }
+  function test_disputeResponse_correctResponse() public {
+    _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
+
+    mockResponse.response = abi.encode(_correctRoot);
+
+    vm.prank(proposer);
+    oracle.proposeResponse(mockRequest, mockResponse);
+    _resetMockIds();
+
+    vm.startPrank(disputer);
+    _accountingExtension.approveModule(address(_responseModule));
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    vm.stopPrank();
+
+    assertEq(_accountingExtension.bondedAmountOf(requester, usdc, _requestId), 0);
+    assertEq(_accountingExtension.bondedAmountOf(proposer, usdc, _requestId), 0);
+    assertEq(_accountingExtension.balanceOf(requester, usdc), 0);
+    assertEq(_accountingExtension.balanceOf(proposer, usdc), _expectedBondSize + _expectedReward);
+  }
+}

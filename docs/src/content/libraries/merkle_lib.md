@@ -10,7 +10,7 @@ The library is a part of the [Connext monorepo](https://github.com/connext/monor
 
 ### Key Methods
 
-- `insert(Tree memory tree, bytes32 node)`: This function inserts a given node (leaf) into the Merkle tree. It operates on an in-memory tree and returns an updated version of that tree. If the tree is already full, it reverts the transaction.
+- `insert`: Inserts a given node (leaf) into the Merkle tree. It operates on an in-memory tree and returns an updated version of that tree. If the tree is already full, it reverts the transaction.
 
 ## 3. Key Mechanisms & Concepts
 
