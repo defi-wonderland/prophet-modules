@@ -89,6 +89,17 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
     // Check: The correct status is returned?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(_status));
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IArbitratorModule.RequestParameters calldata _params) public {
+    if (_params.arbitrator == address(0)) {
+      assertFalse(arbitratorModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(arbitratorModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract ArbitratorModule_Unit_StartResolution is BaseTest {

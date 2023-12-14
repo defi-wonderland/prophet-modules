@@ -70,8 +70,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = (
       address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
-        || _params.paymentAmount == 0 || keccak256(abi.encode(_params.url)) == keccak256(abi.encode(''))
-        || keccak256(abi.encode(_params.body)) == keccak256(abi.encode(''))
+        || _params.paymentAmount == 0 || bytes(_params.url).length == 0 || bytes(_params.body).length == 0
     ) ? false : true;
   }
 }

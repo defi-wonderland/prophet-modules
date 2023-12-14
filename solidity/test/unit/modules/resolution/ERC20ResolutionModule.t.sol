@@ -105,6 +105,20 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
     assertEq(_params.minVotesForQuorum, _minVotesForQuorum);
     assertEq(_params.timeUntilDeadline, _votingTimeWindow);
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IERC20ResolutionModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
+        || _params.minVotesForQuorum == 0 || _params.timeUntilDeadline == 0
+    ) {
+      assertFalse(module.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(module.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract ERC20ResolutionModule_Unit_StartResolution is BaseTest {
