@@ -2,11 +2,11 @@
 pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
-import {Module, IModule} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
-import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
 import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
+import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
 
 contract ArbitratorModule is Module, IArbitratorModule {
   /**

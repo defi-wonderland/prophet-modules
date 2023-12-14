@@ -5,10 +5,10 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../utils/Helpers.sol';
 
-import {Oracle, IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
 import {
   AccountingExtension, IAccountingExtension, IERC20
 } from '../../../contracts/extensions/AccountingExtension.sol';
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 contract ForTest_AccountingExtension is AccountingExtension {
