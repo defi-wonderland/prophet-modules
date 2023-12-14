@@ -35,13 +35,10 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    // TODO: Call `disputeStatus` to check the current status
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
 
-    bytes32 _correctRoot = _correctRoots[_dispute.requestId];
-    bool _won = abi.decode(_response.response, (bytes32)) != _correctRoot;
-
-    if (_won) {
+    if (_status == IOracle.DisputeStatus.Won) {
       _params.accountingExtension.pay({
         _requestId: _dispute.requestId,
         _payer: _dispute.proposer,
@@ -53,7 +50,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       IOracle.Response memory _newResponse = IOracle.Response({
         requestId: _dispute.requestId,
         proposer: _dispute.disputer,
-        response: abi.encode(_correctRoot)
+        response: abi.encode(_correctRoots[_dispute.requestId])
       });
 
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});

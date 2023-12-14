@@ -30,17 +30,6 @@ interface IArbitratorModule is IResolutionModule {
   error ArbitratorModule_InvalidResolutionStatus();
 
   /*///////////////////////////////////////////////////////////////
-                              STRUCTS
-  //////////////////////////////////////////////////////////////*/
-  /**
-   * @notice Parameters of the request as stored in the module
-   * @param arbitrator The address of the arbitrator
-   */
-  struct RequestParameters {
-    address arbitrator;
-  }
-
-  /*///////////////////////////////////////////////////////////////
                               ENUMS
   //////////////////////////////////////////////////////////////*/
 
@@ -51,6 +40,17 @@ interface IArbitratorModule is IResolutionModule {
     Unknown, // The arbitration process has not started (default)
     Active, // The arbitration process is active
     Resolved // The arbitration process is resolved
+  }
+
+  /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+  /**
+   * @notice Parameters of the request as stored in the module
+   * @param arbitrator The address of the arbitrator
+   */
+  struct RequestParameters {
+    address arbitrator;
   }
 
   /*///////////////////////////////////////////////////////////////
