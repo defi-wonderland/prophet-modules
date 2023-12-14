@@ -3,9 +3,6 @@ pragma solidity ^0.8.19;
 
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-
-import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 import {TestConstants} from './TestConstants.sol';
 
 contract Helpers is DSTestPlus, TestConstants {
@@ -38,7 +35,7 @@ contract Helpers is DSTestPlus, TestConstants {
   function _assumeFuzzable(address _address) internal view {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
-    assumeNotPrecompile(_address, block.chainid); // using Optimsim chaind id for precompiles filtering
+    assumeNotPrecompile(_address, block.chainid); // using Optimism chaind id for precompiles filtering
   }
 
   /**

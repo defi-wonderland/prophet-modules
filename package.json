@@ -39,13 +39,13 @@
   },
   "dependencies": {
     "@defi-wonderland/prophet-core-contracts": "0.0.0-49fc8fa6",
-    "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "@openzeppelin/contracts": "^4.9.3",
     "solmate": "https://github.com/transmissions11/solmate.git#bfc9c25865a274a7827fea5abf6e4fb64fc64e6c"
   },
   "devDependencies": {
     "@commitlint/cli": "17.0.3",
     "@commitlint/config-conventional": "17.0.3",
+    "@defi-wonderland/solidity-utils": "0.0.0-3e9c8e8b",
     "@typechain/ethers-v6": "0.3.0",
     "@typechain/truffle-v5": "8.0.2",
     "@typechain/web3-v1": "6.0.2",
@@ -57,7 +57,7 @@
     "lint-staged": "13.2.2",
     "pinst": "3.0.0",
     "solhint": "3.5.1",
-    "solhint-plugin-defi-wonderland": "1.1.0",
+    "solhint-plugin-defi-wonderland": "1.1.2",
     "solidity-docgen": "0.6.0-beta.35",
     "sort-package-json": "2.4.1",
     "standard-version": "9.5.0",

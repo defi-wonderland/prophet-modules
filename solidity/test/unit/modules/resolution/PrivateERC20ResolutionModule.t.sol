@@ -356,7 +356,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     // Check: is totalVotes updated?
     assertEq(_totalVotes, _amountOfVotes);
 
-    // Check: is voter data proplerly updated?
+    // Check: is voter data properly updated?
     IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
     assertEq(_voterData.numOfVotes, _amountOfVotes);
   }

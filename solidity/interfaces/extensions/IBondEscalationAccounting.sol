@@ -90,26 +90,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
   );
 
   /*///////////////////////////////////////////////////////////////
-                              STRUCTS
-  //////////////////////////////////////////////////////////////*/
-
-  /**
-   * @notice Contains the data of the result of an escalation. Is used by users to claim their pledges
-   * @param requestId         The ID of the bond-escalated request
-   * @param forVotesWon       Whether the for votes won the dispute
-   * @param token             The address of the token being paid out
-   * @param amountPerPledger  The amount of token paid to each of the winning pledgers
-   * @param bondEscalationModule The address of the bond escalation module that was used
-   */
-  struct EscalationResult {
-    bytes32 requestId;
-    bool forVotesWon;
-    IERC20 token;
-    uint256 amountPerPledger;
-    IBondEscalationModule bondEscalationModule;
-  }
-
-  /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
 
@@ -132,6 +112,26 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @notice Thrown when trying to settle an already settled escalation
    */
   error BondEscalationAccounting_AlreadySettled();
+
+  /*///////////////////////////////////////////////////////////////
+                              STRUCTS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Contains the data of the result of an escalation. Is used by users to claim their pledges
+   * @param requestId         The ID of the bond-escalated request
+   * @param forVotesWon       Whether the for votes won the dispute
+   * @param token             The address of the token being paid out
+   * @param amountPerPledger  The amount of token paid to each of the winning pledgers
+   * @param bondEscalationModule The address of the bond escalation module that was used
+   */
+  struct EscalationResult {
+    bytes32 requestId;
+    bool forVotesWon;
+    IERC20 token;
+    uint256 amountPerPledger;
+    IBondEscalationModule bondEscalationModule;
+  }
 
   /*///////////////////////////////////////////////////////////////
                               VARIABLES
