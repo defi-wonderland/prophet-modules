@@ -31,6 +31,7 @@ contract BaseTest is Test, Helpers {
 
   // Events
   event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
+  event UnutilizedResponseReleased(bytes32 indexed _requestId, bytes32 indexed _responseId);
 
   /**
    * @notice Deploy the target and mock oracle+accounting extension
@@ -369,5 +370,118 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
 
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _finalizer);
+  }
+}
+
+contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
+  function test_withUndisputedResponse_withFinalizedRequest_releasesBond(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    address _proposer,
+    bytes32 _finalizedResponseId
+  ) public {
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+    bytes32 _responseId = _getId(mockResponse);
+
+    vm.assume(_finalizedResponseId > 0);
+    vm.assume(_finalizedResponseId != _responseId);
+
+    // Mock and expect IOracle.disputeOf to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeOf, (_responseId)), abi.encode(bytes32(0)));
+
+    // Mock and expect IOracle.finalizedResponseId to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
+    );
+
+    // Mock and expect IAccountingExtension.release to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeCall(IAccountingExtension.release, (_proposer, _getId(mockRequest), _token, _bondSize)),
+      abi.encode(true)
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
+    emit UnutilizedResponseReleased(_requestId, _responseId);
+
+    bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
+  }
+
+  function test_withUndisputedResponse_revertsIfRequestIsNotFinalized(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    address _proposer
+  ) public {
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+    bytes32 _responseId = _getId(mockResponse);
+
+    // Mock and expect IOracle.disputeOf to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeOf, (_responseId)), abi.encode(bytes32(0)));
+
+    // Mock and expect IOracle.finalizedResponseId to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(0));
+
+    vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidReleaseParameters.selector);
+
+    bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
+  }
+
+  function test_withDisputedResponse(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    address _proposer,
+    bytes32 _finalizedResponseId,
+    bytes32 _disputeId
+  ) public {
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+    bytes32 _responseId = _getId(mockResponse);
+
+    vm.assume(_disputeId > 0);
+    vm.assume(_finalizedResponseId > 0);
+    vm.assume(_finalizedResponseId != _responseId);
+
+    // Mock and expect IOracle.disputeOf to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeOf, (_responseId)), abi.encode(_disputeId));
+
+    // Mock and expect IOracle.finalizedResponseId to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
+    );
+
+    for (uint256 _i = 0; _i < uint256(type(IOracle.DisputeStatus).max); _i++) {
+      IOracle.DisputeStatus _status = IOracle.DisputeStatus(_i);
+
+      // Mock and expect IOracle.disputeOf to be called
+      _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(_status));
+
+      if (_status == IOracle.DisputeStatus.Lost || _status == IOracle.DisputeStatus.NoResolution) {
+        // Mock and expect IAccountingExtension.release to be called
+        _mockAndExpect(
+          address(accounting),
+          abi.encodeCall(IAccountingExtension.release, (_proposer, _getId(mockRequest), _token, _bondSize)),
+          abi.encode(true)
+        );
+      } else {
+        vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidReleaseParameters.selector);
+      }
+
+      bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
+    }
   }
 }
