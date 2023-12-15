@@ -121,6 +121,21 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
         _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
+        uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
+        uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
+
+        uint256 _amountToPay = _won
+          ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
+          : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
+
+        _params.accountingExtension.onSettleBondEscalation({
+          _requestId: _dispute.requestId,
+          _disputeId: _escalation.disputeId,
+          _token: _params.bondToken,
+          _amountPerPledger: _amountToPay,
+          _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
+        });
+
         _params.accountingExtension.pay({
           _requestId: _dispute.requestId,
           _payer: _won ? _dispute.proposer : _dispute.disputer,
@@ -130,31 +145,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         });
 
         if (_won) {
-          uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
-          uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
-
-          uint256 _amountToPay = _won
-            ? _params.bondSize
-              + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
-            : _params.bondSize
-              + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
-
-          _params.accountingExtension.onSettleBondEscalation({
+          _params.accountingExtension.release({
             _requestId: _dispute.requestId,
-            _disputeId: _escalation.disputeId,
+            _bonder: _dispute.disputer,
             _token: _params.bondToken,
-            _amountPerPledger: _amountToPay,
-            _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
+            _amount: _params.bondSize
           });
-
-          if (_won) {
-            _params.accountingExtension.release({
-              _requestId: _dispute.requestId,
-              _bonder: _dispute.disputer,
-              _token: _params.bondToken,
-              _amount: _params.bondSize
-            });
-          }
         }
       }
     } else {
