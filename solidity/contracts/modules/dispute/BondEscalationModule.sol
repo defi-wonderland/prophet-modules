@@ -101,13 +101,15 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         // Refund the disputer and all pledgers, the bond escalation escalation status stays Escalated
         _newStatus = BondEscalationStatus.Escalated;
 
-        _params.accountingExtension.onSettleBondEscalation({
-          _requestId: _dispute.requestId,
-          _disputeId: _disputeId,
-          _token: _params.bondToken,
-          _amountPerPledger: _params.bondSize,
-          _winningPledgersLength: _escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute
-        });
+        if (_escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute > 0) {
+          _params.accountingExtension.onSettleBondEscalation({
+            _requestId: _dispute.requestId,
+            _disputeId: _disputeId,
+            _token: _params.bondToken,
+            _amountPerPledger: _params.bondSize,
+            _winningPledgersLength: _escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute
+          });
+        }
 
         _params.accountingExtension.release({
           _requestId: _dispute.requestId,
@@ -124,17 +126,21 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
         uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
 
-        uint256 _amountToPay = _won
-          ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
-          : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
+        if (_pledgesAgainstDispute > 0) {
+          uint256 _amountToPay = _won
+            ? _params.bondSize
+              + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
+            : _params.bondSize
+              + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
 
-        _params.accountingExtension.onSettleBondEscalation({
-          _requestId: _dispute.requestId,
-          _disputeId: _escalation.disputeId,
-          _token: _params.bondToken,
-          _amountPerPledger: _amountToPay,
-          _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
-        });
+          _params.accountingExtension.onSettleBondEscalation({
+            _requestId: _dispute.requestId,
+            _disputeId: _escalation.disputeId,
+            _token: _params.bondToken,
+            _amountPerPledger: _amountToPay,
+            _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
+          });
+        }
 
         _params.accountingExtension.pay({
           _requestId: _dispute.requestId,
