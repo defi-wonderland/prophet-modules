@@ -39,4 +39,29 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
 
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = true;
+
+    for (uint256 _i; _i < _params.targets.length; ++_i) {
+      if (_params.targets[_i] == address(0)) {
+        _valid = false;
+        break;
+      }
+    }
+
+    for (uint256 _i; _i < _params.data.length; ++_i) {
+      if (_params.data[_i].length == 0) {
+        _valid = false;
+        break;
+      }
+    }
+  }
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -88,6 +88,17 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
 
     // Check: The correct status is returned?
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(_status));
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IArbitratorModule.RequestParameters calldata _params) public {
+    if (_params.arbitrator == address(0)) {
+      assertFalse(arbitratorModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(arbitratorModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 

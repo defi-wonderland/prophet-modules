@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -182,6 +182,21 @@ contract BondEscalationModule_Unit_ModuleData is BaseTest {
     assertEq(_params.bondEscalationDeadline, _decodedParams.bondEscalationDeadline);
     assertEq(_params.tyingBuffer, _decodedParams.tyingBuffer);
     assertEq(_params.disputeWindow, _decodedParams.disputeWindow);
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IBondEscalationModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0 || _params.bondEscalationDeadline == 0 || _params.maxNumberOfEscalations == 0
+        || _params.tyingBuffer == 0 || _params.disputeWindow == 0
+    ) {
+      assertFalse(bondEscalationModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(bondEscalationModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 

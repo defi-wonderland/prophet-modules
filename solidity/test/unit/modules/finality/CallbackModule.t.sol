@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -54,6 +54,17 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
     // Check: decoded values match original values?
     assertEq(_params.target, _target);
     assertEq(_params.data, _data);
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(ICallbackModule.RequestParameters calldata _params) public {
+    if (address(_params.target) == address(0) || _params.data.length == 0) {
+      assertFalse(callbackModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(callbackModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 

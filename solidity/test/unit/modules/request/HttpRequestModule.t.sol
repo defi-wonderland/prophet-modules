@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -75,6 +75,38 @@ contract HttpRequestModule_Unit_ModuleData is BaseTest {
     assertEq(address(_params.accountingExtension), address(accounting));
     assertEq(address(_params.paymentToken), address(_token));
     assertEq(_params.paymentAmount, _amount);
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(
+    string memory _url,
+    string memory _body,
+    uint256 _method,
+    address _accountingExtension,
+    address _paymentToken,
+    uint256 _paymentAmount
+  ) public {
+    _method = bound(_method, 0, 1);
+
+    IHttpRequestModule.RequestParameters memory _params = IHttpRequestModule.RequestParameters({
+      url: _url,
+      body: _body,
+      method: IHttpRequestModule.HttpMethod(_method),
+      accountingExtension: IAccountingExtension(_accountingExtension),
+      paymentToken: IERC20(_paymentToken),
+      paymentAmount: _paymentAmount
+    });
+
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
+        || _params.paymentAmount == 0 || bytes(_params.url).length == 0 || bytes(_params.body).length == 0
+    ) {
+      assertFalse(httpRequestModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(httpRequestModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 

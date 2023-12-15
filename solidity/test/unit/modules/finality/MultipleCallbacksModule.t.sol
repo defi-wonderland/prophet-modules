@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -42,6 +42,30 @@ contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
    */
   function test_moduleNameReturnsName() public {
     assertEq(multipleCallbackModule.moduleName(), 'MultipleCallbacksModule');
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IMultipleCallbacksModule.RequestParameters calldata _params) public {
+    bool _valid = true;
+    for (uint256 _i; _i < _params.targets.length; ++_i) {
+      if (_params.targets[_i] == address(0)) {
+        _valid = false;
+      }
+    }
+
+    for (uint256 _i; _i < _params.data.length; ++_i) {
+      if (_params.data[_i].length == 0) {
+        _valid = false;
+      }
+    }
+
+    if (!_valid) {
+      assertFalse(multipleCallbackModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(multipleCallbackModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 

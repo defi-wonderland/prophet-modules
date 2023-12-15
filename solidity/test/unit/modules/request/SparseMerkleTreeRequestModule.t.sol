@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import 'forge-std/Test.sol';
@@ -123,6 +123,21 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
     assertEq(address(_params.accountingExtension), address(_accounting), 'Mismatch: decoded accounting extension');
     assertEq(address(_params.paymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
     assertEq(_params.paymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
+  }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(ISparseMerkleTreeRequestModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
+        || address(_params.treeVerifier) == address(0) || _params.paymentAmount == 0 || _params.treeData.length == 0
+        || _params.leavesToInsert.length == 0
+    ) {
+      assertFalse(sparseMerkleTreeRequestModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(sparseMerkleTreeRequestModule.validateParameters(abi.encode(_params)));
+    }
   }
 }
 
