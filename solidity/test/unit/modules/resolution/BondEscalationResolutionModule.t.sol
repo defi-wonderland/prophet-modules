@@ -740,7 +740,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     assertEq(module.pledgesAgainstDispute(_disputeId, pledgerAgainst), _pledgeAmount);
     // Check: is the status properly updated?
     assertEq(uint256(_status), uint256(IBondEscalationResolutionModule.InequalityStatus.AgainstTurnToEqualize));
-    // // Check: is the timer properly updated?
+    // Check: is the timer properly updated?
     assertEq(uint256(_timer), block.timestamp);
   }
 

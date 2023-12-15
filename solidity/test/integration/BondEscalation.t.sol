@@ -101,24 +101,24 @@ contract Integration_BondEscalation is IntegrationBase {
   }
 
   function test_proposerWins() public {
-    // // Step 1: Proposer pledges against the dispute
+    // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
     _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
-    // // Step 2: Disputer doubles down
+    // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
-    // // Step 3: Proposer doubles down
+    // Step 3: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
     _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
-    // // Step 4: Disputer runs out of capital
-    // // Step 5: External parties see that Disputer's dispute was wrong so they don't join to escalate
-    // // Step 6: Proposer response's is deemed correct and final once the bond escalation window is over
+    // Step 4: Disputer runs out of capital
+    // Step 5: External parties see that Disputer's dispute was wrong so they don't join to escalate
+    // Step 6: Proposer response's is deemed correct and final once the bond escalation window is over
     vm.warp(_expectedDeadline + _tyingBuffer + 1);
     _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
@@ -191,7 +191,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _bondEscalationAccounting.claimEscalationReward(_disputeId, requester);
     assertEq(_bondEscalationAccounting.balanceOf(requester, usdc), 0, 'Mismatch: Requester balance');
 
-    // Test: The proposer has lost his pledge
+    // // Test: The proposer has lost his pledge
     _bondEscalationAccounting.claimEscalationReward(_disputeId, proposer);
     assertEq(_bondEscalationAccounting.balanceOf(proposer, usdc), 0, 'Mismatch: Proposer balance');
 
