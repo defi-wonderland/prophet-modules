@@ -840,7 +840,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, true, _params.bondToken, _params.bondSize << 1, _numForPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numForPledgers)
       ),
       abi.encode()
     );
@@ -908,7 +908,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, false, _params.bondToken, _params.bondSize << 1, _numAgainstPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numAgainstPledgers)
       ),
       abi.encode(true)
     );

@@ -49,18 +49,12 @@ interface IBondEscalationAccounting is IAccountingExtension {
    *
    * @param _requestId             The ID of the bond-escalated request
    * @param _disputeId             The ID of the bond-escalated dispute
-   * @param _forVotesWon           True if the winning side were the for votes
    * @param _token                 The address of the token being paid out
    * @param _amountPerPledger      The amount of `_token` to be paid for each winning pledgers
    * @param _winningPledgersLength The number of winning pledgers
    */
   event BondEscalationSettled(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    bool _forVotesWon,
-    IERC20 _token,
-    uint256 _amountPerPledger,
-    uint256 _winningPledgersLength
+    bytes32 _requestId, bytes32 _disputeId, IERC20 _token, uint256 _amountPerPledger, uint256 _winningPledgersLength
   );
 
   /**
@@ -120,14 +114,12 @@ interface IBondEscalationAccounting is IAccountingExtension {
   /**
    * @notice Contains the data of the result of an escalation. Is used by users to claim their pledges
    * @param requestId         The ID of the bond-escalated request
-   * @param forVotesWon       Whether the for votes won the dispute
    * @param token             The address of the token being paid out
    * @param amountPerPledger  The amount of token paid to each of the winning pledgers
    * @param bondEscalationModule The address of the bond escalation module that was used
    */
   struct EscalationResult {
     bytes32 requestId;
-    bool forVotesWon;
     IERC20 token;
     uint256 amountPerPledger;
     IBondEscalationModule bondEscalationModule;
@@ -151,20 +143,13 @@ interface IBondEscalationAccounting is IAccountingExtension {
    *
    * @param _disputeId             The ID of the bond-escalated dispute
    * @return _requestId            The ID of the bond-escalated request
-   * @return _forVotesWon          True if the for votes won the dispute
    * @return _token                Address of the token being paid as a reward for winning the bond escalation
    * @return _amountPerPledger     Amount of `_token` to be rewarded to each of the winning pledgers
    * @return _bondEscalationModule The address of the bond escalation module that was used
    */
   function escalationResults(bytes32 _disputeId)
     external
-    returns (
-      bytes32 _requestId,
-      bool _forVotesWon,
-      IERC20 _token,
-      uint256 _amountPerPledger,
-      IBondEscalationModule _bondEscalationModule
-    );
+    returns (bytes32 _requestId, IERC20 _token, uint256 _amountPerPledger, IBondEscalationModule _bondEscalationModule);
 
   /**
    * @notice True if the given pledger has claimed their reward for the given dispute
@@ -198,7 +183,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
    *
    * @param _requestId              The ID of the bond-escalated request
    * @param _disputeId              The ID of the bond-escalated dispute
-   * @param _forVotesWon            True if the for votes won the dispute
    * @param _token                  Address of the token being paid as a reward for winning the bond escalation
    * @param _amountPerPledger       Amount of `_token` to be rewarded to each of the winning pledgers
    * @param _winningPledgersLength  Amount of pledges that won the dispute
@@ -206,7 +190,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
   function onSettleBondEscalation(
     bytes32 _requestId,
     bytes32 _disputeId,
-    bool _forVotesWon,
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
