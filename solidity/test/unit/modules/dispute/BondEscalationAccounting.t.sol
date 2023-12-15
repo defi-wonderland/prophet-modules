@@ -462,6 +462,11 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
 
+    // Mock and expect to call the oracle getting the dispute status
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
     // Mock and expect the call to the escalation module asking for pledges
     _mockAndExpect(
       _bondEscalationModule,
@@ -501,6 +506,11 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
+
+    // Mock and expect to call the oracle getting the dispute status
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Lost)
+    );
 
     // Mock and expect to call the escalation module asking for pledges
     _mockAndExpect(
