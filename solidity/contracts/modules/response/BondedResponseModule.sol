@@ -88,6 +88,34 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
 
+  /// @inheritdoc IBondedResponseModule
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+    bytes32 _responseId = _validateResponse(_request, _response);
+    bytes32 _disputeId = ORACLE.disputeOf(_responseId);
+
+    if (_disputeId > 0) {
+      IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
+      if (_disputeStatus != IOracle.DisputeStatus.Lost && _disputeStatus != IOracle.DisputeStatus.NoResolution) {
+        revert BondedResponseModule_InvalidReleaseParameters();
+      }
+    }
+
+    bytes32 _finalizedResponseId = ORACLE.finalizedResponseId(_response.requestId);
+    if (_finalizedResponseId == _responseId || _finalizedResponseId == bytes32(0)) {
+      revert BondedResponseModule_InvalidReleaseParameters();
+    }
+
+    RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
+    _params.accountingExtension.release({
+      _bonder: _response.proposer,
+      _requestId: _response.requestId,
+      _token: _params.bondToken,
+      _amount: _params.bondSize
+    });
+
+    emit UnutilizedResponseReleased(_response.requestId, _responseId);
+  }
+
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external

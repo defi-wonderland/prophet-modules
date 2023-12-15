@@ -25,6 +25,14 @@ interface IBondedResponseModule is IResponseModule {
    */
   event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
 
+  /**
+   * @notice Emitted when an uncalled response is released
+   *
+   * @param _requestId The ID of the request that the response was proposed to
+   * @param _responseId The ID of the response that was released
+   */
+  event UnutilizedResponseReleased(bytes32 indexed _requestId, bytes32 indexed _responseId);
+
   /*///////////////////////////////////////////////////////////////
                               ERRORS
   //////////////////////////////////////////////////////////////*/
@@ -43,6 +51,11 @@ interface IBondedResponseModule is IResponseModule {
    * @notice Thrown when trying to propose a response while an undisputed response is already proposed
    */
   error BondedResponseModule_AlreadyResponded();
+
+  /**
+   * @notice Thrown when trying to release an uncalled response with an invalid request, response or dispute
+   */
+  error BondedResponseModule_InvalidReleaseParameters();
 
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
@@ -99,4 +112,12 @@ interface IBondedResponseModule is IResponseModule {
     IOracle.Response calldata _response,
     address _finalizer
   ) external;
+
+  /**
+   * @notice Releases the proposer fund if the response is valid and it has not been used to finalize the request
+   *
+   * @param _request The finalized request
+   * @param _response The unutilized response
+   */
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external;
 }
