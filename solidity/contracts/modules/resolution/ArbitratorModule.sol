@@ -75,6 +75,6 @@ contract ArbitratorModule is Module, IArbitratorModule {
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = _params.arbitrator == address(0) ? false : true;
+    _valid = _params.arbitrator != address(0);
   }
 }

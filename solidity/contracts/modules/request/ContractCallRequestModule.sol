@@ -68,9 +68,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = (
-      address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
-        || _params.target == address(0) || _params.paymentAmount == 0 || _params.functionSelector == bytes4(0)
-    ) ? false : true;
+    _valid = address(_params.accountingExtension) != address(0) && address(_params.paymentToken) != address(0)
+      && _params.target != address(0) && _params.paymentAmount != 0 && _params.functionSelector != bytes4(0);
   }
 }

@@ -348,10 +348,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = (
-      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
-        || _params.percentageDiff == 0 || _params.pledgeThreshold == 0 || _params.timeUntilDeadline == 0
-        || _params.timeToBreakInequality == 0
-    ) ? false : true;
+    _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
+      && _params.percentageDiff != 0 && _params.pledgeThreshold != 0 && _params.timeUntilDeadline != 0
+      && _params.timeToBreakInequality != 0;
   }
 }

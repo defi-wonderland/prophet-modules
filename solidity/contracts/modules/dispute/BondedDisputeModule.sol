@@ -112,9 +112,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = (
-      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
-        || _params.bondSize == 0
-    ) ? false : true;
+    _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
+      && _params.bondSize != 0;
   }
 }

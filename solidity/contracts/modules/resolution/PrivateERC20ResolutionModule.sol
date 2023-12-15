@@ -168,9 +168,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = (
-      address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
-        || _params.minVotesForQuorum == 0 || _params.committingTimeWindow == 0 || _params.revealingTimeWindow == 0
-    ) ? false : true;
+    _valid = address(_params.accountingExtension) != address(0) && address(_params.votingToken) != address(0)
+      && _params.minVotesForQuorum != 0 && _params.committingTimeWindow != 0 && _params.revealingTimeWindow != 0;
   }
 }
