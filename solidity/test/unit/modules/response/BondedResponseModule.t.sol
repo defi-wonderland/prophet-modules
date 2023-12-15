@@ -374,6 +374,9 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
 }
 
 contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
+  /**
+   * @notice Finalized request, undisputed response, the bond should be released
+   */
   function test_withUndisputedResponse_withFinalizedRequest_releasesBond(
     IERC20 _token,
     uint256 _bondSize,
@@ -381,13 +384,16 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     address _proposer,
     bytes32 _finalizedResponseId
   ) public {
+    // Setting the response module data
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
 
+    // Updating IDs
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
     mockResponse.proposer = _proposer;
     bytes32 _responseId = _getId(mockResponse);
 
+    // Can't claim back the bond of the response that was finalized
     vm.assume(_finalizedResponseId > 0);
     vm.assume(_finalizedResponseId != _responseId);
 
@@ -410,17 +416,23 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
     emit UnutilizedResponseReleased(_requestId, _responseId);
 
+    // Test: does it release the bond?
     bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
   }
 
+  /**
+   * @notice Non-finalized request, undisputed response, the call should revert
+   */
   function test_withUndisputedResponse_revertsIfRequestIsNotFinalized(
     IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
     address _proposer
   ) public {
+    // Setting the response module data
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
 
+    // Updating IDs
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
     mockResponse.proposer = _proposer;
@@ -432,11 +444,15 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     // Mock and expect IOracle.finalizedResponseId to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(0));
 
+    // Check: reverts?
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidReleaseParameters.selector);
 
     bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
   }
 
+  /**
+   * @notice Finalized request, disputed response, the call should revert if the dispute status is not Lost nor NoResolution
+   */
   function test_withDisputedResponse(
     IERC20 _token,
     uint256 _bondSize,
@@ -445,14 +461,19 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     bytes32 _finalizedResponseId,
     bytes32 _disputeId
   ) public {
+    // Setting the response module data
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
 
+    // Updating IDs
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
     mockResponse.proposer = _proposer;
     bytes32 _responseId = _getId(mockResponse);
 
+    // Make sure there is a dispute
     vm.assume(_disputeId > 0);
+
+    // Can't claim back the bond of the response that was finalized
     vm.assume(_finalizedResponseId > 0);
     vm.assume(_finalizedResponseId != _responseId);
 
@@ -464,6 +485,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
       address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
     );
 
+    // We're going to test all possible dispute statuses
     for (uint256 _i = 0; _i < uint256(type(IOracle.DisputeStatus).max); _i++) {
       IOracle.DisputeStatus _status = IOracle.DisputeStatus(_i);
 
