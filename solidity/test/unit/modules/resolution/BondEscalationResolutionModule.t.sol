@@ -193,6 +193,21 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
   function test_moduleName() public {
     assertEq(module.moduleName(), 'BondEscalationResolutionModule');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.percentageDiff == 0 || _params.pledgeThreshold == 0 || _params.timeUntilDeadline == 0
+        || _params.timeToBreakInequality == 0
+    ) {
+      assertFalse(module.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(module.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {

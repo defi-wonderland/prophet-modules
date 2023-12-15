@@ -49,7 +49,7 @@ contract BaseTest is Test, Helpers {
   }
 }
 
-contract BondedResponseModule_Unit_ModuleData is BaseTest {
+contract BondedDisputeModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
@@ -76,9 +76,23 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
   function test_moduleNameReturnsName() public {
     assertEq(bondedDisputeModule.moduleName(), 'BondedDisputeModule');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IBondedDisputeModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0
+    ) {
+      assertFalse(bondedDisputeModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(bondedDisputeModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
-contract BondedResponseModule_Unit_OnDisputeStatusChange is BaseTest {
+contract BondedDisputeModule_Unit_OnDisputeStatusChange is BaseTest {
   /**
    * @notice Dispute lost by disputer
    */
@@ -221,7 +235,7 @@ contract BondedResponseModule_Unit_OnDisputeStatusChange is BaseTest {
   }
 }
 
-contract BondedResponseModule_Unit_DisputeResponse is BaseTest {
+contract BondedDisputeModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute response returns the correct status
    */

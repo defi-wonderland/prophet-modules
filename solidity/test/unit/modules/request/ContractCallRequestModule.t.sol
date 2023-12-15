@@ -86,6 +86,20 @@ contract ContractCallRequestModule_Unit_ModuleData is BaseTest {
     assertEq(address(_params.paymentToken), address(_paymentToken), 'Mismatch: decoded payment token');
     assertEq(_params.paymentAmount, _paymentAmount, 'Mismatch: decoded payment amount');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IContractCallRequestModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
+        || _params.target == address(0) || _params.paymentAmount == 0 || _params.functionSelector == bytes4(0)
+    ) {
+      assertFalse(contractCallRequestModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(contractCallRequestModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract ContractCallRequestModule_Unit_CreateRequest is BaseTest {

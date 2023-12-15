@@ -71,6 +71,20 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
     assertEq(_params.deadline, _deadline, 'Mismatch: deadline');
     assertEq(_params.disputeWindow, _disputeWindow, 'Mismatch: dispute window');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IBondedResponseModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0 || _params.disputeWindow == 0 || _params.deadline == 0
+    ) {
+      assertFalse(bondedResponseModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(bondedResponseModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract BondedResponseModule_Unit_Propose is BaseTest {

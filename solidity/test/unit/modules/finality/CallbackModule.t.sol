@@ -55,6 +55,17 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
     assertEq(_params.target, _target);
     assertEq(_params.data, _data);
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(ICallbackModule.RequestParameters calldata _params) public {
+    if (address(_params.target) == address(0) || _params.data.length == 0) {
+      assertFalse(callbackModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(callbackModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract CallbackModule_Unit_FinalizeRequest is BaseTest {

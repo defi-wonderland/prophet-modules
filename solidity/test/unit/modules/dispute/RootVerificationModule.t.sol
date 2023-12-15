@@ -144,6 +144,21 @@ contract RootVerificationModule_Unit_ModuleData is BaseTest {
     assertEq(address(_params.bondToken), _randomToken, 'Mismatch: decoded token');
     assertEq(_params.bondSize, _bondSize, 'Mismatch: decoded bond size');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(IRootVerificationModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || address(_params.treeVerifier) == address(0) || _params.bondSize == 0 || _params.treeData.length == 0
+        || _params.leavesToInsert.length == 0
+    ) {
+      assertFalse(rootVerificationModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(rootVerificationModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract RootVerificationModule_Unit_DisputeResponse is BaseTest {

@@ -89,4 +89,16 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
 
     ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
   }
+
+  /// @inheritdoc IModule
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
+    RequestParameters memory _params = decodeRequestData(_encodedParameters);
+    _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
+      && _params.bondSize != 0 && address(_params.verifier) != address(0) && _params.callData.length != 0;
+  }
 }

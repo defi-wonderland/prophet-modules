@@ -102,6 +102,20 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
   function test_moduleName() public {
     assertEq(circuitResolverModule.moduleName(), 'CircuitResolverModule');
   }
+
+  /**
+   * @notice Test that the validateParameters function correctly checks the parameters
+   */
+  function test_validateParameters(ICircuitResolverModule.RequestParameters calldata _params) public {
+    if (
+      address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
+        || _params.bondSize == 0 || address(_params.verifier) == address(0) || _params.callData.length == 0
+    ) {
+      assertFalse(circuitResolverModule.validateParameters(abi.encode(_params)));
+    } else {
+      assertTrue(circuitResolverModule.validateParameters(abi.encode(_params)));
+    }
+  }
 }
 
 contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
