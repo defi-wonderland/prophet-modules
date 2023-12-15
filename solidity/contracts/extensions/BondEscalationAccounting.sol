@@ -79,7 +79,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _result.requestId;
     if (pledgerClaimed[_requestId][_pledger]) revert BondEscalationAccounting_AlreadyClaimed();
 
-    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_requestId);
+    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
     uint256 _amountPerPledger = _result.amountPerPledger;
     uint256 _numberOfPledges;
 
