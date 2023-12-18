@@ -743,10 +743,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
-    // Set the bond escalation status to Escalated, which is the only possible one for this function
-    bondEscalationModule.forTest_setBondEscalationStatus(
-      _requestId, IBondEscalationModule.BondEscalationStatus.Escalated
-    );
+    // Set the bond escalation status to Active, which is the only possible one for this function
+    bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
 
     // Mock and expect IOracle.createdAt to be called
     _mockAndExpect(
@@ -778,7 +776,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     // Check: is the bond escalation status properly updated?
     assertEq(
       uint256(bondEscalationModule.getEscalation(_requestId).status),
-      uint256(IBondEscalationModule.BondEscalationStatus.Escalated)
+      uint256(IBondEscalationModule.BondEscalationStatus.DisputerWon)
     );
   }
 
@@ -791,6 +789,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
   function test_shouldChangeBondEscalationStatusAndCallPayPledgersWon(
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
+    vm.assume(_params.bondSize < type(uint256).max / 2);
+
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
 
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -840,7 +840,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, true, _params.bondToken, _params.bondSize << 1, _numForPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numForPledgers)
       ),
       abi.encode()
     );
@@ -868,6 +868,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
   function test_shouldChangeBondEscalationStatusAndCallPayPledgersLost(
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
+    vm.assume(_params.bondSize < type(uint256).max / 2);
+
     // Set to Lost so the proposer and againstDisputePledgers win
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -908,7 +910,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, false, _params.bondToken, _params.bondSize << 1, _numAgainstPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numAgainstPledgers)
       ),
       abi.encode(true)
     );

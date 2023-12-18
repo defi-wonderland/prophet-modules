@@ -38,14 +38,12 @@ contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
   function forTest_setEscalationResult(
     bytes32 _disputeId,
     bytes32 _requestId,
-    bool _forVotesWon,
     IERC20 _token,
     uint256 _amountPerPledger,
     IBondEscalationModule _bondEscalationModule
   ) public {
     escalationResults[_disputeId] = EscalationResult({
       requestId: _requestId,
-      forVotesWon: _forVotesWon,
       token: _token,
       amountPerPledger: _amountPerPledger,
       bondEscalationModule: _bondEscalationModule
@@ -73,12 +71,7 @@ contract BaseTest is Test, Helpers {
   );
 
   event BondEscalationSettled(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    bool _forVotesWon,
-    IERC20 _token,
-    uint256 _amountPerPledger,
-    uint256 _winningPledgersLength
+    bytes32 _requestId, bytes32 _disputeId, IERC20 _token, uint256 _amountPerPledger, uint256 _winningPledgersLength
   );
 
   event EscalationRewardClaimed(
@@ -216,7 +209,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     bondEscalationAccounting.onSettleBondEscalation({
       _requestId: _requestId,
       _disputeId: _disputeId,
-      _forVotesWon: true,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
@@ -240,7 +232,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     );
 
     bondEscalationAccounting.forTest_setEscalationResult(
-      _disputeId, _requestId, true, token, _amountPerPledger, IBondEscalationModule(address(this))
+      _disputeId, _requestId, token, _amountPerPledger, IBondEscalationModule(address(this))
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amountPerPledger * _numOfWinningPledgers);
@@ -251,7 +243,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     bondEscalationAccounting.onSettleBondEscalation({
       _requestId: _requestId,
       _disputeId: _disputeId,
-      _forVotesWon: true,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
@@ -286,7 +277,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     bondEscalationAccounting.onSettleBondEscalation({
       _requestId: _requestId,
       _disputeId: _disputeId,
-      _forVotesWon: true,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
@@ -315,12 +305,11 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
-    emit BondEscalationSettled(_requestId, _disputeId, true, token, _amountPerPledger, _numOfWinningPledgers);
+    emit BondEscalationSettled(_requestId, _disputeId, token, _amountPerPledger, _numOfWinningPledgers);
 
     bondEscalationAccounting.onSettleBondEscalation({
       _requestId: _requestId,
       _disputeId: _disputeId,
-      _forVotesWon: true,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
@@ -328,7 +317,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
     (
       bytes32 _requestIdSaved,
-      bool _forVotesWon,
       IERC20 _token,
       uint256 _amountPerPledgerSaved,
       IBondEscalationModule _bondEscalationModule
@@ -336,7 +324,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
     // Check: are the escalation results properly stored?
     assertEq(_requestIdSaved, _requestId);
-    assertEq(_forVotesWon, true);
     assertEq(address(_token), address(token));
     assertEq(_amountPerPledgerSaved, _amountPerPledger);
     assertEq(address(_bondEscalationModule), address(this));
@@ -447,7 +434,7 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
 
   function test_revertIfAlreadyClaimed(bytes32 _disputeId, bytes32 _requestId) public {
     bondEscalationAccounting.forTest_setEscalationResult(
-      _disputeId, _requestId, true, token, 0, IBondEscalationModule(address(this))
+      _disputeId, _requestId, token, 0, IBondEscalationModule(address(this))
     );
 
     bondEscalationAccounting.forTest_setClaimed(pledger, _requestId, true);
@@ -470,10 +457,15 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     vm.assume(_amount < type(uint256).max / _pledges);
 
     bondEscalationAccounting.forTest_setEscalationResult(
-      _disputeId, _requestId, true, token, _amount, IBondEscalationModule(_bondEscalationModule)
+      _disputeId, _requestId, token, _amount, IBondEscalationModule(_bondEscalationModule)
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
+
+    // Mock and expect to call the oracle getting the dispute status
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
 
     // Mock and expect the call to the escalation module asking for pledges
     _mockAndExpect(
@@ -510,10 +502,15 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     _amount = bound(_amount, 0, type(uint256).max / _pledges);
 
     bondEscalationAccounting.forTest_setEscalationResult(
-      _disputeId, _requestId, false, token, _amount, IBondEscalationModule(_bondEscalationModule)
+      _disputeId, _requestId, token, _amount, IBondEscalationModule(_bondEscalationModule)
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
+
+    // Mock and expect to call the oracle getting the dispute status
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Lost)
+    );
 
     // Mock and expect to call the escalation module asking for pledges
     _mockAndExpect(

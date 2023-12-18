@@ -77,12 +77,15 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
-
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
     IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
+    BondEscalationStatus _newStatus;
 
-    if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
-      if (_disputeId == _escalation.disputeId) {
+    if (_disputeId == _escalation.disputeId) {
+      // The bond escalated (first) dispute has been updated
+      if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
+        // The dispute has been escalated to the Resolution module
+        // Make sure the bond escalation deadline has passed and update the status
         if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
 
         if (
@@ -92,77 +95,114 @@ contract BondEscalationModule is Module, IBondEscalationModule {
           revert BondEscalationModule_NotEscalatable();
         }
 
-        _escalation.status = BondEscalationStatus.Escalated;
-        emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Escalated);
-        return;
-      } else {
-        emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Escalated});
-        return;
-      }
-    }
+        _newStatus = BondEscalationStatus.Escalated;
+      } else if (_disputeStatus == IOracle.DisputeStatus.NoResolution) {
+        // The resolution module failed to reach a resolution
+        // Refund the disputer and all pledgers, the bond escalation escalation status stays Escalated
+        _newStatus = BondEscalationStatus.Escalated;
 
-    bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
-
-    _params.accountingExtension.pay({
-      _requestId: _dispute.requestId,
-      _payer: _won ? _dispute.proposer : _dispute.disputer,
-      _receiver: _won ? _dispute.disputer : _dispute.proposer,
-      _token: _params.bondToken,
-      _amount: _params.bondSize
-    });
-
-    if (_won) {
-      _params.accountingExtension.release({
-        _requestId: _dispute.requestId,
-        _bonder: _dispute.disputer,
-        _token: _params.bondToken,
-        _amount: _params.bondSize
-      });
-    }
-
-    if (_disputeId == _escalation.disputeId) {
-      // The dispute has been escalated to the Resolution module
-      if (_escalation.status == BondEscalationStatus.Escalated) {
-        if (_escalation.amountOfPledgesAgainstDispute == 0) {
-          return;
+        if (_escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute > 0) {
+          _params.accountingExtension.onSettleBondEscalation({
+            _requestId: _dispute.requestId,
+            _disputeId: _disputeId,
+            _token: _params.bondToken,
+            _amountPerPledger: _params.bondSize,
+            _winningPledgersLength: _escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute
+          });
         }
 
-        BondEscalationStatus _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
-        _escalation.status = _newStatus;
-
-        emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
-
-        _params.accountingExtension.onSettleBondEscalation({
+        _params.accountingExtension.release({
           _requestId: _dispute.requestId,
-          _disputeId: _disputeId,
-          _forVotesWon: _won,
+          _bonder: _dispute.disputer,
           _token: _params.bondToken,
-          _amountPerPledger: _params.bondSize << 1,
-          _winningPledgersLength: _won ? _escalation.amountOfPledgesForDispute : _escalation.amountOfPledgesAgainstDispute
+          _amount: _params.bondSize
         });
       } else {
-        // The status has changed to Won or Lost
+        // One of the sides won
+        // Pay the winner (proposer/disputer) and the pledgers, the bond escalation status changes to DisputerWon/DisputerLost
+        bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
+        _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
+
         uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
         uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
-        bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
 
-        uint256 _amountToPay = _disputersWon
-          ? _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
-          : _params.bondSize + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
+        if (_pledgesAgainstDispute > 0) {
+          uint256 _amountToPay = _won
+            ? _params.bondSize
+              + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
+            : _params.bondSize
+              + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
 
-        _params.accountingExtension.onSettleBondEscalation({
+          _params.accountingExtension.onSettleBondEscalation({
+            _requestId: _dispute.requestId,
+            _disputeId: _escalation.disputeId,
+            _token: _params.bondToken,
+            _amountPerPledger: _amountToPay,
+            _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
+          });
+        }
+
+        _params.accountingExtension.pay({
           _requestId: _dispute.requestId,
-          _disputeId: _escalation.disputeId,
-          _forVotesWon: _disputersWon,
+          _payer: _won ? _dispute.proposer : _dispute.disputer,
+          _receiver: _won ? _dispute.disputer : _dispute.proposer,
           _token: _params.bondToken,
-          _amountPerPledger: _amountToPay,
-          _winningPledgersLength: _disputersWon ? _pledgesForDispute : _pledgesAgainstDispute
+          _amount: _params.bondSize
         });
+
+        if (_won) {
+          _params.accountingExtension.release({
+            _requestId: _dispute.requestId,
+            _bonder: _dispute.disputer,
+            _token: _params.bondToken,
+            _amount: _params.bondSize
+          });
+        }
+      }
+    } else {
+      // The non-bond escalated (second and subsequent) dispute has been updated
+      if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
+        // The dispute has been escalated to the Resolution module
+        // Update the bond escalation status to Escalated
+        _newStatus = BondEscalationStatus.Escalated;
+      } else if (_disputeStatus == IOracle.DisputeStatus.NoResolution) {
+        // The resolution module failed to reach a resolution
+        // Refund the disputer, the bond escalation status stays Escalated
+        _newStatus = BondEscalationStatus.Escalated;
+        _params.accountingExtension.release({
+          _requestId: _dispute.requestId,
+          _bonder: _dispute.disputer,
+          _token: _params.bondToken,
+          _amount: _params.bondSize
+        });
+      } else {
+        // One of the sides won
+        // Pay the winner (proposer/disputer), the bond escalation status changes to DisputerWon/DisputerLost
+        bool _won = _disputeStatus == IOracle.DisputeStatus.Won;
+        _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
+
+        _params.accountingExtension.pay({
+          _requestId: _dispute.requestId,
+          _payer: _won ? _dispute.proposer : _dispute.disputer,
+          _receiver: _won ? _dispute.disputer : _dispute.proposer,
+          _token: _params.bondToken,
+          _amount: _params.bondSize
+        });
+
+        if (_won) {
+          _params.accountingExtension.release({
+            _requestId: _dispute.requestId,
+            _bonder: _dispute.disputer,
+            _token: _params.bondToken,
+            _amount: _params.bondSize
+          });
+        }
       }
     }
 
-    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
-    emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _status});
+    _escalation.status = _newStatus;
+    emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
+    emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _disputeStatus});
   }
 
   ////////////////////////////////////////////////////////////////////

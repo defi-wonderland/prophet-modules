@@ -44,7 +44,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   function onSettleBondEscalation(
     bytes32 _requestId,
     bytes32 _disputeId,
-    bool _forVotesWon,
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
@@ -59,7 +58,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
 
     escalationResults[_disputeId] = EscalationResult({
       requestId: _requestId,
-      forVotesWon: _forVotesWon,
       token: _token,
       amountPerPledger: _amountPerPledger,
       bondEscalationModule: IBondEscalationModule(msg.sender)
@@ -68,7 +66,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     emit BondEscalationSettled({
       _requestId: _requestId,
       _disputeId: _disputeId,
-      _forVotesWon: _forVotesWon,
       _token: _token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _winningPledgersLength
@@ -82,10 +79,17 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _result.requestId;
     if (pledgerClaimed[_requestId][_pledger]) revert BondEscalationAccounting_AlreadyClaimed();
 
+    IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
     uint256 _amountPerPledger = _result.amountPerPledger;
-    uint256 _numberOfPledges = _result.forVotesWon
-      ? _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
-      : _result.bondEscalationModule.pledgesAgainstDispute(_requestId, _pledger);
+    uint256 _numberOfPledges;
+
+    if (_status == IOracle.DisputeStatus.NoResolution) {
+      _numberOfPledges = 1;
+    } else {
+      _numberOfPledges = _status == IOracle.DisputeStatus.Won
+        ? _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
+        : _result.bondEscalationModule.pledgesAgainstDispute(_requestId, _pledger);
+    }
 
     IERC20 _token = _result.token;
     uint256 _claimAmount = _amountPerPledger * _numberOfPledges;
