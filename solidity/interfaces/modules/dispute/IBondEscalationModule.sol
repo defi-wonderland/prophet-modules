@@ -110,14 +110,18 @@ interface IBondEscalationModule is IDisputeModule {
 
   /**
    * @notice Enum holding all the possible statuses of a dispute going through the bond escalation mechanism.
+   * @param None Dispute is not going through the bond escalation mechanism.
+   * @param Active Dispute is going through the bond escalation mechanism.
+   * @param Escalated Dispute is going through the bond escalation mechanism and has been escalated.
+   * @param DisputerLost An escalated dispute has been settled and the disputer lost.
+   * @param DisputerWon An escalated dispute has been settled and the disputer won.
    */
   enum BondEscalationStatus {
-    None, // Dispute is not going through the bond escalation mechanism.
-    Active, // Dispute is going through the bond escalation mechanism.
-    Escalated, // Dispute is going through the bond escalation mechanism and has been escalated.
-    DisputerLost, // An escalated dispute has been settled and the disputer lost.
-    DisputerWon // An escalated dispute has been settled and the disputer won.
-
+    None,
+    Active,
+    Escalated,
+    DisputerLost,
+    DisputerWon
   }
 
   /*///////////////////////////////////////////////////////////////
