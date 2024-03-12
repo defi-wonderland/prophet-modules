@@ -20,8 +20,8 @@ Prophet presents a versatile and fully adaptable optimistic oracle solution, tra
 
 ## Deployments
 
-The addresses of the contracts deployed on Optimism Goerli are listed below.
-
+*The addresses of the contracts deployed on Optimism Goerli will be listed here.*
+<!-- 
 | Contract                                                                                                                                                   | Goerli                                                                                                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | [Oracle](/solidity/interfaces/core/IOracle.sol/interface.IOracle.md)                                                                                       | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) |
@@ -38,7 +38,7 @@ The addresses of the contracts deployed on Optimism Goerli are listed below.
 | [ArbitratorModule](/solidity/interfaces/modules/resolution/IArbitratorModule.sol/interface.IArbitratorModule.md)                                           | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) |
 | [BondEscalationResolutionModule](/solidity/interfaces/modules/resolution/IBondEscalationResolutionModule.sol/interface.IBondEscalationResolutionModule.md) | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) |
 | [ERC20ResolutionModule](/solidity/interfaces/modules/resolution/IERC20ResolutionModule.sol/interface.IERC20ResolutionModule.md)                            | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) |
-| [PrivateERC20ResolutionModule](/solidity/interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol/interface.IPrivateERC20ResolutionModule.md)       | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) |
+| [PrivateERC20ResolutionModule](/solidity/interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol/interface.IPrivateERC20ResolutionModule.md)       | [`0x0000000000000000000000000000000000000000`](https://goerli-optimism.etherscan.io/address/0x0000000000000000000000000000000000000000) | -->
 
 ## Licensing
 
