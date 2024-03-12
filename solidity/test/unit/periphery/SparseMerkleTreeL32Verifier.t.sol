@@ -32,7 +32,6 @@ contract SparseMerkleTreeL32Verifier_UnitTest is Test {
   /**
    * @notice Deploy the target
    */
-
   function setUp() public {
     sparseMerkleTreeL32Verifier = new ForTest_SparseMerkleTreeL32Verifier();
   }
