@@ -157,12 +157,12 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   /**
    * @notice Parameters of the request as stored in the module
    *
-   * @param _accountingExtension   The accounting extension to use for this request.
-   * @param _token                 The token to use for this request.
-   * @param _percentageDiff        The percentage difference between the for and against pledges that triggers the change in voting turns. This value should be between 1 and 100.
-   * @param _pledgeThreshold       The amount of pledges that must be reached to achieve quorum and start triggering voting turns.
-   * @param _timeUntilDeadline     The amount of time in seconds past the start time of the escalation until the resolution process is over.
-   * @param _timeToBreakInequality The amount of time the pledgers have to break the pledge inequality once the percentage difference has been surpassed.
+   * @param accountingExtension   The accounting extension to use for this request.
+   * @param bondToken             The token to use for this request.
+   * @param percentageDiff        The percentage difference between the for and against pledges that triggers the change in voting turns. This value should be between 1 and 100.
+   * @param pledgeThreshold       The amount of pledges that must be reached to achieve quorum and start triggering voting turns.
+   * @param timeUntilDeadline     The amount of time in seconds past the start time of the escalation until the resolution process is over.
+   * @param timeToBreakInequality The amount of time the pledgers have to break the pledge inequality once the percentage difference has been surpassed.
    */
   struct RequestParameters {
     IBondEscalationAccounting accountingExtension;
@@ -176,8 +176,8 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   /**
    * @notice The inequality status and its last update time of a given dispute.
    *
-   * @param _inequalityStatus The current status of the inequality.
-   * @param _time             The time at which the inequality was last updated.
+   * @param inequalityStatus The current status of the inequality.
+   * @param time             The time at which the inequality was last updated.
    */
   struct InequalityData {
     InequalityStatus inequalityStatus;
@@ -187,10 +187,10 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   /**
    * @notice The bond escalation progress and the balance of pledges for and against a given dispute.
    *
-   * @param _resolution     The current resolution of the dispute.
-   * @param _startTime      The time at which the dispute was escalated.
-   * @param _pledgesFor     The amount of pledges in favor of the dispute.
-   * @param _pledgesAgainst The amount of pledges against the dispute.
+   * @param resolution     The current resolution of the dispute.
+   * @param startTime      The time at which the dispute was escalated.
+   * @param pledgesFor     The amount of pledges in favor of the dispute.
+   * @param pledgesAgainst The amount of pledges against the dispute.
    */
   struct Escalation {
     Resolution resolution;
@@ -272,6 +272,9 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   /**
    * @notice Allows users to pledge in favor of a given dispute. This means the user believes the proposed answer is
    *         incorrect and therefore wants the disputer to win his dispute.
+   *
+   * @param _request The request data
+   * @param _dispute The dispute data
    * @param _pledgeAmount The amount of pledges to pledge.
    */
   function pledgeForDispute(
@@ -283,6 +286,9 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   /**
    * @notice Allows users to pledge against a given dispute. This means the user believes the proposed answer is
    *         correct and therefore wants the disputer to lose his dispute.
+   *
+   * @param _request The request data
+   * @param _dispute The dispute data
    * @param _pledgeAmount The amount of pledges to pledge.
    */
   function pledgeAgainstDispute(
@@ -293,6 +299,9 @@ interface IBondEscalationResolutionModule is IResolutionModule {
 
   /**
    * @notice Allows user to claim his corresponding pledges after a dispute is resolved.
+   *
+   * @param _request The request data
+   * @param _dispute The dispute data
    *
    * @dev Winning pledgers will claim their pledges along with their reward. In case of no resolution, users can
    *      claim their pledges back. Losing pledgers will go to the rewards of the winning pledgers.

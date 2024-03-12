@@ -8,16 +8,13 @@ import {MerkleLib} from '../libraries/MerkleLib.sol';
 contract SparseMerkleTreeL32Verifier is ITreeVerifier {
   using MerkleLib for MerkleLib.Tree;
 
+  /// @notice The depth of the Merkle tree
   uint256 internal constant _TREE_DEPTH = 32;
+
+  /// @notice A temporary tree created and cleaned up in the calculateRoot function
   MerkleLib.Tree internal _tempTree;
 
-  constructor() {}
-
-  /**
-   * @notice Calculates the Merkle root hash given a set of Merkle tree branches and merkle tree leaves count.
-   * @param _treeData The encoded Merkle tree data parameters for the tree verifier.
-   * @return _calculatedRoot The calculated Merkle root hash.
-   */
+  /// @inheritdoc ITreeVerifier
   function calculateRoot(
     bytes memory _treeData,
     bytes32[] memory _leavesToInsert

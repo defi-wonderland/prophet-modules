@@ -8,9 +8,10 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
 
 contract CircuitResolverModule is Module, ICircuitResolverModule {
-  constructor(IOracle _oracle) Module(_oracle) {}
-
+  /// @notice Keeps track of the correct responses to requests
   mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
+
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

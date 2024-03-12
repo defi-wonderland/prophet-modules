@@ -60,9 +60,7 @@ library MerkleLib {
   // ============= Structs ==============
 
   /**
-   * @notice Struct representing incremental merkle tree. Contains current
-   * branch and the number of inserted leaves in the tree.
-   *
+   * @notice Struct representing incremental merkle tree. Contains current branch and the number of inserted leaves in the tree.
    */
   struct Tree {
     bytes32[TREE_DEPTH] branch;

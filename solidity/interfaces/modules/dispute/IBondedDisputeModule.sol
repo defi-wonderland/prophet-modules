@@ -20,10 +20,10 @@ interface IBondedDisputeModule is IDisputeModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice  Parameters of the request as stored in the module
-   * @param   ipfsHash The hash of the CID from IPFS
-   * @param   requestModule The address of the request module
-   * @param   responseModule The address of the response module
+   * @notice Parameters of the request as stored in the module
+   * @param accountingExtension The address of the accounting extension
+   * @param bondToken The address of the bond token
+   * @param bondSize The size of the bond
    */
   struct RequestParameters {
     IAccountingExtension accountingExtension;
@@ -61,7 +61,9 @@ interface IBondedDisputeModule is IDisputeModule {
    *
    * @dev     According to the result of the dispute, bonds are released to the proposer or paid to the disputer
    * @param   _disputeId The ID of the dispute being updated
-   * @param   _dispute The dispute object
+   * @param   _request The request a dispute has been submitted for
+   * @param   _response The response that is being disputed
+   * @param   _dispute The dispute that has changed status
    */
   function onDisputeStatusChange(
     bytes32 _disputeId,

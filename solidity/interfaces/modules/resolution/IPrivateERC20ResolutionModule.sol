@@ -97,7 +97,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   /**
    * @notice Parameters of the request as stored in the module
    * @param accountingExtension The accounting extension used to bond and release tokens
-   * @param token The token used to vote
+   * @param votingToken The token used to vote
    * @param minVotesForQuorum The minimum amount of votes to win the dispute
    * @param committingTimeWindow The amount of time to commit votes from the escalation of the dispute
    * @param revealingTimeWindow The amount of time to reveal votes from the committing phase
@@ -115,7 +115,6 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @param startTime The timestamp at which the dispute was escalated
    * @param totalVotes The total amount of votes cast for the dispute
    */
-
   struct Escalation {
     uint256 startTime;
     uint256 totalVotes;
@@ -151,6 +150,9 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @notice Starts the committing phase for a dispute
    * @dev Only callable by the Oracle
    * @param _disputeId The id of the dispute to start resolution of
+   * @param _request The request data
+   * @param _response The disputed response
+   * @param _dispute The dispute being resolved
    */
   function startResolution(
     bytes32 _disputeId,
@@ -162,6 +164,8 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   /**
    * @notice Stores a commitment for a vote cast by a voter
    * @dev Committing multiple times and overwriting a previous commitment is allowed
+   * @param _request The request data
+   * @param _dispute The dispute being voted on
    * @param _commitment The commitment computed from the provided data and the user's address
    */
   function commitVote(
@@ -173,6 +177,8 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   /**
    * @notice Reveals a vote cast by a voter
    * @dev The user must have previously approved the module to transfer the tokens
+   * @param _request The request data
+   * @param _dispute The dispute being voted on
    * @param _numberOfVotes The amount of votes being revealed
    * @param _salt The salt used to compute the commitment
    */
@@ -187,6 +193,9 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @notice Resolves a dispute by tallying the votes and executing the winning outcome
    * @dev Only callable by the Oracle
    * @param _disputeId The id of the dispute being resolved
+   * @param _request The request data
+   * @param _response The disputed response
+   * @param _dispute The dispute being resolved
    */
   function resolveDispute(
     bytes32 _disputeId,
@@ -206,6 +215,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @notice Computes a valid commitment for the revealing phase
    * @param _disputeId The id of the dispute being voted on
    * @param _numberOfVotes The amount of votes being cast
+   * @param _salt Random data used to hash the commitment
    * @return _commitment The commitment computed from the provided data and the user's address
    */
   function computeCommitment(
