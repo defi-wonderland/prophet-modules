@@ -114,7 +114,7 @@ interface IBondedResponseModule is IResponseModule {
   ) external;
 
   /**
-   * @notice Releases the proposer fund if the response is valid and it has not been used to finalize the request
+   * @notice Releases the proposer funds if the response is valid and it has not been used to finalize the request
    *
    * @param _request The finalized request
    * @param _response The unutilized response
