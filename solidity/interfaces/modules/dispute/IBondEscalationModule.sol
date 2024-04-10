@@ -211,7 +211,7 @@ interface IBondEscalationModule is IDisputeModule {
    *
    * @param _request The request data.
    * @param _response The response being disputed.
-   * @param _dispute The response being disputed.
+   * @param _dispute The dispute created by the oracle.
    */
   function disputeResponse(
     IOracle.Request calldata _request,
