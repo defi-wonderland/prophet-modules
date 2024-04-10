@@ -12,8 +12,8 @@ Here you can find the list and the details of each module available in Prophet
 You can notice that many modules follow the same structure. This is because they all inherit from the `IModule` interface which defines the common functions and modifiers that all modules should have.
 
 - `moduleName` is required to properly show the module in Prophet UI.
-- `RequestParameters` is what parameters are required for the request to be processed with the module.
-- `decodeRequestData` decodes the ABI encoded parameters using the `RequestParameters` struct and returns them as a list. This is useful for both on-chain and off-chain parts.
+- `RequestParameters` is which parameters are required for the request to be processed with the module.
+- `decodeRequestData` decodes the ABI encoded parameters using the `RequestParameters` struct and returns them as a list. This is useful for both on-chain and off-chain components.
 
 ## Best Practices
 
