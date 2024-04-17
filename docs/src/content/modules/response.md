@@ -16,5 +16,6 @@ A Response module should take care of the following:
 - Setting the rules for the responses, such as validations or deadlines
 - Handling the rewards for proposing a valid response
 - Applying the `onlyOracle` modifier to the hooks to secure them
+- Releasing the bond if the response ended up being unutilized, meaning it's not accepted nor disputed
 
 While developing a Response module, keep in mind that the criteria that is too narrow might result in a lack of responses, while criteria that is too broad might result in a large number of invalid responses.

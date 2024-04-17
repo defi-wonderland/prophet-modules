@@ -193,6 +193,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   /**
    * @notice Pledges for or against a dispute
    *
+   * @param _request The request being disputed
+   * @param _dispute The dispute to vote for or against
    * @param _pledgeAmount The amount to pledge
    * @param _pledgingFor Whether the pledger is pledging for or against the dispute
    */
@@ -314,6 +316,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
    * @param _disputeId The ID of the dispute
    * @param _amountToRelease The amount to release
    * @param _resolution The resolution of the dispute
+   * @param _params The request parameters
    */
   function _claimPledge(
     bytes32 _requestId,

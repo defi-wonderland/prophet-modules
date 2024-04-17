@@ -35,11 +35,14 @@ interface IArbitratorModule is IResolutionModule {
 
   /**
    * @notice Available status of the arbitration process
+   * @param Unknown The arbitration process has not started (default)
+   * @param Active The arbitration process is active
+   * @param Resolved The The arbitration process is finished
    */
   enum ArbitrationStatus {
-    Unknown, // The arbitration process has not started (default)
-    Active, // The arbitration process is active
-    Resolved // The arbitration process is resolved
+    Unknown,
+    Active,
+    Resolved
   }
 
   /*///////////////////////////////////////////////////////////////

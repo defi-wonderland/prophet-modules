@@ -55,7 +55,6 @@ contract ForTest_BondEscalationModule is BondEscalationModule {
 /**
  * @title Bonded Response Module Unit tests
  */
-
 contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_BondEscalationModule public bondEscalationModule;

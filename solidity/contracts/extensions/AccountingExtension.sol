@@ -33,12 +33,18 @@ contract AccountingExtension is IAccountingExtension {
 
   /**
    * @notice Checks that the caller is an allowed module used in the request.
+   * @param _requestId The request ID.
    */
   modifier onlyAllowedModule(bytes32 _requestId) {
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
     _;
   }
 
+  /**
+   * @notice Checks if the user is either the requester or a proposer, or a disputer.
+   * @param _requestId The request ID.
+   * @param _user The address to check.
+   */
   modifier onlyParticipant(bytes32 _requestId, address _user) {
     if (!ORACLE.isParticipant(_requestId, _user)) revert AccountingExtension_UnauthorizedUser();
     _;

@@ -36,11 +36,11 @@ interface ICircuitResolverModule is IDisputeModule {
   /**
    * @notice Parameters of the request as stored in the module
    *
-   * @return callData The encoded data forwarded to the verifier
-   * @return verifier The address of the verifier contract
-   * @return accountingExtension The address of the accounting extension
-   * @return bondToken The address of the bond token
-   * @return bondSize The size of the bond
+   * @param callData The encoded data forwarded to the verifier
+   * @param verifier The address of the verifier contract
+   * @param accountingExtension The address of the accounting extension
+   * @param bondToken The address of the bond token
+   * @param bondSize The size of the bond
    */
   struct RequestParameters {
     bytes callData;

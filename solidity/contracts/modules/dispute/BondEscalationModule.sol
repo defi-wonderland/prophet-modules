@@ -282,6 +282,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
   /**
    * @notice Checks the necessary conditions for pledging
+   * @param _disputeId The ID of the dispute to pledge for or against
+   * @param _request The request data
+   * @param _dispute The dispute data
+   * @param _forDispute Whether the pledge is for or against the dispute
    * @return _params The decoded parameters for the request
    */
   function _pledgeChecks(

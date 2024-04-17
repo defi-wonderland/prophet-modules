@@ -21,7 +21,6 @@ import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBond
 /**
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
-
 contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModule {
   constructor(IOracle _oracle) BondEscalationResolutionModule(_oracle) {}
 
@@ -59,7 +58,6 @@ contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModul
 /**
  * @title Bonded Escalation Resolution Module Unit tests
  */
-
 contract BaseTest is Test, Helpers {
   // The target contract
   ForTest_BondEscalationResolutionModule public module;

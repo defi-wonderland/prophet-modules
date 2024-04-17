@@ -32,6 +32,7 @@ interface IAccountingExtension {
 
   /**
    * @notice A payment between users has been made
+   * @param _requestId The ID of the request
    * @param _beneficiary The user receiving the tokens
    * @param _payer The user who is getting its tokens transferred
    * @param _token The address of the token being transferred
@@ -43,6 +44,7 @@ interface IAccountingExtension {
 
   /**
    * @notice User's funds have been bonded
+   * @param _requestId The ID of the request
    * @param _bonder The user who is getting its tokens bonded
    * @param _token The address of the token being bonded
    * @param _amount The amount of `_token` bonded
@@ -51,6 +53,7 @@ interface IAccountingExtension {
 
   /**
    * @notice User's funds have been released
+   * @param _requestId The ID of the request
    * @param _beneficiary The user who is getting its tokens released
    * @param _token The address of the token being released
    * @param _amount The amount of `_token` released
@@ -90,6 +93,7 @@ interface IAccountingExtension {
 
   /**
    * @notice Returns the interface for the Oracle contract
+   * @return _oracle The Oracle address
    */
   function ORACLE() external view returns (IOracle _oracle);
 

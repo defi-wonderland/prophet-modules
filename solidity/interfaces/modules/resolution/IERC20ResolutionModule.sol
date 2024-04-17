@@ -38,6 +38,9 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Emitted when the voter gets back their bond
+   * @param _voter The voter who has claimed their bond
+   * @param _disputeId The id of the dispute
+   * @param _amount The amount of tokens claimed
    */
   event VoteClaimed(address _voter, bytes32 _disputeId, uint256 _amount);
 
@@ -81,6 +84,7 @@ interface IERC20ResolutionModule is IResolutionModule {
 
   /**
    * @notice Parameters of the request as stored in the module
+   * @param accountingExtension The accounting extension to bond and release funds
    * @param votingToken The token used to vote
    * @param minVotesForQuorum The minimum amount of votes to win the dispute
    * @param timeUntilDeadline The time until the voting phase ends
@@ -135,8 +139,10 @@ interface IERC20ResolutionModule is IResolutionModule {
   /**
    * @notice Casts a vote in favor of a dispute
    *
-   * @param _request  The request for which the dispute was created
-   * @param _dispute  The dispute for which the vote is being cast
+   * @param _disputeId  The id of the dispute
+   * @param _request    The request for which the dispute was created
+   * @param _response   The disputed response
+   * @param _dispute    The dispute for which the vote is being cast
    */
   function startResolution(
     bytes32 _disputeId,

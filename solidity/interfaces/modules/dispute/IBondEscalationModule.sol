@@ -110,13 +110,18 @@ interface IBondEscalationModule is IDisputeModule {
 
   /**
    * @notice Enum holding all the possible statuses of a dispute going through the bond escalation mechanism.
+   * @param None Dispute is not going through the bond escalation mechanism.
+   * @param Active Dispute is going through the bond escalation mechanism.
+   * @param Escalated Dispute is going through the bond escalation mechanism and has been escalated.
+   * @param DisputerLost An escalated dispute has been settled and the disputer lost.
+   * @param DisputerWon An escalated dispute has been settled and the disputer won.
    */
   enum BondEscalationStatus {
-    None, // Dispute is not going through the bond escalation mechanism.
-    Active, // Dispute is going through the bond escalation mechanism.
-    Escalated, // Dispute is going through the bond escalation mechanism and has been escalated.
-    DisputerLost, // An escalated dispute has been settled and the disputer lost.
-    DisputerWon // An escalated dispute has been settled and the disputer won.
+    None,
+    Active,
+    Escalated,
+    DisputerLost,
+    DisputerWon
   }
 
   /*///////////////////////////////////////////////////////////////
@@ -126,14 +131,14 @@ interface IBondEscalationModule is IDisputeModule {
   /**
    * @notice Parameters of the request as stored in the module
    *
-   * @param _accountingExtension        Address of the accounting extension associated with the given request
-   * @param _bondToken                  Address of the token associated with the given request
-   * @param _bondSize                   Amount to bond to dispute or propose an answer for the given request
-   * @param _numberOfEscalations        Maximum allowed escalations or pledges for each side during the bond escalation process
-   * @param _bondEscalationDeadline     Timestamp at which bond escalation process finishes when pledges are not tied
-   * @param _tyingBuffer                Number of seconds to extend the bond escalation process to allow the losing
+   * @param accountingExtension        Address of the accounting extension associated with the given request
+   * @param bondToken                  Address of the token associated with the given request
+   * @param bondSize                   Amount to bond to dispute or propose an answer for the given request
+   * @param maxNumberOfEscalations     Maximum allowed escalations or pledges for each side during the bond escalation process
+   * @param bondEscalationDeadline     Timestamp at which bond escalation process finishes when pledges are not tied
+   * @param tyingBuffer                Number of seconds to extend the bond escalation process to allow the losing
    *                                    party to tie if at the end of the initial deadline the pledges weren't tied.
-   * @param _disputeWindow              Number of seconds disputers have to challenge the proposed response since its creation.
+   * @param disputeWindow              Number of seconds disputers have to challenge the proposed response since its creation.
    */
   struct RequestParameters {
     IBondEscalationAccounting accountingExtension;
@@ -204,7 +209,9 @@ interface IBondEscalationModule is IDisputeModule {
    * @dev If this is the first dispute of the request and the bond escalation window is not over,
    *      it will start the bond escalation process. This function must be called through the Oracle.
    *
-   * @param _response  The response being disputed.
+   * @param _request The request data.
+   * @param _response The response being disputed.
+   * @param _dispute The dispute created by the oracle.
    */
   function disputeResponse(
     IOracle.Request calldata _request,
@@ -216,9 +223,10 @@ interface IBondEscalationModule is IDisputeModule {
    * @notice Updates the status of a given disputeId and pays the proposer and disputer accordingly. If this
    *         dispute has gone through the bond escalation mechanism, then it will pay the winning pledgers as well.
    *
-   * @param _disputeId  The ID of the dispute to update the status for.
-   * @param _dispute    The full dispute object.
-   *
+   * @param _disputeId The ID of the dispute to update the status for.
+   * @param _request The request data.
+   * @param _response The disputed response.
+   * @param _dispute The dispute data.
    */
   function onDisputeStatusChange(
     bytes32 _disputeId,
@@ -230,7 +238,9 @@ interface IBondEscalationModule is IDisputeModule {
   /**
    * @notice Bonds funds in favor of a given dispute during the bond escalation process.
    *
-   * @dev This function must be called directly through this contract.
+   * @param _request The request data.
+   * @param _dispute The dispute data.
+   *
    * @dev If the bond escalation is not tied at the end of its deadline, a tying buffer is added
    *      to avoid scenarios where one of the parties breaks the tie very last second.
    *      During the tying buffer, the losing party can only tie, and once the escalation is tied
@@ -241,8 +251,10 @@ interface IBondEscalationModule is IDisputeModule {
   /**
    * @notice Pledges funds against a given disputeId during its bond escalation process.
    *
-   * @dev Must be called directly through this contract. Will revert if the disputeId is not going through
-   *         the bond escalation process.
+   * @param _request The request data.
+   * @param _dispute The dispute data.
+   *
+   * @dev Will revert if the disputeId is not going through the bond escalation process.
    * @dev If the bond escalation is not tied at the end of its deadline, a tying buffer is added
    *      to avoid scenarios where one of the parties breaks the tie very last second.
    *      During the tying buffer, the losing party can only tie, and once the escalation is tied
@@ -253,7 +265,10 @@ interface IBondEscalationModule is IDisputeModule {
   /**
    * @notice Settles the bond escalation process of a given requestId.
    *
-   * @dev Must be called directly through this contract.
+   * @param _request The request data.
+   * @param _response The response data.
+   * @param _dispute The dispute data.
+   *
    * @dev Can only be called if after the deadline + tyingBuffer window is over, the pledges weren't tied
    */
   function settleBondEscalation(
