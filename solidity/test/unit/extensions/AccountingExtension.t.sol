@@ -71,6 +71,9 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
       address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
     );
 
+    // Mock and expect the ERC20 balance
+    _mockAndExpect(address(token), abi.encodeCall(IERC20.balanceOf, (address(extension))), abi.encode(_amount));
+
     // Expect the event
     vm.expectEmit(true, true, true, true, address(extension));
     emit Deposited(sender, token, _amount);
@@ -80,6 +83,27 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
 
     // Check: balance of token deposit increased?
     assertEq(extension.balanceOf(sender, token), _amount);
+  }
+
+  /**
+   * @notice Should revert if token takes a fee on transfer
+   */
+  function test_depositRevert(uint256 _amount, uint256 _fee) public {
+    vm.assume(_amount > _fee);
+    vm.assume(_fee > 0);
+
+    // Mock and expect the ERC20 transfer
+    _mockAndExpect(
+      address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
+    );
+
+    // Mock and expect the ERC20 balance
+    _mockAndExpect(address(token), abi.encodeCall(IERC20.balanceOf, (address(extension))), abi.encode(_amount - _fee));
+
+    // Check: does it revert if token takes a fee on transfer?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_FeeOnTransferToken.selector);
+    vm.prank(sender);
+    extension.deposit(token, _amount);
   }
 
   /**
