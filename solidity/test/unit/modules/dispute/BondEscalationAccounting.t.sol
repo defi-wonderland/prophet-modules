@@ -19,6 +19,10 @@ import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
   constructor(IOracle _oracle) BondEscalationAccounting(_oracle) {}
 
+  function forTest_setPledgerHasPledged(bytes32 _disputeId, address _pledger, bool _pledged) public {
+    pledgerHasPledged[_disputeId][_pledger] = _pledged;
+  }
+
   function forTest_setPledge(bytes32 _disputeId, IERC20 _token, uint256 _amount) public {
     pledges[_disputeId][_token] = _amount;
   }
@@ -445,6 +449,16 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     bondEscalationAccounting.claimEscalationReward(_disputeId, pledger);
   }
 
+  function test_revertIfNotPledged(bytes32 _disputeId, bytes32 _requestId) public {
+    bondEscalationAccounting.forTest_setEscalationResult(
+      _disputeId, _requestId, token, 0, IBondEscalationModule(address(this))
+    );
+
+    vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_NotPledged.selector);
+
+    bondEscalationAccounting.claimEscalationReward(_disputeId, pledger);
+  }
+
   function test_forVotesWon(
     bytes32 _disputeId,
     bytes32 _requestId,
@@ -461,6 +475,8 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
+
+    bondEscalationAccounting.forTest_setPledgerHasPledged(_disputeId, pledger, true);
 
     // Mock and expect to call the oracle getting the dispute status
     _mockAndExpect(
@@ -506,6 +522,8 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     );
 
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges);
+
+    bondEscalationAccounting.forTest_setPledgerHasPledged(_disputeId, pledger, true);
 
     // Mock and expect to call the oracle getting the dispute status
     _mockAndExpect(

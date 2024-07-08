@@ -17,7 +17,9 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   mapping(bytes32 _disputeId => EscalationResult _result) public escalationResults;
 
   /// @inheritdoc IBondEscalationAccounting
-  mapping(bytes32 _requestId => mapping(address _pledger => bool)) public pledgerClaimed;
+  mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
+
+  mapping(bytes32 _disputeId => mapping(address _pledger => bool _pledged)) public pledgerHasPledged;
 
   constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
@@ -32,6 +34,8 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
+
+    pledgerHasPledged[_disputeId][_pledger] = true;
 
     unchecked {
       balanceOf[_pledger][_token] -= _amount;
@@ -78,6 +82,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     if (_result.token == IERC20(address(0))) revert BondEscalationAccounting_NoEscalationResult();
     bytes32 _requestId = _result.requestId;
     if (pledgerClaimed[_requestId][_pledger]) revert BondEscalationAccounting_AlreadyClaimed();
+    if (!pledgerHasPledged[_disputeId][_pledger]) revert BondEscalationAccounting_NotPledged();
 
     IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
     uint256 _amountPerPledger = _result.amountPerPledger;
@@ -95,6 +100,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     uint256 _claimAmount = _amountPerPledger * _numberOfPledges;
 
     pledgerClaimed[_requestId][_pledger] = true;
+    pledgerHasPledged[_disputeId][_pledger] = false;
     balanceOf[_pledger][_token] += _claimAmount;
 
     unchecked {
