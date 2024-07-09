@@ -56,7 +56,7 @@ contract BaseTest is Test, Helpers {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    token = IERC20(address(new MockERC20()));
+    token = IERC20(new MockERC20('Token', 'TKN'));
 
     extension = new ForTest_AccountingExtension(oracle);
   }
@@ -67,16 +67,18 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
    * @notice Test an ERC20 deposit
    */
   function test_depositERC20(uint256 _amount, uint256 _initialBalance) public {
+    // Mint tokens to the sender and approve the extension
+    MockERC20(address(token)).mint(sender, _amount);
+    MockERC20(address(token)).approve(sender, address(extension), _amount);
+
     // Mock and expect the ERC20 balance
     _initialBalance = bound(_initialBalance, 0, type(uint256).max - _amount);
     MockERC20(address(token)).mockBalanceOfPerCall(address(extension), 0, _initialBalance);
     MockERC20(address(token)).mockBalanceOfPerCall(address(extension), 1, _initialBalance + _amount);
     vm.expectCall(address(token), abi.encodeCall(IERC20.balanceOf, (address(extension))), 2);
 
-    // Mock and expect the ERC20 transfer
-    _mockAndExpect(
-      address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
-    );
+    // Expect the ERC20 transfer
+    vm.expectCall(address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), 1);
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(extension));
@@ -96,16 +98,14 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
     vm.assume(_amount >= _fee);
     vm.assume(_fee > 0);
 
-    // Mock and expect the ERC20 balance
+    // Mint tokens to the sender and approve the extension
+    MockERC20(address(token)).mint(sender, _amount);
+    MockERC20(address(token)).approve(sender, address(extension), _amount);
+
+    // Mock the ERC20 balance
     _initialBalance = bound(_initialBalance, 0, type(uint256).max - (_amount - _fee));
     MockERC20(address(token)).mockBalanceOfPerCall(address(extension), 0, _initialBalance);
     MockERC20(address(token)).mockBalanceOfPerCall(address(extension), 1, _initialBalance + (_amount - _fee));
-    vm.expectCall(address(token), abi.encodeCall(IERC20.balanceOf, (address(extension))), 2);
-
-    // Mock and expect the ERC20 transfer
-    _mockAndExpect(
-      address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
-    );
 
     // Check: does it revert if token takes a fee on transfer?
     vm.expectRevert(IAccountingExtension.AccountingExtension_FeeOnTransferToken.selector);
@@ -121,6 +121,7 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
     _initialBalance = bound(_initialBalance, _amount, type(uint256).max);
     extension.forTest_setBalanceOf(sender, token, _initialBalance);
 
+    // Mock and expect the ERC20 transfer
     _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (sender, _amount)), abi.encode(true));
 
     // Expect the event
