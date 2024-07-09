@@ -48,7 +48,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   function onDisputeStatusChange(
     bytes32 _disputeId,
     IOracle.Request calldata _request,
-    IOracle.Response calldata, /* _response */
+    IOracle.Response calldata _response, /* _response */
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
@@ -70,6 +70,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
         _amount: _params.bondSize
       });
     } else if (_status == IOracle.DisputeStatus.Won) {
+      if (_dispute.proposer != _response.proposer) revert BondedDisputeModule_OnlyResponseProposer();
       // Disputer won, we pay the disputer and release their bond
       _params.accountingExtension.pay({
         _requestId: _dispute.requestId,

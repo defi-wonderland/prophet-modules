@@ -16,6 +16,14 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
   */
 interface IBondedDisputeModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when the response proposer tries to dispute the response
+   */
+  error BondedDisputeModule_OnlyResponseProposer();
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 
