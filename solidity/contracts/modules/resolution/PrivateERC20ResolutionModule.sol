@@ -132,8 +132,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     uint256 _quorumReached = _escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
-    address[] memory __voters = _voters[_disputeId].values();
-
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
@@ -142,9 +140,11 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 
-    uint256 _length = __voters.length;
-    for (uint256 _i; _i < _length;) {
-      _params.votingToken.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
+    address _voter;
+    uint256 _votersLength = _voters[_disputeId].length();
+    for (uint256 _i; _i < _votersLength;) {
+      _voter = _voters[_disputeId].at(_i);
+      _params.votingToken.safeTransfer(_voter, _votersData[_disputeId][_voter].numOfVotes);
       unchecked {
         ++_i;
       }
