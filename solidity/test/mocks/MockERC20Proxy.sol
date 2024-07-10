@@ -27,6 +27,7 @@ contract MockERC20Proxy {
     }
   }
 
+  // solhint-disable-next-line
   fallback() external {
     if (_mocked) {
       ++_calls;

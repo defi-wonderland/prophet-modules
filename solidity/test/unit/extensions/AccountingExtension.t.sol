@@ -53,11 +53,8 @@ contract BaseTest is Test, Helpers {
    * @notice Deploy the target and mock oracle extension
    */
   function setUp() public virtual {
-    oracle = IOracle(makeAddr('Oracle'));
-    vm.etch(address(oracle), hex'069420');
-
-    token = IERC20(makeAddr('Token'));
-    vm.etch(address(token), hex'069420');
+    oracle = IOracle(_mockContract('Oracle'));
+    token = IERC20(_mockContract('Token'));
 
     extension = new ForTest_AccountingExtension(oracle);
   }
@@ -91,7 +88,7 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
     );
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Deposited(sender, IERC20(address(tokenProxy)), _amount);
 
     vm.prank(sender);
@@ -137,7 +134,7 @@ contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
     _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (sender, _amount)), abi.encode(true));
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Withdrew(sender, token, _amount);
 
     vm.prank(sender);
@@ -190,7 +187,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     extension.forTest_setBalanceOf(_bonder, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Bonded(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
@@ -325,7 +322,7 @@ contract AccountingExtension_Unit_Pay is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _payer, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Paid(_requestId, _receiver, _payer, token, _amount);
 
     vm.prank(_sender);
@@ -417,7 +414,7 @@ contract AccountingExtension_Unit_Release is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _bonder, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Released(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
