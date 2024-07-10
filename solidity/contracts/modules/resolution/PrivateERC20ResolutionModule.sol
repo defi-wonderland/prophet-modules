@@ -126,7 +126,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (block.timestamp < _escalation.startTime + _params.committingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp < _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
+    if (block.timestamp <= _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
