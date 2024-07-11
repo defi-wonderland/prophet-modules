@@ -70,7 +70,7 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
         _amount: _params.bondSize
       });
     } else if (_status == IOracle.DisputeStatus.Won) {
-      if (_dispute.proposer != _response.proposer) revert BondedDisputeModule_OnlyResponseProposer();
+      if (_dispute.proposer != _response.proposer) revert BondedDisputeModule_SelfDispute();
       // Disputer won, we pay the disputer and release their bond
       _params.accountingExtension.pay({
         _requestId: _dispute.requestId,

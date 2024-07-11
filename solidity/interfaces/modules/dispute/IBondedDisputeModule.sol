@@ -22,7 +22,7 @@ interface IBondedDisputeModule is IDisputeModule {
   /**
    * @notice Thrown when the response proposer tries to dispute the response
    */
-  error BondedDisputeModule_OnlyResponseProposer();
+  error BondedDisputeModule_SelfDispute();
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/

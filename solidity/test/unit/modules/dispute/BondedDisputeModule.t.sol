@@ -221,6 +221,32 @@ contract BondedDisputeModule_Unit_OnDisputeStatusChange is BaseTest {
   }
 
   /**
+   * @notice Test if onDisputeStatusChange reverts when the dispute is self-disputed
+   */
+  function test_revertIfSelfDispute(uint256 _bondSize, IERC20 _token) public {
+    mockRequest.disputeModuleData =
+      abi.encode(IBondedDisputeModule.RequestParameters(accountingExtension, _token, _bondSize));
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(oracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Change the proposer to the disputer
+    mockDispute.proposer = makeAddr('newProposer');
+
+    // Check: revert if self-dispute
+    vm.expectRevert(IBondedDisputeModule.BondedDisputeModule_SelfDispute.selector);
+
+    // Test: call disputeResponse with self-dispute
+    vm.prank(address(oracle));
+    bondedDisputeModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Test if onDisputeStatusChange reverts when called by caller who's not the oracle
    */
   function test_revertWrongCaller(address _randomCaller) public {
