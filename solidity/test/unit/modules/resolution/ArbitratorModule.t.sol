@@ -80,7 +80,7 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
    * @notice Test that the status is correctly retrieved
    */
   function test_getStatus(uint256 _status, bytes32 _disputeId) public {
-    _status = bound(_status, 0, uint256(IArbitratorModule.ArbitrationStatus.Resolved));
+    vm.assume(_status <= uint256(IArbitratorModule.ArbitrationStatus.Resolved));
     IArbitratorModule.ArbitrationStatus _arbitratorStatus = IArbitratorModule.ArbitrationStatus(_status);
 
     // Store the mock dispute
@@ -233,8 +233,7 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
   }
 
   function test_emitsEvent(uint256 _status, address _arbitrator) public assumeFuzzable(_arbitrator) {
-    vm.assume(_status <= uint256(IOracle.DisputeStatus.Lost));
-    vm.assume(_status > uint256(IOracle.DisputeStatus.Escalated));
+    _status = bound(_status, uint256(IOracle.DisputeStatus.Escalated) + 1, uint256(IOracle.DisputeStatus.Lost));
     IOracle.DisputeStatus _arbitratorStatus = IOracle.DisputeStatus(_status);
 
     mockRequest.resolutionModuleData = abi.encode(_arbitrator);
