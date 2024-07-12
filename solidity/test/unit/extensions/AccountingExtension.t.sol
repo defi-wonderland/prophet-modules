@@ -11,6 +11,8 @@ import {
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import {MockERC20Proxy} from '../../mocks/MockERC20Proxy.sol';
+
 contract ForTest_AccountingExtension is AccountingExtension {
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -50,52 +52,89 @@ contract BaseTest is Test, Helpers {
   /**
    * @notice Deploy the target and mock oracle extension
    */
-  function setUp() public {
-    oracle = IOracle(makeAddr('Oracle'));
-    vm.etch(address(oracle), hex'069420');
-
-    token = IERC20(makeAddr('Token'));
-    vm.etch(address(token), hex'069420');
+  function setUp() public virtual {
+    oracle = IOracle(_mockContract('Oracle'));
+    token = IERC20(_mockContract('Token'));
 
     extension = new ForTest_AccountingExtension(oracle);
   }
 }
 
 contract AccountingExtension_Unit_DepositAndWithdraw is BaseTest {
+  MockERC20Proxy public tokenProxy;
+
+  /**
+   * @notice Deploy a token proxy
+   */
+  function setUp() public override {
+    super.setUp();
+
+    tokenProxy = new MockERC20Proxy(token);
+  }
+
   /**
    * @notice Test an ERC20 deposit
    */
-  function test_depositERC20(uint256 _amount) public {
+  function test_depositERC20(uint256 _amount, uint256 _initialBalance) public {
+    // Mock and expect the ERC20 balance
+    _initialBalance = bound(_initialBalance, 0, type(uint256).max - _amount);
+    tokenProxy.mockBalanceOfPerCall(0, address(extension), _initialBalance);
+    tokenProxy.mockBalanceOfPerCall(1, address(extension), _initialBalance + _amount);
+    vm.expectCall(address(tokenProxy), abi.encodeCall(IERC20.balanceOf, (address(extension))), 2);
+
     // Mock and expect the ERC20 transfer
     _mockAndExpect(
       address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
     );
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(extension));
-    emit Deposited(sender, token, _amount);
+    _expectEmit(address(extension));
+    emit Deposited(sender, IERC20(address(tokenProxy)), _amount);
 
     vm.prank(sender);
-    extension.deposit(token, _amount);
+    extension.deposit(IERC20(address(tokenProxy)), _amount);
 
     // Check: balance of token deposit increased?
-    assertEq(extension.balanceOf(sender, token), _amount);
+    assertEq(extension.balanceOf(sender, IERC20(address(tokenProxy))), _amount);
+  }
+
+  /**
+   * @notice Should revert if token takes a fee on transfer
+   */
+  function test_depositRevert(uint256 _amount, uint256 _fee, uint256 _initialBalance) public {
+    vm.assume(_amount >= _fee);
+    vm.assume(_fee > 0);
+
+    // Mock and expect the ERC20 balance
+    _initialBalance = bound(_initialBalance, 0, type(uint256).max - (_amount - _fee));
+    tokenProxy.mockBalanceOfPerCall(0, address(extension), _initialBalance);
+    tokenProxy.mockBalanceOfPerCall(1, address(extension), _initialBalance + (_amount - _fee));
+    vm.expectCall(address(tokenProxy), abi.encodeCall(IERC20.balanceOf, (address(extension))), 2);
+
+    // Mock and expect the ERC20 transfer
+    _mockAndExpect(
+      address(token), abi.encodeCall(IERC20.transferFrom, (sender, address(extension), _amount)), abi.encode(true)
+    );
+
+    // Check: does it revert if token takes a fee on transfer?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_FeeOnTransferToken.selector);
+    vm.prank(sender);
+    extension.deposit(IERC20(address(tokenProxy)), _amount);
   }
 
   /**
    * @notice Test withdrawing ERC20. Should update balance and emit event
    */
   function test_withdrawERC20(uint256 _amount, uint256 _initialBalance) public {
-    vm.assume(_amount > 0);
-
     // Set the initial balance
     _initialBalance = bound(_initialBalance, _amount, type(uint256).max);
     extension.forTest_setBalanceOf(sender, token, _initialBalance);
 
+    // Mock and expect the ERC20 transfer
     _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (sender, _amount)), abi.encode(true));
 
     // Expect the event
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Withdrew(sender, token, _amount);
 
     vm.prank(sender);
@@ -148,7 +187,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     extension.forTest_setBalanceOf(_bonder, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Bonded(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);
@@ -283,7 +322,7 @@ contract AccountingExtension_Unit_Pay is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _payer, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Paid(_requestId, _receiver, _payer, token, _amount);
 
     vm.prank(_sender);
@@ -375,7 +414,7 @@ contract AccountingExtension_Unit_Release is BaseTest {
     extension.forTest_setBondedBalanceOf(_requestId, _bonder, token, _initialBalance);
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(extension));
+    _expectEmit(address(extension));
     emit Released(_requestId, _bonder, token, _amount);
 
     vm.prank(_sender);

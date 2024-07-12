@@ -21,10 +21,12 @@ The `BondEscalationAccounting` contract is an extension that allows users to dep
 
 - Pledging: Users can pledge tokens for or against a dispute. The pledged tokens are locked and cannot be used until the dispute is resolved.
 
-- Deposits: Users can deposit tokens into the extension. Deposits can be made in any ERC20 token, ETH deposits will be converted to WETH.
+- Deposits: Users can deposit tokens into the extension. Deposits can be made in many ERC20 tokens, ETH deposits will be converted to WETH.
 
 - Withdrawals: Users can withdraw their tokens at any time. The withdrawal operation reduces the user's balance in the extension and transfers the tokens back to the user's address. Locked tokens can't be withdrawn until they're released by a module.
 
 ## 4. Gotchas
 
 - Before depositing ERC20 tokens, users must first approve the extension to transfer the tokens on their behalf.
+- Users can only withdraw tokens that are not currently bonded. If a user has bonded tokens for a request, those tokens are locked until they are released by an allowed module. Attempting to withdraw bonded tokens will result in an error. Attempting to slash or pay out tokens that are not locked will also result in a transaction being reverted.
+- The contract supports many ERC20 tokens, including wrapped Ether (WETH). However, if a user tries to deposit a ERC20 token with a fee on transfer, a non-ERC20 token or a token that the contract otherwise doesn't support, the transaction will fail.
