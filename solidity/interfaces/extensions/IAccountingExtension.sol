@@ -65,6 +65,11 @@ interface IAccountingExtension {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Thrown when depositing tokens with a fee on transfer
+   */
+  error AccountingExtension_FeeOnTransferToken();
+
+  /**
    * @notice Thrown when the account doesn't have enough balance to bond/withdraw
    * or not enough bonded to release/pay
    */
@@ -121,6 +126,7 @@ interface IAccountingExtension {
   /**
    * @notice Transfers tokens from a user and updates his virtual balance
    * @dev The user must have approved the accounting extension to transfer the tokens.
+   * The transfer must not take a fee (deflationary tokens can lead to unexpected behavior).
    * @param _token The address of the token being deposited
    * @param _amount The amount of `_token` to deposit
    */
