@@ -167,7 +167,6 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
    */
   function test_revertIfResponseLengthIsInvalid(uint8 _length) public {
     vm.assume(_length != 32);
-    mockRequest.disputeModuleData;
 
     // Create new Response memory struct with random values
     mockResponse.response = new bytes(_length);
