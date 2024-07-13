@@ -52,8 +52,14 @@ contract AccountingExtension is IAccountingExtension {
 
   /// @inheritdoc IAccountingExtension
   function deposit(IERC20 _token, uint256 _amount) external {
+    uint256 _balance = _token.balanceOf(address(this));
+
     _token.safeTransferFrom(msg.sender, address(this), _amount);
+
+    if (_amount != _token.balanceOf(address(this)) - _balance) revert AccountingExtension_FeeOnTransferToken();
+
     balanceOf[msg.sender][_token] += _amount;
+
     emit Deposited(msg.sender, _token, _amount);
   }
 
