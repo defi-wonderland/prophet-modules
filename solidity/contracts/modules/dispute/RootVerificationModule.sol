@@ -71,6 +71,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
+    if (_response.response.length != 32) revert RootVerificationModule_InvalidResponseLength();
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     bytes32 _correctRoot = _params.treeVerifier.calculateRoot(_params.treeData, _params.leavesToInsert);
