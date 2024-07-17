@@ -87,7 +87,9 @@ contract BaseTest is Test, Helpers {
 
       _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
       _mockAndExpect(
-        address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+        address(oracle),
+        abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
+        abi.encode(IOracle.DisputeStatus.Escalated)
       );
       module.commitVote(_request, _dispute, _commitment);
 
@@ -196,7 +198,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: does it revert if no commitment is given?
@@ -333,7 +335,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: reverts if dispute is not escalated? == no escalation data
@@ -373,7 +375,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: does it revert if the committing phase is over?
@@ -607,7 +609,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: is the event emitted?
@@ -650,7 +652,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Jump to timestamp
