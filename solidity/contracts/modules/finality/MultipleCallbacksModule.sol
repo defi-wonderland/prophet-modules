@@ -30,12 +30,6 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
-      if (!_targetHasBytecode(_params.targets[_i])) {
-        unchecked {
-          ++_i;
-        }
-        continue;
-      }
       _params.targets[_i].call(_params.data[_i]);
       emit Callback(_response.requestId, _params.targets[_i], _params.data[_i]);
       unchecked {
@@ -49,7 +43,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external
-    pure
+    view
     override(Module, IModule)
     returns (bool _valid)
   {
@@ -57,7 +51,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     _valid = true;
 
     for (uint256 _i; _i < _params.targets.length; ++_i) {
-      if (_params.targets[_i] == address(0)) {
+      if (_params.targets[_i] == address(0) || !_targetHasBytecode(_params.targets[_i])) {
         _valid = false;
         break;
       }

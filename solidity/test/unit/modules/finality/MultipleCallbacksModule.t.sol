@@ -31,6 +31,14 @@ contract BaseTest is Test, Helpers {
 
     multipleCallbackModule = new MultipleCallbacksModule(oracle);
   }
+
+  function targetHasBytecode(address _target) public view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
+  }
 }
 
 /**
@@ -50,7 +58,7 @@ contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
   function test_validateParameters(IMultipleCallbacksModule.RequestParameters calldata _params) public {
     bool _valid = true;
     for (uint256 _i; _i < _params.targets.length; ++_i) {
-      if (_params.targets[_i] == address(0)) {
+      if (_params.targets[_i] == address(0) || !targetHasBytecode(_params.targets[_i])) {
         _valid = false;
       }
     }

@@ -31,6 +31,14 @@ contract BaseTest is Test, Helpers {
 
     callbackModule = new CallbackModule(oracle);
   }
+
+  function targetHasBytecode(address _target) public view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
+  }
 }
 
 contract CallbackModule_Unit_ModuleData is BaseTest {
@@ -60,7 +68,7 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
    * @notice Test that the validateParameters function correctly checks the parameters
    */
   function test_validateParameters(ICallbackModule.RequestParameters calldata _params) public {
-    if (address(_params.target) == address(0) || _params.data.length == 0) {
+    if (address(_params.target) == address(0) || _params.data.length == 0 || !targetHasBytecode(_params.target)) {
       assertFalse(callbackModule.validateParameters(abi.encode(_params)));
     } else {
       assertTrue(callbackModule.validateParameters(abi.encode(_params)));

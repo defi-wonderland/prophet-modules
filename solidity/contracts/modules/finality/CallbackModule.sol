@@ -28,10 +28,6 @@ contract CallbackModule is Module, ICallbackModule {
   ) external override(Module, ICallbackModule) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.finalityModuleData);
 
-    if (!_targetHasBytecode(_params.target)) {
-      emit RequestFinalized(_response.requestId, _response, _finalizer);
-      return;
-    }
     _params.target.call(_params.data);
     emit Callback(_response.requestId, _params.target, _params.data);
     emit RequestFinalized(_response.requestId, _response, _finalizer);
@@ -40,12 +36,12 @@ contract CallbackModule is Module, ICallbackModule {
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external
-    pure
+    view
     override(Module, IModule)
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = address(_params.target) != address(0) && _params.data.length != 0;
+    _valid = address(_params.target) != address(0) && _params.data.length != 0 && _targetHasBytecode(_params.target);
   }
 
   /**
