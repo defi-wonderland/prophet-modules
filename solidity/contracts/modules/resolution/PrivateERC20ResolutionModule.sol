@@ -57,7 +57,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     bytes32 _disputeId = _getId(_dispute);
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
@@ -123,7 +123,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (_requestId != _dispute.requestId) revert PrivateERC20ResolutionModule_InvalidRequestId();
 
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
