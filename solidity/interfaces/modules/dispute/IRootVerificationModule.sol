@@ -18,6 +18,15 @@ import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
   */
 interface IRootVerificationModule is IDisputeModule {
   /*///////////////////////////////////////////////////////////////
+                              ERRORS
+  //////////////////////////////////////////////////////////////*/
+
+  /**
+   * @notice Thrown when the response length is invalid
+   */
+  error RootVerificationModule_InvalidResponseLength();
+
+  /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
 

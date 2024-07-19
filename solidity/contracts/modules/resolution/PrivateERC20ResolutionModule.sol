@@ -54,7 +54,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   function commitVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute, bytes32 _commitment) public {
     bytes32 _disputeId = _getId(_dispute);
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
@@ -114,7 +114,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
