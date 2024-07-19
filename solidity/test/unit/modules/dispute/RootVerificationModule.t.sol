@@ -163,6 +163,22 @@ contract RootVerificationModule_Unit_ModuleData is BaseTest {
 
 contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
   /**
+   * @notice Test if dispute response reverts when the response length is invalid
+   */
+  function test_revertIfResponseLengthIsInvalid(uint8 _length) public {
+    vm.assume(_length != 32);
+
+    // Create new Response memory struct with random values
+    mockResponse.response = new bytes(_length);
+
+    // Check: revert if response length is invalid?
+    vm.expectRevert(IRootVerificationModule.RootVerificationModule_InvalidResponseLength.selector);
+
+    vm.prank(address(oracle));
+    rootVerificationModule.disputeResponse(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Test if dispute incorrect response returns the correct status
    */
   function test_disputeIncorrectResponse(

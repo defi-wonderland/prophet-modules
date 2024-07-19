@@ -87,7 +87,9 @@ contract BaseTest is Test, Helpers {
 
       _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
       _mockAndExpect(
-        address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+        address(oracle),
+        abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
+        abi.encode(IOracle.DisputeStatus.Escalated)
       );
       module.commitVote(_request, _dispute, _commitment);
 
@@ -196,7 +198,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: does it revert if no commitment is given?
@@ -240,6 +242,68 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   }
 
   /**
+   * @notice Test that `commitVote` reverts if called with `_disputeId` of an already active dispute.
+   */
+  function test_revertIfActive(bytes32 _requestId, bytes32 _commitment) public {
+    // Computer proper IDs
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    module.commitVote(mockRequest, mockDispute, _commitment);
+  }
+
+  /**
+   * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute with no resolution.
+   */
+  function test_revertIfNoResolution(bytes32 _requestId, bytes32 _commitment) public {
+    // Computer proper IDs
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
+      abi.encode(IOracle.DisputeStatus.NoResolution)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    module.commitVote(mockRequest, mockDispute, _commitment);
+  }
+
+  /**
+   * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute that has already been won.
+   */
+  function test_revertIfWon(bytes32 _requestId, bytes32 _commitment) public {
+    // Computer proper IDs
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    module.commitVote(mockRequest, mockDispute, _commitment);
+  }
+
+  /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of an already resolved dispute.
    */
   function test_revertIfAlreadyResolved(bytes32 _requestId, bytes32 _commitment) public {
@@ -271,7 +335,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: reverts if dispute is not escalated? == no escalation data
@@ -311,7 +375,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: does it revert if the committing phase is over?
@@ -545,7 +609,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Check: is the event emitted?
@@ -588,7 +652,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.None)
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Jump to timestamp
@@ -605,5 +669,135 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
       vm.prank(address(oracle));
       module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
     }
+  }
+
+  function test_revertIfActive() public {
+    // Set request data
+    mockRequest.resolutionModuleData = abi.encode(
+      IPrivateERC20ResolutionModule.RequestParameters({
+        accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
+        votingToken: token,
+        minVotesForQuorum: 1,
+        committingTimeWindow: 500_000,
+        revealingTimeWindow: 1_000_000
+      })
+    );
+
+    // Compute proper ids
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    module.forTest_setStartTime(_disputeId, 1);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  function test_revertIfWon() public {
+    // Set request data
+    mockRequest.resolutionModuleData = abi.encode(
+      IPrivateERC20ResolutionModule.RequestParameters({
+        accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
+        votingToken: token,
+        minVotesForQuorum: 1,
+        committingTimeWindow: 500_000,
+        revealingTimeWindow: 1_000_000
+      })
+    );
+
+    // Compute proper ids
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    module.forTest_setStartTime(_disputeId, 1);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  function test_revertIfLost() public {
+    // Set request data
+    mockRequest.resolutionModuleData = abi.encode(
+      IPrivateERC20ResolutionModule.RequestParameters({
+        accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
+        votingToken: token,
+        minVotesForQuorum: 1,
+        committingTimeWindow: 500_000,
+        revealingTimeWindow: 1_000_000
+      })
+    );
+
+    // Compute proper ids
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    module.forTest_setStartTime(_disputeId, 1);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Lost)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  function test_revertIfNonResolve() public {
+    // Set request data
+    mockRequest.resolutionModuleData = abi.encode(
+      IPrivateERC20ResolutionModule.RequestParameters({
+        accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
+        votingToken: token,
+        minVotesForQuorum: 1,
+        committingTimeWindow: 500_000,
+        revealingTimeWindow: 1_000_000
+      })
+    );
+
+    // Compute proper ids
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+    bytes32 _disputeId = _getId(mockDispute);
+
+    module.forTest_setStartTime(_disputeId, 1);
+
+    // Mock and expect IOracle.createdAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeStatus to be called
+    _mockAndExpect(
+      address(oracle),
+      abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
+      abi.encode(IOracle.DisputeStatus.NoResolution)
+    );
+
+    // Check: does it revert if the dispute is already resolved?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 }

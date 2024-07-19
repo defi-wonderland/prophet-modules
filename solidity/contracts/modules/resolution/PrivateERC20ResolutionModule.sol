@@ -54,10 +54,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   function commitVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute, bytes32 _commitment) public {
     bytes32 _disputeId = _getId(_dispute);
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (
-      ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None
-        && ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated
-    ) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
@@ -117,10 +114,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
-    if (
-      ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None
-        && ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated
-    ) {
+    if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
 
@@ -132,13 +126,11 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (block.timestamp < _escalation.startTime + _params.committingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp < _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
+    if (block.timestamp <= _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 
     uint256 _quorumReached = _escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
-
-    address[] memory __voters = _voters[_disputeId].values();
 
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
@@ -148,9 +140,11 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 
-    uint256 _length = __voters.length;
-    for (uint256 _i; _i < _length;) {
-      _params.votingToken.safeTransfer(__voters[_i], _votersData[_disputeId][__voters[_i]].numOfVotes);
+    address _voter;
+    uint256 _votersLength = _voters[_disputeId].length();
+    for (uint256 _i; _i < _votersLength;) {
+      _voter = _voters[_disputeId].at(_i);
+      _params.votingToken.safeTransfer(_voter, _votersData[_disputeId][_voter].numOfVotes);
       unchecked {
         ++_i;
       }
