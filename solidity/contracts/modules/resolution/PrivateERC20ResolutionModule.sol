@@ -52,6 +52,9 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
   /// @inheritdoc IPrivateERC20ResolutionModule
   function commitVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute, bytes32 _commitment) public {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert PrivateERC20ResolutionModule_InvalidRequestId();
+
     bytes32 _disputeId = _getId(_dispute);
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
@@ -78,6 +81,9 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     uint256 _numberOfVotes,
     bytes32 _salt
   ) public {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert PrivateERC20ResolutionModule_InvalidRequestId();
+
     bytes32 _disputeId = _getId(_dispute);
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
@@ -113,6 +119,9 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert PrivateERC20ResolutionModule_InvalidRequestId();
+
     if (ORACLE.createdAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.None) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
@@ -134,10 +143,10 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
 
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
-      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost);
-      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 
     address _voter;

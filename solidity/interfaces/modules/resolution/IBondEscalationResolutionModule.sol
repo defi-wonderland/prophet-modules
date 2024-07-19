@@ -74,6 +74,11 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Thrown when a request does not match a request id.
+   */
+  error BondEscalationResolutionModule_InvalidRequestId();
+
+  /**
    * @notice Thrown when the user tries to resolve a dispute that has already been resolved.
    */
   error BondEscalationResolutionModule_AlreadyResolved();

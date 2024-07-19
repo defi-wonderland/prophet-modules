@@ -46,6 +46,11 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Thrown when a request does not match a request id
+   */
+  error PrivateERC20ResolutionModule_InvalidRequestId();
+
+  /**
    * @notice Thrown when the dispute has not been escalated
    */
   error PrivateERC20ResolutionModule_DisputeNotEscalated();

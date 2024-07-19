@@ -54,6 +54,11 @@ interface IERC20ResolutionModule is IResolutionModule {
   error ERC20ResolutionModule_OnlyDisputeModule();
 
   /**
+   * @notice Thrown when a request does not match a request id
+   */
+  error ERC20ResolutionModule_InvalidRequestId();
+
+  /**
    * @notice Throws if the dispute doesn't exist or has not been escalated
    */
   error ERC20ResolutionModule_DisputeNotEscalated();

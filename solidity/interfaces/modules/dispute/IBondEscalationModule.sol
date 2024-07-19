@@ -51,6 +51,10 @@ interface IBondEscalationModule is IDisputeModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
+   * @notice Thrown when a request does not match a request id.
+   */
+  error BondEscalationModule_InvalidRequestId();
+  /**
    * @notice Thrown when trying to escalate a dispute going through the bond escalation module before its deadline.
    */
   error BondEscalationModule_BondEscalationNotOver();

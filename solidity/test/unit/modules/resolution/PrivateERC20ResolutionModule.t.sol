@@ -224,10 +224,20 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   }
 
   /**
-   * @notice Test that `commitVote` reverts if there is no dispute with the given`_disputeId`
+   * @notice Test that `commitVote` reverts if request ids do not match.
    */
-  function test_revertIfNonExistentDispute(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfInvalidRequestId(bytes32 _commitment) public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_InvalidRequestId.selector);
+    module.commitVote(mockRequest, mockDispute, _commitment);
+  }
+
+  /**
+   * @notice Test that `commitVote` reverts if there is no dispute with the given`_disputeId`.
+   */
+  function test_revertIfNonExistentDispute(bytes32 _commitment) public {
     // Compute proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
@@ -242,8 +252,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of an already resolved dispute.
    */
-  function test_revertIfAlreadyResolved(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfAlreadyResolved(bytes32 _commitment) public {
     // Computer proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
@@ -262,8 +273,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
-  function test_revertIfNotEscalated(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfNotEscalated(bytes32 _commitment) public {
     // Compute proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
@@ -376,9 +388,22 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
   }
 
   /**
+   * @notice Test that `revealVote` reverts if request ids do not match.
+   */
+  function test_revertIfInvalidRequestId(uint256 _numberOfVotes, bytes32 _salt) public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_InvalidRequestId.selector);
+    module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
+  }
+
+  /**
    * @notice Test that `revealVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes, bytes32 _salt) public {
+    // Compute proper id
+    bytes32 _requestId = _getId(mockRequest);
+    mockDispute.requestId = _requestId;
+
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_DisputeNotEscalated.selector);
     module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
@@ -556,6 +581,16 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
 
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Test that `resolveDispute` reverts if request ids do not match.
+   */
+  function test_revertIfInvalidRequestId(bytes32 _disputeId) public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_InvalidRequestId.selector);
     vm.prank(address(oracle));
     module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
   }

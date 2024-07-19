@@ -56,6 +56,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     IOracle.Dispute calldata _dispute,
     uint256 _numberOfVotes
   ) public {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert ERC20ResolutionModule_InvalidRequestId();
+
     bytes32 _disputeId = _getId(_dispute);
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
@@ -72,7 +75,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     _voters[_disputeId].add(msg.sender);
     escalations[_disputeId].totalVotes += _numberOfVotes;
 
-    _params.accountingExtension.bond(msg.sender, _dispute.requestId, _params.votingToken, _numberOfVotes);
+    _params.accountingExtension.bond(msg.sender, _requestId, _params.votingToken, _numberOfVotes);
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
@@ -83,6 +86,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert ERC20ResolutionModule_InvalidRequestId();
+
     // Check disputeId actually exists and that it isn't resolved already
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert ERC20ResolutionModule_AlreadyResolved();
@@ -102,15 +108,18 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     // Update status
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
-      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost);
-      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
   }
 
   /// @inheritdoc IERC20ResolutionModule
   function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
+    bytes32 _requestId = _getId(_request);
+    if (_requestId != _dispute.requestId) revert ERC20ResolutionModule_InvalidRequestId();
+
     bytes32 _disputeId = _getId(_dispute);
     Escalation memory _escalation = escalations[_disputeId];
 
@@ -121,7 +130,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     // Transfer the tokens back to the voter
     uint256 _amount = votes[_disputeId][msg.sender];
-    _params.accountingExtension.release(msg.sender, _dispute.requestId, _params.votingToken, _amount);
+    _params.accountingExtension.release(msg.sender, _requestId, _params.votingToken, _amount);
 
     emit VoteClaimed(msg.sender, _disputeId, _amount);
   }

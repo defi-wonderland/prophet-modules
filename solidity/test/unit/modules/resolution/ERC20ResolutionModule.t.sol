@@ -203,6 +203,15 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   }
 
   /**
+   * @notice Test that `castVote` reverts if request ids do not match.
+   */
+  function test_revertIfInvalidRequestId(uint256 _numberOfVotes) public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
+    module.castVote(mockRequest, mockDispute, _numberOfVotes);
+  }
+
+  /**
    * @notice Test that `castVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes) public {
@@ -256,7 +265,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
         timeUntilDeadline: votingTimeWindow
       })
     );
-
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
@@ -289,7 +297,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
         timeUntilDeadline: votingTimeWindow
       })
     );
-
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
@@ -345,6 +352,16 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   }
 
   /**
+   * @notice Test that `resolveDispute` reverts if request ids do not match.
+   */
+  function test_revertIfInvalidRequestId(bytes32 _disputeId) public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
+    vm.prank(address(oracle));
+    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
    * @notice Test that `resolveDispute` reverts if called during voting phase.
    */
   function test_revertIfOnGoingVotePhase(uint256 _timestamp) public {
@@ -363,7 +380,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     );
     mockDispute.requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(mockDispute);
-
     module.forTest_setStartTime(_disputeId, 500_000);
 
     _mockAndExpect(
@@ -382,6 +398,15 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
 contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
+   * @notice Reverts if request ids do not match
+   */
+  function test_revertIfInvalidRequestId() public {
+    // Check: does it revert if request ids do not match?
+    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
+    module.claimVote(mockRequest, mockDispute);
+  }
+
+  /**
    * @notice Reverts if the vote is still ongoing
    */
   function test_revertIfVoteIsOnGoing(address _voter) public {
@@ -393,7 +418,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
         timeUntilDeadline: 1000
       })
     );
-
     mockDispute.requestId = _getId(mockRequest);
     module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
 
