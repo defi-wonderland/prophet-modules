@@ -254,8 +254,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of an already active dispute.
    */
-  function test_revertIfActive(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfActive(bytes32 _commitment) public {
     // Computer proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
@@ -274,8 +275,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute with no resolution.
    */
-  function test_revertIfNoResolution(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfNoResolution(bytes32 _commitment) public {
     // Computer proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
@@ -296,8 +298,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute that has already been won.
    */
-  function test_revertIfWon(bytes32 _requestId, bytes32 _commitment) public {
+  function test_revertIfWon(bytes32 _commitment) public {
     // Computer proper IDs
+    bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
