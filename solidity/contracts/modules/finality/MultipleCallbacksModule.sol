@@ -30,6 +30,12 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
+      if (!_targetHasBytecode(_params.targets[_i])) {
+        unchecked {
+          ++_i;
+        }
+        continue;
+      }
       _params.targets[_i].call(_params.data[_i]);
       emit Callback(_response.requestId, _params.targets[_i], _params.data[_i]);
       unchecked {
@@ -63,5 +69,18 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
         break;
       }
     }
+  }
+
+  /**
+   * @notice Checks if a target address has bytecode
+   * @param _target The address to check
+   * @return _hasBytecode Whether the target has bytecode or not
+   */
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
   }
 }
