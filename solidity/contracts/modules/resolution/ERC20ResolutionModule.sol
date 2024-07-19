@@ -86,9 +86,6 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert ERC20ResolutionModule_InvalidRequestId();
-
     // Check disputeId actually exists and that it isn't resolved already
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert ERC20ResolutionModule_AlreadyResolved();
@@ -108,10 +105,10 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     // Update status
     if (_quorumReached == 1) {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
-      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Won);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
       ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost);
-      emit DisputeResolved(_requestId, _disputeId, IOracle.DisputeStatus.Lost);
+      emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
   }
 

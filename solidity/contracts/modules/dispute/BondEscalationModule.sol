@@ -33,27 +33,24 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationModule_InvalidRequestId();
-
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
 
     if (block.number > ORACLE.createdAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 
-    BondEscalation storage _escalation = _escalations[_requestId];
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
     bytes32 _disputeId = _getId(_dispute);
 
     _params.accountingExtension.bond({
       _bonder: _dispute.disputer,
-      _requestId: _requestId,
+      _requestId: _dispute.requestId,
       _token: _params.bondToken,
       _amount: _params.bondSize
     });
 
     emit ResponseDisputed({
-      _requestId: _requestId,
+      _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _disputeId,
       _dispute: _dispute,
@@ -66,7 +63,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
       _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
-      emit BondEscalationStatusUpdated(_requestId, _disputeId, BondEscalationStatus.Active);
+      emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
     } else if (_disputeId != _escalation.disputeId) {
       ORACLE.escalateDispute(_request, _response, _dispute);
     }
@@ -79,11 +76,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationModule_InvalidRequestId();
-
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
-    BondEscalation storage _escalation = _escalations[_requestId];
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
     IOracle.DisputeStatus _disputeStatus = ORACLE.disputeStatus(_disputeId);
     BondEscalationStatus _newStatus;
 
@@ -109,7 +103,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
         if (_escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute > 0) {
           _params.accountingExtension.onSettleBondEscalation({
-            _requestId: _requestId,
+            _requestId: _dispute.requestId,
             _disputeId: _disputeId,
             _token: _params.bondToken,
             _amountPerPledger: _params.bondSize,
@@ -118,7 +112,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         }
 
         _params.accountingExtension.release({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _bonder: _dispute.disputer,
           _token: _params.bondToken,
           _amount: _params.bondSize
@@ -140,7 +134,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
               + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
 
           _params.accountingExtension.onSettleBondEscalation({
-            _requestId: _requestId,
+            _requestId: _dispute.requestId,
             _disputeId: _escalation.disputeId,
             _token: _params.bondToken,
             _amountPerPledger: _amountToPay,
@@ -149,7 +143,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         }
 
         _params.accountingExtension.pay({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _payer: _won ? _dispute.proposer : _dispute.disputer,
           _receiver: _won ? _dispute.disputer : _dispute.proposer,
           _token: _params.bondToken,
@@ -158,7 +152,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
         if (_won) {
           _params.accountingExtension.release({
-            _requestId: _requestId,
+            _requestId: _dispute.requestId,
             _bonder: _dispute.disputer,
             _token: _params.bondToken,
             _amount: _params.bondSize
@@ -176,7 +170,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         // Refund the disputer, the bond escalation status stays Escalated
         _newStatus = BondEscalationStatus.Escalated;
         _params.accountingExtension.release({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _bonder: _dispute.disputer,
           _token: _params.bondToken,
           _amount: _params.bondSize
@@ -188,7 +182,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         _newStatus = _won ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
         _params.accountingExtension.pay({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _payer: _won ? _dispute.proposer : _dispute.disputer,
           _receiver: _won ? _dispute.disputer : _dispute.proposer,
           _token: _params.bondToken,
@@ -197,7 +191,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
         if (_won) {
           _params.accountingExtension.release({
-            _requestId: _requestId,
+            _requestId: _dispute.requestId,
             _bonder: _dispute.disputer,
             _token: _params.bondToken,
             _amount: _params.bondSize
@@ -207,7 +201,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     }
 
     _escalation.status = _newStatus;
-    emit BondEscalationStatusUpdated(_requestId, _disputeId, _newStatus);
+    emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _newStatus);
     emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: _disputeStatus});
   }
 

@@ -410,16 +410,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
   }
 
   /**
-   * @notice Tests that disputeResponse reverts if request ids do not match.
-   */
-  function test_revertIfInvalidRequestId() public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidRequestId.selector);
-    vm.prank(address(oracle));
-    bondEscalationModule.disputeResponse(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
    * @notice Tests that disputeResponse reverts if the challenge period for the response is over.
    */
   function test_revertIfDisputeWindowIsOver(
@@ -611,16 +601,6 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     vm.prank(_caller);
     bondEscalationModule.onDisputeStatusChange(_disputeId, _request, mockResponse, mockDispute);
-  }
-
-  /**
-   * @notice Tests that onDisputeStatusChange reverts if request ids do not match
-   */
-  function test_revertIfInvalidRequestId(bytes32 _disputeId) public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidRequestId.selector);
-    vm.prank(address(oracle));
-    bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
   /**

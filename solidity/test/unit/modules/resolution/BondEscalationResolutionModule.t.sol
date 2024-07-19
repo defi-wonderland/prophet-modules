@@ -820,20 +820,12 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_reverts(
-    bytes32 _disputeId,
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_InvalidRequestId.selector);
-
-    vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
-
+  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params)
+    public
+    assumeFuzzable(address(_params.accountingExtension))
+  {
     // 1. BondEscalationResolutionModule_AlreadyResolved
-    bytes32 _requestId;
-    bytes32 _responseId;
-    (_requestId, _responseId, _disputeId) = _setResolutionModuleData(_params);
+    (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
     // Set mock escalation with resolution == DisputerWon
     module.forTest_setEscalation(_disputeId, IBondEscalationResolutionModule.Resolution.DisputerWon, 0, 0, 0);

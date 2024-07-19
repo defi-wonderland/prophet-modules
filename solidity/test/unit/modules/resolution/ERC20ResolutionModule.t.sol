@@ -352,16 +352,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   }
 
   /**
-   * @notice Test that `resolveDispute` reverts if request ids do not match.
-   */
-  function test_revertIfInvalidRequestId(bytes32 _disputeId) public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
-    vm.prank(address(oracle));
-    module.resolveDispute(_disputeId, mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
    * @notice Test that `resolveDispute` reverts if called during voting phase.
    */
   function test_revertIfOnGoingVotePhase(uint256 _timestamp) public {

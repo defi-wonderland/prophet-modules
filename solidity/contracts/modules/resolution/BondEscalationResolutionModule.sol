@@ -83,9 +83,6 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationResolutionModule_InvalidRequestId();
-
     Escalation storage _escalation = escalations[_disputeId];
 
     if (_escalation.resolution != Resolution.Unresolved) revert BondEscalationResolutionModule_AlreadyResolved();
@@ -120,7 +117,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     }
 
     ORACLE.updateDisputeStatus(_request, _response, _dispute, _disputeStatus);
-    emit DisputeResolved(_requestId, _disputeId, _disputeStatus);
+    emit DisputeResolved(_dispute.requestId, _disputeId, _disputeStatus);
   }
 
   /// @inheritdoc IBondEscalationResolutionModule
