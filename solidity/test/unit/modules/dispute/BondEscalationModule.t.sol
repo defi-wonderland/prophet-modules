@@ -1313,11 +1313,28 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
 contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
   /**
-   * @notice Tests that settleBondEscalation reverts if request ids do not match.
+   * @notice Tests that settleBondEscalation reverts if the response body is invalid.
    */
-  function test_revertIfInvalidRequestId() public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidRequestId.selector);
+  function test_revertIfInvalidResponseBody() public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _responseId = _getId(mockResponse);
+    mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
+
+    // Check: does it revert if the response body is invalid?
+    vm.expectRevert(IModule.Module_InvalidResponseBody.selector);
+    bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+  }
+
+  /**
+   * @notice Tests that settleBondEscalation reverts if the dispute body is invalid.
+   */
+  function test_revertIfInvalidDisputeBody() public {
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
   }
 
@@ -1332,9 +1349,13 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
     _params.bondEscalationDeadline = block.timestamp;
     mockRequest.disputeModuleData = abi.encode(_params);
-
     bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
 
     // Check: does it revert if the bond escalation is not over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
@@ -1352,9 +1373,13 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
-
     bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
 
     vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
@@ -1376,9 +1401,13 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
-
     bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
     vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
@@ -1407,9 +1436,13 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
-
     bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
     vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
@@ -1451,9 +1484,13 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
-
     bytes32 _requestId = _getId(mockRequest);
+
+    mockResponse.requestId = _requestId;
+    bytes32 _responseId = _getId(mockResponse);
+
     mockDispute.requestId = _requestId;
+    mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
     vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);

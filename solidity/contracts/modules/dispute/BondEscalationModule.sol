@@ -33,14 +33,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
+    bytes32 _disputeId = _getId(_dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     if (block.number > ORACLE.createdAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
-
-    BondEscalation storage _escalation = _escalations[_dispute.requestId];
-    bytes32 _disputeId = _getId(_dispute);
 
     _params.accountingExtension.bond({
       _bonder: _dispute.disputer,
@@ -251,11 +250,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationModule_InvalidRequestId();
-
+    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
-    BondEscalation storage _escalation = _escalations[_requestId];
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     if (block.timestamp <= _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
@@ -275,7 +272,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
     _escalation.status = _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
-    emit BondEscalationStatusUpdated(_requestId, _escalation.disputeId, _escalation.status);
+    emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _escalation.status);
 
     ORACLE.updateDisputeStatus(
       _request, _response, _dispute, _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost
