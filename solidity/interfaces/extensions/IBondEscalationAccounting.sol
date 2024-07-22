@@ -107,11 +107,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
    */
   error BondEscalationAccounting_AlreadySettled();
 
-  /**
-   * @notice Thrown when an user tries to claim their pledge for an escalation which wasn't pledged
-   */
-  error BondEscalationAccounting_NotPledged();
-
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
@@ -164,15 +159,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @return _claimed          True if the pledger has claimed their reward
    */
   function pledgerClaimed(bytes32 _requestId, address _pledger) external returns (bool _claimed);
-
-  /**
-   * @notice True if the given pledger has pledged for the given dispute
-   *
-   * @param _disputeId         The ID of the bond-escalated dispute
-   * @param _pledger           Address of the pledger
-   * @return _pledged          True if the pledger has pledged
-   */
-  function pledgerHasPledged(bytes32 _disputeId, address _pledger) external returns (bool _pledged);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

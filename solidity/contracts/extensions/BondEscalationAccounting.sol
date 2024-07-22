@@ -19,8 +19,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
-  mapping(bytes32 _disputeId => mapping(address _pledger => bool _pledged)) public pledgerHasPledged;
-
   constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
   /// @inheritdoc IBondEscalationAccounting
@@ -34,8 +32,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
-
-    pledgerHasPledged[_disputeId][_pledger] = true;
 
     unchecked {
       balanceOf[_pledger][_token] -= _amount;
@@ -82,14 +78,14 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     if (_result.token == IERC20(address(0))) revert BondEscalationAccounting_NoEscalationResult();
     bytes32 _requestId = _result.requestId;
     if (pledgerClaimed[_requestId][_pledger]) revert BondEscalationAccounting_AlreadyClaimed();
-    if (!pledgerHasPledged[_disputeId][_pledger]) revert BondEscalationAccounting_NotPledged();
 
     IOracle.DisputeStatus _status = ORACLE.disputeStatus(_disputeId);
     uint256 _amountPerPledger = _result.amountPerPledger;
     uint256 _numberOfPledges;
 
     if (_status == IOracle.DisputeStatus.NoResolution) {
-      _numberOfPledges = 1;
+      _numberOfPledges = _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
+        + _result.bondEscalationModule.pledgesAgainstDispute(_requestId, _pledger);
     } else {
       _numberOfPledges = _status == IOracle.DisputeStatus.Won
         ? _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
@@ -100,7 +96,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     uint256 _claimAmount = _amountPerPledger * _numberOfPledges;
 
     pledgerClaimed[_requestId][_pledger] = true;
-    pledgerHasPledged[_disputeId][_pledger] = false;
     balanceOf[_pledger][_token] += _claimAmount;
 
     unchecked {
