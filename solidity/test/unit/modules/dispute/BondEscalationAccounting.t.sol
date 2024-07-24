@@ -538,19 +538,21 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     bytes32 _disputeId,
     bytes32 _requestId,
     uint256 _amount,
-    uint256 _pledges,
+    uint256 _pledgesAgainst,
+    uint256 _pledgesFor,
     address _bondEscalationModule
   ) public assumeFuzzable(_bondEscalationModule) {
     vm.assume(_amount > 0);
-    vm.assume(_pledges > 0 && _pledges < 30);
+    vm.assume(_pledgesAgainst > 0 && _pledgesAgainst < 10_000);
+    vm.assume(_pledgesFor > 0 && _pledgesFor < 10_000);
 
-    _amount = bound(_amount, 0, type(uint128).max / _pledges);
+    _amount = bound(_amount, 0, type(uint128).max / (_pledgesAgainst + _pledgesFor));
 
     bondEscalationAccounting.forTest_setEscalationResult(
       _disputeId, _requestId, token, _amount, IBondEscalationModule(_bondEscalationModule)
     );
 
-    bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * _pledges * 2);
+    bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount * (_pledgesAgainst + _pledgesFor));
 
     // Mock and expect to call the oracle getting the dispute status
     _mockAndExpect(
@@ -563,25 +565,25 @@ contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
     _mockAndExpect(
       _bondEscalationModule,
       abi.encodeCall(IBondEscalationModule.pledgesAgainstDispute, (_requestId, pledger)),
-      abi.encode(_pledges)
+      abi.encode(_pledgesAgainst)
     );
 
     // Mock and expect the call to the escalation module asking for pledges
     _mockAndExpect(
       _bondEscalationModule,
       abi.encodeCall(IBondEscalationModule.pledgesForDispute, (_requestId, pledger)),
-      abi.encode(_pledges)
+      abi.encode(_pledgesFor)
     );
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationAccounting));
-    emit EscalationRewardClaimed(_requestId, _disputeId, pledger, token, _amount * _pledges * 2);
+    emit EscalationRewardClaimed(_requestId, _disputeId, pledger, token, _amount * (_pledgesAgainst + _pledgesFor));
 
     vm.prank(_bondEscalationModule);
     bondEscalationAccounting.claimEscalationReward(_disputeId, pledger);
 
     // Check: is the balance of the pledger properly updated?
-    assertEq(bondEscalationAccounting.balanceOf(pledger, token), _amount * _pledges * 2);
+    assertEq(bondEscalationAccounting.balanceOf(pledger, token), _amount * (_pledgesAgainst + _pledgesFor));
     // Check: is the reward marked as claimed for the pledger?
     assertTrue(bondEscalationAccounting.pledgerClaimed(_requestId, pledger));
 

@@ -356,8 +356,8 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 10: Participants claim their rewards
     // Test: The requester has paid out the reward and is left with no balance
-    // _bondEscalationAccounting.claimEscalationReward(_disputeId, requester);
-    // assertEq(_bondEscalationAccounting.balanceOf(requester, usdc), 0, 'Mismatch: Requester balance');
+    _bondEscalationAccounting.claimEscalationReward(_disputeId, requester);
+    assertEq(_bondEscalationAccounting.balanceOf(requester, usdc), 0, 'Mismatch: Requester balance');
 
     // Test: The proposer has lost his pledge and bond
     _bondEscalationAccounting.claimEscalationReward(_disputeId, proposer);
