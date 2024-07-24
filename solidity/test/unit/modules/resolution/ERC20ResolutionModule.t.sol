@@ -203,11 +203,11 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   }
 
   /**
-   * @notice Test that `castVote` reverts if request ids do not match.
+   * @notice Test that `castVote` reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidRequestId(uint256 _numberOfVotes) public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes) public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.castVote(mockRequest, mockDispute, _numberOfVotes);
   }
 
@@ -388,11 +388,11 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
 contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
-   * @notice Reverts if request ids do not match
+   * @notice Reverts if the dispute body is invalid
    */
-  function test_revertIfInvalidRequestId() public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody() public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.claimVote(mockRequest, mockDispute);
   }
 

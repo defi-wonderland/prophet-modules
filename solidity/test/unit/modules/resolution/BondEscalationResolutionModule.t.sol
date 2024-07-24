@@ -255,8 +255,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_InvalidRequestId.selector);
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -540,8 +540,8 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_InvalidRequestId.selector);
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -1013,8 +1013,8 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     address _randomPledger,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_InvalidRequestId.selector);
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.claimPledge(mockRequest, mockDispute);
 
     (,, bytes32 _disputeId) = _setResolutionModuleData(_params);

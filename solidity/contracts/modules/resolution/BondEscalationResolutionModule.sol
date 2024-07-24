@@ -122,10 +122,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
   /// @inheritdoc IBondEscalationResolutionModule
   function claimPledge(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationResolutionModule_InvalidRequestId();
-
-    bytes32 _disputeId = _getId(_dispute);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation storage _escalation = escalations[_disputeId];
 
     if (_escalation.resolution == Resolution.Unresolved) revert BondEscalationResolutionModule_NotResolved();
@@ -143,7 +140,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _claimPledge({
-        _requestId: _requestId,
+        _requestId: _dispute.requestId,
         _disputeId: _disputeId,
         _amountToRelease: _amountToRelease,
         _resolution: _escalation.resolution,
@@ -156,7 +153,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _claimPledge({
-        _requestId: _requestId,
+        _requestId: _dispute.requestId,
         _disputeId: _disputeId,
         _amountToRelease: _amountToRelease,
         _resolution: _escalation.resolution,
@@ -169,7 +166,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       if (_pledgerBalanceFor > 0) {
         pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
         _claimPledge({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _disputeId: _disputeId,
           _amountToRelease: _pledgerBalanceFor,
           _resolution: _escalation.resolution,
@@ -180,7 +177,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       if (_pledgerBalanceAgainst > 0) {
         pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
         _claimPledge({
-          _requestId: _requestId,
+          _requestId: _dispute.requestId,
           _disputeId: _disputeId,
           _amountToRelease: _pledgerBalanceAgainst,
           _resolution: _escalation.resolution,
@@ -204,10 +201,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
     uint256 _pledgeAmount,
     bool _pledgingFor
   ) internal {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationResolutionModule_InvalidRequestId();
-
-    bytes32 _disputeId = _getId(_dispute);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation storage _escalation = escalations[_disputeId];
 
     if (_escalation.startTime == 0) revert BondEscalationResolutionModule_NotEscalated();
@@ -226,7 +220,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
-      _requestId: _requestId,
+      _requestId: _dispute.requestId,
       _disputeId: _disputeId,
       _token: _params.bondToken,
       _amount: _pledgeAmount
@@ -239,7 +233,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
       _escalation.pledgesFor += _pledgeAmount;
       pledgesForDispute[_disputeId][msg.sender] += _pledgeAmount;
-      emit PledgedForDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
+      emit PledgedForDispute(msg.sender, _dispute.requestId, _disputeId, _pledgeAmount);
     } else {
       if (_inequalityData.inequalityStatus == InequalityStatus.ForTurnToEqualize) {
         revert BondEscalationResolutionModule_ForTurnToEqualize();
@@ -247,7 +241,7 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
       _escalation.pledgesAgainst += _pledgeAmount;
       pledgesAgainstDispute[_disputeId][msg.sender] += _pledgeAmount;
-      emit PledgedAgainstDispute(msg.sender, _requestId, _disputeId, _pledgeAmount);
+      emit PledgedAgainstDispute(msg.sender, _dispute.requestId, _disputeId, _pledgeAmount);
     }
 
     if (_escalation.pledgesFor + _escalation.pledgesAgainst >= _params.pledgeThreshold) {

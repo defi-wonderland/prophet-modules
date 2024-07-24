@@ -226,11 +226,11 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   }
 
   /**
-   * @notice Test that `commitVote` reverts if request ids do not match.
+   * @notice Test that `commitVote` reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidRequestId(bytes32 _commitment) public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody(bytes32 _commitment) public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.commitVote(mockRequest, mockDispute, _commitment);
   }
 
@@ -455,11 +455,11 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
   }
 
   /**
-   * @notice Test that `revealVote` reverts if request ids do not match.
+   * @notice Test that `revealVote` reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidRequestId(uint256 _numberOfVotes, bytes32 _salt) public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes, bytes32 _salt) public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
   }
 

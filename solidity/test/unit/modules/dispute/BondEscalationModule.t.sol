@@ -933,20 +933,18 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
 
 contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   /**
-   * @notice Tests that pledgeForDispute reverts if request ids do not match.
+   * @notice Tests that pledgeForDispute reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidRequestId() public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody() public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
   }
 
   /**
    * @notice Tests that pledgeForDispute reverts if the dispute is not going through the bond escalation mechanism.
    */
-  function test_revertIfTheDisputeIsNotGoingThroughTheBondEscalationProcess(bytes32 _disputeId) public {
-    vm.assume(_disputeId > 0);
-
+  function test_revertIfTheDisputeIsNotGoingThroughTheBondEscalationProcess() public {
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
 
@@ -1121,20 +1119,18 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
 contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
-   * @notice Tests that pledgeAgainstDispute reverts if request ids do not match.
+   * @notice Tests that pledgeAgainstDispute reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidRequestId() public {
-    // Check: does it revert if request ids do not match?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidRequestId.selector);
+  function test_revertIfInvalidDisputeBody() public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
     bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
   }
 
   /**
    * @notice Tests that pledgeAgainstDispute reverts if the dispute is not going through the bond escalation mechanism.
    */
-  function test_revertIfTheDisputeIsNotGoingThroughTheBondEscalationProcess(bytes32 _disputeId) public {
-    vm.assume(_disputeId > 0);
-
+  function test_revertIfTheDisputeIsNotGoingThroughTheBondEscalationProcess() public {
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
 

@@ -211,7 +211,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function pledgeForDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
     bytes32 _disputeId = _getId(_dispute);
-    RequestParameters memory _params = _pledgeChecks(_disputeId, _request, _dispute, true);
+    RequestParameters memory _params = _pledgeChecks(_request, _dispute, true);
 
     _escalations[_dispute.requestId].amountOfPledgesForDispute += 1;
     pledgesForDispute[_dispute.requestId][msg.sender] += 1;
@@ -229,7 +229,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function pledgeAgainstDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
     bytes32 _disputeId = _getId(_dispute);
-    RequestParameters memory _params = _pledgeChecks(_disputeId, _request, _dispute, false);
+    RequestParameters memory _params = _pledgeChecks(_request, _dispute, false);
 
     _escalations[_dispute.requestId].amountOfPledgesAgainstDispute += 1;
     pledgesAgainstDispute[_dispute.requestId][msg.sender] += 1;
@@ -281,22 +281,18 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
   /**
    * @notice Checks the necessary conditions for pledging
-   * @param _disputeId The ID of the dispute to pledge for or against
    * @param _request The request data
    * @param _dispute The dispute data
    * @param _forDispute Whether the pledge is for or against the dispute
    * @return _params The decoded parameters for the request
    */
   function _pledgeChecks(
-    bytes32 _disputeId,
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
     bool _forDispute
   ) internal view returns (RequestParameters memory _params) {
-    bytes32 _requestId = _getId(_request);
-    if (_requestId != _dispute.requestId) revert BondEscalationModule_InvalidRequestId();
-
-    BondEscalation memory _escalation = _escalations[_requestId];
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
+    BondEscalation memory _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId != _escalation.disputeId) {
       revert BondEscalationModule_InvalidDispute();
