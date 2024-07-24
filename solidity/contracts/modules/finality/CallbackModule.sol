@@ -41,7 +41,7 @@ contract CallbackModule is Module, ICallbackModule {
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = address(_params.target) != address(0) && _params.data.length != 0 && _targetHasBytecode(_params.target);
+    _valid = _params.data.length != 0 && _targetHasBytecode(_params.target);
   }
 
   /**

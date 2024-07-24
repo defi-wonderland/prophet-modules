@@ -51,7 +51,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     _valid = true;
 
     for (uint256 _i; _i < _params.targets.length; ++_i) {
-      if (_params.targets[_i] == address(0) || !_targetHasBytecode(_params.targets[_i])) {
+      if (!_targetHasBytecode(_params.targets[_i])) {
         _valid = false;
         break;
       }
