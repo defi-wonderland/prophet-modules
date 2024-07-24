@@ -40,7 +40,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
   ) external override(IContractCallRequestModule, Module) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.requestModuleData);
 
-    if (ORACLE.createdAt(_getId(_response)) != 0) {
+    if (ORACLE.responseCreatedAt(_getId(_response)) != 0) {
       _params.accountingExtension.pay({
         _requestId: _response.requestId,
         _payer: _request.requester,

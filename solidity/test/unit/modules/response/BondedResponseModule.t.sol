@@ -236,9 +236,11 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(false)
     );
 
-    // Mock and expect IOracle.createdAt to be called
+    // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(_responseCreationBlock)
+      address(oracle),
+      abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))),
+      abi.encode(_responseCreationBlock)
     );
 
     // Check: does it revert if it's too early to finalize?
@@ -269,9 +271,9 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(true)
     );
 
-    // Mock and expect IOracle.createdAt to be called
+    // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
     );
 
     // Mock and expect IAccountingExtension.release to be called
@@ -302,8 +304,10 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
     );
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.number));
+    // Mock and expect IOracle.responseCreatedAt to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.number)
+    );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
@@ -344,10 +348,10 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _allowedModule)), abi.encode(true)
     );
 
-    // Mock and expect IOracle.createdAt to be called
+    // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))),
+      abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))),
       abi.encode(block.timestamp - _baseDisputeWindow)
     );
 
