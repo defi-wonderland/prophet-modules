@@ -250,7 +250,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external {
-    bytes32 _disputeId = _validateDispute(_request, _response, _dispute);
+    (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 

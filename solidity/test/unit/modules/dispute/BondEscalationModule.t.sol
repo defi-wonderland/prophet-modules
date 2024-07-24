@@ -1316,11 +1316,6 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
    * @notice Tests that settleBondEscalation reverts if the response body is invalid.
    */
   function test_revertIfInvalidResponseBody() public {
-    bytes32 _requestId = _getId(mockRequest);
-    bytes32 _responseId = _getId(mockResponse);
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
-
     // Check: does it revert if the response body is invalid?
     vm.expectRevert(IModule.Module_InvalidResponseBody.selector);
     bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
