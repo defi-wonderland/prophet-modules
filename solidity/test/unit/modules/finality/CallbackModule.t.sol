@@ -81,7 +81,6 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
    * @notice Test that finalizeRequest emits events
    */
   function test_emitsEvents(address _proposer, address _target, bytes calldata _data) public assumeFuzzable(_target) {
-    vm.etch(_target, '0xabcdef');
     mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     mockResponse.requestId = _getId(mockRequest);
 

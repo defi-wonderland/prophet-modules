@@ -70,7 +70,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
-    uint256 _responseCreatedAt = ORACLE.createdAt(_getId(_response));
+    uint256 _responseCreatedAt = ORACLE.responseCreatedAt(_getId(_response));
 
     if (_responseCreatedAt != 0) {
       if (!_isModule && block.number < _responseCreatedAt + _params.disputeWindow) {

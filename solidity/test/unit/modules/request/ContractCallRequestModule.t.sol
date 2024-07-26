@@ -153,7 +153,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
 
     // Mock and expect oracle to return the response's creation time
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
     );
 
     // Mock and expect IAccountingExtension.pay to be called
@@ -186,7 +186,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
     mockResponse.requestId = _requestId;
 
     // Mock and expect oracle to return no timestamp
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(0));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(0));
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
@@ -216,7 +216,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
     mockResponse.requestId = _requestId;
 
     // Mock and expect oracle to return no timestamp
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_getId(mockResponse))), abi.encode(0));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(0));
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(

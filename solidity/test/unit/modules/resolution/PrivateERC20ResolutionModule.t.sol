@@ -85,7 +85,7 @@ contract BaseTest is Test, Helpers {
 
       bytes32 _commitment = module.computeCommitment(_disputeId, _amountOfVotes, bytes32(_i)); // index as salt
 
-      _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+      _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
       _mockAndExpect(
         address(oracle),
         abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
@@ -194,8 +194,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     vm.expectEmit(true, true, true, true);
     emit VoteCommitted(_voter, _disputeId, _commitment);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -243,8 +243,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(0));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(0));
 
     // Check: does it revert if no dispute exists?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_NonExistentDispute.selector);
@@ -260,8 +260,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
@@ -281,8 +281,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle),
@@ -304,8 +304,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
@@ -325,8 +325,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Lost)
@@ -346,8 +346,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -386,8 +386,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     // Warp to invalid timestamp for commitment
     vm.warp(_timestamp);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -676,8 +676,8 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     module.forTest_setStartTime(_disputeId, 1);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -718,8 +718,8 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     module.forTest_setStartTime(_disputeId, 1);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Active)
@@ -750,8 +750,8 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     module.forTest_setStartTime(_disputeId, 1);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
@@ -782,8 +782,8 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     module.forTest_setStartTime(_disputeId, 1);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Lost)
@@ -814,8 +814,8 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
     module.forTest_setStartTime(_disputeId, 1);
 
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.createdAt, (_disputeId)), abi.encode(1));
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
       address(oracle),
