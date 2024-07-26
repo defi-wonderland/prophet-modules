@@ -249,14 +249,16 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 
     // block.timestamp < _startTime + _timeUntilDeadline
     _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
-
-    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
   }
 
-  function test_reverts(
+  function test_pledgeForDisputeReverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+
     // 1. BondEscalationResolutionModule_NotEscalated
     (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
@@ -382,6 +384,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     uint256 _pledgesFor = 0;
     uint256 _pledgesAgainst = _pledgeAmount * 200 / 300;
 
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
+
     // Set all data
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
@@ -431,6 +435,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     uint256 _pledgesFor = 100_000;
     uint256 _pledgesAgainst = (_pledgeAmount + _pledgesFor) * 301 / 200;
 
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
+
     // Set the data
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
@@ -475,6 +481,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Making both the same so the percentage diff is not reached
     uint256 _pledgesFor = 100_000;
     uint256 _pledgesAgainst = (_pledgeAmount + _pledgesFor);
+
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Resetting the pledges values
     module.forTest_setEscalation(
@@ -526,14 +534,16 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // block.timestamp < _startTime + _timeUntilDeadline
     _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
-
-    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
   }
 
-  function test_reverts(
+  function test_pledgeAgainstDisputeReverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+
     // 1. BondEscalationResolutionModule_NotEscalated
     (_requestId,, _disputeId) = _setResolutionModuleData(_params);
 
@@ -658,6 +668,8 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     uint256 _pledgesAgainst = 0;
     uint256 _pledgesFor = _pledgeAmount * 200 / 300;
 
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
+
     // Set all data
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
@@ -707,6 +719,8 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     uint256 _pledgesAgainst = 100_000;
     uint256 _pledgesFor = (_pledgeAmount + _pledgesAgainst) * 301 / 200;
 
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
+
     // Set the data
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
@@ -751,6 +765,8 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Making both the same so the percentage diff is not reached
     uint256 _pledgesAgainst = 100_000;
     uint256 _pledgesFor = (_pledgeAmount + _pledgesAgainst);
+
+    (_requestId,, _disputeId) = _setResolutionModuleData(requestParameters);
 
     // Resetting the pledges values
     module.forTest_setEscalation(
@@ -804,7 +820,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params)
+  function test_resolveDisputeReverts(IBondEscalationResolutionModule.RequestParameters memory _params)
     public
     assumeFuzzable(address(_params.accountingExtension))
   {
@@ -990,14 +1006,19 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
-  function test_reverts(
-    bytes32 _disputeId,
+  function test_claimPledgeReverts(
     uint256 _pledgesFor,
     uint256 _pledgesAgainst,
     uint128 _startTime,
     address _randomPledger,
-    IOracle.Request calldata _request
-  ) public {
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    module.claimPledge(mockRequest, mockDispute);
+
+    (,, bytes32 _disputeId) = _setResolutionModuleData(_params);
+
     // Set a mock escalation with resolution == Unresolved
     module.forTest_setEscalation(
       _disputeId, IBondEscalationResolutionModule.Resolution.Unresolved, _startTime, _pledgesFor, _pledgesAgainst
@@ -1008,7 +1029,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
 
     // Check: does it revert if trying to claim a pledge of a not resolved escalation?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotResolved.selector);
-    module.claimPledge(_request, mockDispute);
+    module.claimPledge(mockRequest, mockDispute);
   }
 
   function test_disputerWon(

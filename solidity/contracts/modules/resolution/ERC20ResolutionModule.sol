@@ -56,7 +56,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     IOracle.Dispute calldata _dispute,
     uint256 _numberOfVotes
   ) public {
-    bytes32 _disputeId = _getId(_dispute);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
@@ -111,7 +111,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
   /// @inheritdoc IERC20ResolutionModule
   function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
-    bytes32 _disputeId = _getId(_dispute);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];
 
     // Check that voting deadline is over

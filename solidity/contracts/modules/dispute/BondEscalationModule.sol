@@ -33,14 +33,13 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
+    bytes32 _disputeId = _getId(_dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (block.number > ORACLE.createdAt(_dispute.responseId) + _params.disputeWindow) {
+    if (block.number > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
-
-    BondEscalation storage _escalation = _escalations[_dispute.requestId];
-    bytes32 _disputeId = _getId(_dispute);
 
     _params.accountingExtension.bond({
       _bonder: _dispute.disputer,
@@ -212,7 +211,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function pledgeForDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
     bytes32 _disputeId = _getId(_dispute);
-    RequestParameters memory _params = _pledgeChecks(_disputeId, _request, _dispute, true);
+    RequestParameters memory _params = _pledgeChecks(_request, _dispute, true);
 
     _escalations[_dispute.requestId].amountOfPledgesForDispute += 1;
     pledgesForDispute[_dispute.requestId][msg.sender] += 1;
@@ -230,7 +229,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   function pledgeAgainstDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
     bytes32 _disputeId = _getId(_dispute);
-    RequestParameters memory _params = _pledgeChecks(_disputeId, _request, _dispute, false);
+    RequestParameters memory _params = _pledgeChecks(_request, _dispute, false);
 
     _escalations[_dispute.requestId].amountOfPledgesAgainstDispute += 1;
     pledgesAgainstDispute[_dispute.requestId][msg.sender] += 1;
@@ -251,9 +250,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external {
-    bytes32 _requestId = _getId(_request);
+    (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
-    BondEscalation storage _escalation = _escalations[_requestId];
+    BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     if (block.timestamp <= _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
@@ -273,7 +272,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     bool _disputersWon = _pledgesForDispute > _pledgesAgainstDispute;
     _escalation.status = _disputersWon ? BondEscalationStatus.DisputerWon : BondEscalationStatus.DisputerLost;
 
-    emit BondEscalationStatusUpdated(_requestId, _escalation.disputeId, _escalation.status);
+    emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _escalation.status);
 
     ORACLE.updateDisputeStatus(
       _request, _response, _dispute, _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost
@@ -282,18 +281,17 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
   /**
    * @notice Checks the necessary conditions for pledging
-   * @param _disputeId The ID of the dispute to pledge for or against
    * @param _request The request data
    * @param _dispute The dispute data
    * @param _forDispute Whether the pledge is for or against the dispute
    * @return _params The decoded parameters for the request
    */
   function _pledgeChecks(
-    bytes32 _disputeId,
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
     bool _forDispute
   ) internal view returns (RequestParameters memory _params) {
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
     BondEscalation memory _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId != _escalation.disputeId) {
