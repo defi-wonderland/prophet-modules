@@ -131,6 +131,59 @@ contract Integration_ResponseProposal is IntegrationBase {
     oracle.proposeResponse(mockRequest, mockResponse);
   }
 
+  /**
+   * @notice Proposing from an approved dispute module
+   */
+  function test_proposeResponse_fromApprovedDisputeModule(bytes memory _responseBytes) public {
+    address _otherRequester = makeAddr('otherRequester');
+    address _approvedDisputeModule = makeAddr('_approvedDisputeModule');
+
+    // Approve the new dispute module
+    _accountingExtension.approveModule(_approvedDisputeModule);
+
+    mockRequest.nonce += 1;
+    mockRequest.requester = _otherRequester;
+    mockRequest.disputeModule = _approvedDisputeModule;
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    uint256 _oldProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
+    assertGt(_oldProposerBalance, 0);
+
+    vm.startPrank(_otherRequester);
+    // Create a new proposal with another dispute module
+    _accountingExtension.approveModule(mockRequest.requestModule);
+    bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
+
+    vm.stopPrank();
+
+    vm.startPrank(_approvedDisputeModule);
+    // Propose a response from the approved dispute module
+    mockResponse.response = _responseBytes;
+    mockResponse.proposer = proposer;
+    mockResponse.requestId = _requestIdApprovedDisputeModule;
+
+    oracle.proposeResponse(mockRequest, mockResponse);
+    vm.stopPrank();
+
+    uint256 _newProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
+
+    // Proposer got their balance bonded when they didn't create the response
+    assertTrue(_expectedBondSize != 0);
+    assertEq(_oldProposerBalance, _newProposerBalance + _expectedBondSize);
+  }
+
+  /**
+   * @notice Proposing from an unapproved dispute module
+   */
   function test_proposeResponse_fromUnapprovedDisputeModule(bytes memory _responseBytes) public {
     address _attacker = makeAddr('attacker');
     mockRequest.nonce += 1;

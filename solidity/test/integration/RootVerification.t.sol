@@ -133,6 +133,7 @@ contract Integration_RootVerification is IntegrationBase {
 
     vm.startPrank(disputer);
     _accountingExtension.approveModule(address(_responseModule));
+    _accountingExtension.approveModule(address(mockRequest.disputeModule));
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
     vm.stopPrank();
 
