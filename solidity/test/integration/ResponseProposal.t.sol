@@ -146,9 +146,6 @@ contract Integration_ResponseProposal is IntegrationBase {
       })
     );
 
-    uint256 _oldProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
-    assertGt(_oldProposerBalance, 0);
-
     vm.startPrank(_attacker);
     // Attacker creates a request with their own address as the dispute module
     mockRequest.disputeModule = _attacker;
@@ -160,14 +157,8 @@ contract Integration_ResponseProposal is IntegrationBase {
     mockResponse.proposer = proposer;
     mockResponse.requestId = _requestIdAttacker;
 
+    // Should revert as the dispute module is not approved
+    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
     oracle.proposeResponse(mockRequest, mockResponse);
-
-    vm.stopPrank();
-
-    uint256 _newProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
-
-    // Proposer got their balance bonded when they didn't create the response
-    assertTrue(_expectedBondSize != 0);
-    assertEq(_oldProposerBalance, _newProposerBalance + _expectedBondSize);
   }
 }

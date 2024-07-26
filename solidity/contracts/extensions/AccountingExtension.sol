@@ -126,13 +126,12 @@ contract AccountingExtension is IAccountingExtension {
     uint256 _amount,
     address _sender
   ) external onlyAllowedModule(_requestId) onlyParticipant(_requestId, _bonder) {
-    if (!(_approvals[_bonder].contains(msg.sender) || _approvals[_bonder].contains(_sender))) {
+    bool _moduleApproved = _approvals[_bonder].contains(msg.sender);
+    bool _senderApproved = _bonder == _sender || _approvals[_bonder].contains(_sender);
+
+    if (!(_moduleApproved && _senderApproved)) {
       revert AccountingExtension_InsufficientAllowance();
     }
-
-    // if (!(_approvals[_bonder].contains(msg.sender) && (_bonder == _sender || _approvals[_bonder].contains(_sender)))) {
-    //   revert AccountingExtension_InsufficientAllowance();
-    // }
 
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();
 
