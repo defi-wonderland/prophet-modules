@@ -203,6 +203,15 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   }
 
   /**
+   * @notice Test that `castVote` reverts if the dispute body is invalid.
+   */
+  function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes) public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    module.castVote(mockRequest, mockDispute, _numberOfVotes);
+  }
+
+  /**
    * @notice Test that `castVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes) public {
@@ -256,7 +265,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
         timeUntilDeadline: votingTimeWindow
       })
     );
-
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
@@ -289,7 +297,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
         timeUntilDeadline: votingTimeWindow
       })
     );
-
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
@@ -363,7 +370,6 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     );
     mockDispute.requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(mockDispute);
-
     module.forTest_setStartTime(_disputeId, 500_000);
 
     _mockAndExpect(
@@ -382,6 +388,15 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
 
 contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
+   * @notice Reverts if the dispute body is invalid
+   */
+  function test_revertIfInvalidDisputeBody() public {
+    // Check: does it revert if the dispute body is invalid?
+    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    module.claimVote(mockRequest, mockDispute);
+  }
+
+  /**
    * @notice Reverts if the vote is still ongoing
    */
   function test_revertIfVoteIsOnGoing(address _voter) public {
@@ -393,7 +408,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
         timeUntilDeadline: 1000
       })
     );
-
     mockDispute.requestId = _getId(mockRequest);
     module.forTest_setStartTime(_getId(mockDispute), block.timestamp);
 
