@@ -251,7 +251,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
   }
 
-  function test_reverts(
+  function test_pledgeForDisputeReverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
@@ -536,7 +536,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     _startTime = uint128(block.timestamp - timeUntilDeadline + 1);
   }
 
-  function test_reverts(
+  function test_pledgeAgainstDisputeReverts(
     uint256 _pledgeAmount,
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
@@ -820,7 +820,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_reverts(IBondEscalationResolutionModule.RequestParameters memory _params)
+  function test_resolveDisputeReverts(IBondEscalationResolutionModule.RequestParameters memory _params)
     public
     assumeFuzzable(address(_params.accountingExtension))
   {
@@ -1006,7 +1006,7 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
-  function test_reverts(
+  function test_claimPledgeReverts(
     uint256 _pledgesFor,
     uint256 _pledgesAgainst,
     uint128 _startTime,
