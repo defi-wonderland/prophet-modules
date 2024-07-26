@@ -831,9 +831,11 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    *         the users that pledged in favor of the dispute, as they have won.
    */
   function test_shouldChangeBondEscalationStatusAndCallPayPledgersWon(
-    IBondEscalationModule.RequestParameters memory _params
+    IBondEscalationModule.RequestParameters memory _params,
+    uint256 _numPledgers
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    vm.assume(_params.bondSize < type(uint256).max / 2);
+    vm.assume(_params.bondSize < type(uint128).max / 2);
+    vm.assume(_numPledgers > 0 && _numPledgers < 30);
 
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
 
@@ -843,11 +845,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    uint256 _numForPledgers = 2;
-    uint256 _numAgainstPledgers = 2;
-
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
-    _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalation(_requestId, _numPledgers, _numPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -884,7 +883,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numForPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numPledgers)
       ),
       abi.encode()
     );
@@ -910,9 +909,11 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    *         the users that pledged against the dispute, as those that pledged in favor have lost .
    */
   function test_shouldChangeBondEscalationStatusAndCallPayPledgersLost(
-    IBondEscalationModule.RequestParameters memory _params
+    IBondEscalationModule.RequestParameters memory _params,
+    uint256 _numPledgers
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    vm.assume(_params.bondSize < type(uint256).max / 2);
+    vm.assume(_params.bondSize < type(uint128).max / 2);
+    vm.assume(_numPledgers > 0 && _numPledgers < 30);
 
     // Set to Lost so the proposer and againstDisputePledgers win
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Lost;
@@ -922,11 +923,8 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     mockDispute.requestId = _requestId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    uint256 _numForPledgers = 2;
-    uint256 _numAgainstPledgers = 2;
-
     // Set bond escalation data to have pledgers and to return the winning for pledgers as in this case they won the escalation
-    _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
+    _setBondEscalation(_requestId, _numPledgers, _numPledgers);
 
     // Set this dispute to have gone through the bond escalation process
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -954,7 +952,7 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
-        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numAgainstPledgers)
+        (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numPledgers)
       ),
       abi.encode(true)
     );
