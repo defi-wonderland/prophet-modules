@@ -17,7 +17,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   mapping(bytes32 _disputeId => EscalationResult _result) public escalationResults;
 
   /// @inheritdoc IBondEscalationAccounting
-  mapping(bytes32 _requestId => mapping(address _pledger => bool)) public pledgerClaimed;
+  mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
   constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
@@ -84,7 +84,8 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     uint256 _numberOfPledges;
 
     if (_status == IOracle.DisputeStatus.NoResolution) {
-      _numberOfPledges = 1;
+      _numberOfPledges = _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)
+        + _result.bondEscalationModule.pledgesAgainstDispute(_requestId, _pledger);
     } else {
       _numberOfPledges = _status == IOracle.DisputeStatus.Won
         ? _result.bondEscalationModule.pledgesForDispute(_requestId, _pledger)

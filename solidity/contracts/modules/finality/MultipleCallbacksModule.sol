@@ -43,7 +43,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external
-    pure
+    view
     override(Module, IModule)
     returns (bool _valid)
   {
@@ -51,7 +51,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     _valid = true;
 
     for (uint256 _i; _i < _params.targets.length; ++_i) {
-      if (_params.targets[_i] == address(0)) {
+      if (!_targetHasBytecode(_params.targets[_i])) {
         _valid = false;
         break;
       }
@@ -63,5 +63,18 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
         break;
       }
     }
+  }
+
+  /**
+   * @notice Checks if a target address has bytecode
+   * @param _target The address to check
+   * @return _hasBytecode Whether the target has bytecode or not
+   */
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
   }
 }

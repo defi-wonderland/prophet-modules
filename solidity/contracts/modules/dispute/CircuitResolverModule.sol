@@ -94,12 +94,25 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external
-    pure
+    view
     override(Module, IModule)
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
-      && _params.bondSize != 0 && address(_params.verifier) != address(0) && _params.callData.length != 0;
+      && _params.bondSize != 0 && _targetHasBytecode(_params.verifier) && _params.callData.length != 0;
+  }
+
+  /**
+   * @notice Checks if a target address has bytecode
+   * @param _target The address to check
+   * @return _hasBytecode Whether the target has bytecode or not
+   */
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
   }
 }

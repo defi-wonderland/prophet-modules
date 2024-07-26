@@ -42,7 +42,7 @@ import {TestConstants} from '../utils/TestConstants.sol';
 // solhint-enable no-unused-import
 
 contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
-  uint256 public constant FORK_BLOCK = 100_000_000;
+  uint256 public constant FORK_BLOCK = 122_612_760;
 
   uint256 internal _initialBalance = 100_000 ether;
 

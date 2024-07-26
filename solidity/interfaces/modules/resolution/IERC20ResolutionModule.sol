@@ -49,11 +49,6 @@ interface IERC20ResolutionModule is IResolutionModule {
   //////////////////////////////////////////////////////////////*/
 
   /**
-   * @notice Throws if the caller is not the dispute module
-   */
-  error ERC20ResolutionModule_OnlyDisputeModule();
-
-  /**
    * @notice Throws if the dispute doesn't exist or has not been escalated
    */
   error ERC20ResolutionModule_DisputeNotEscalated();
