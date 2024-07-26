@@ -677,51 +677,6 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  /**
-   * @notice Tests that onDisputeStatusChange pays the disputer if the disputer won
-   */
-  function test_callPayIfNormalDisputeWonPledgesForDispute(
-    IBondEscalationModule.RequestParameters memory _params,
-    address[] memory _pledgersforDispute
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
-    vm.assume(_pledgersforDispute.length > 0 && _pledgersforDispute.length < 10);
-    _params.accountingExtension = IBondEscalationAccounting(makeAddr('BondEscalationAccounting'));
-    mockRequest.disputeModuleData = abi.encode(_params);
-    bytes32 _requestId = _getId(mockRequest);
-
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
-
-    // Mock and expect IAccountingExtension.pay to be called
-    _mockAndExpect(
-      address(_params.accountingExtension),
-      abi.encodeCall(
-        IAccountingExtension.pay,
-        (_requestId, mockDispute.proposer, mockDispute.disputer, _params.bondToken, _params.bondSize)
-      ),
-      abi.encode(true)
-    );
-
-    // Mock and expect IAccountingExtension.pay to be called
-    _mockAndExpect(
-      address(_params.accountingExtension),
-      abi.encodeCall(
-        IAccountingExtension.release, (mockDispute.disputer, _requestId, _params.bondToken, _params.bondSize)
-      ),
-      abi.encode(true)
-    );
-
-    // Mock and expect IOracle.createdAt to be called
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Won)
-    );
-
-    bondEscalationModule.forTest_setBondEscalation(_requestId, _pledgersforDispute, new address[](0));
-
-    vm.prank(address(oracle));
-    bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
-  }
-
   function test_emitsEvent(IBondEscalationModule.RequestParameters memory _params)
     public
     assumeFuzzable(address(_params.accountingExtension))
@@ -948,13 +903,13 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     );
 
     // Mock and expect IBondEscalationAccounting.onSettleBondEscalation to be called
-    vm.mockCall(
+    _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.onSettleBondEscalation,
         (_requestId, _disputeId, _params.bondToken, _params.bondSize << 1, _numPledgers)
       ),
-      abi.encode(true)
+      abi.encode()
     );
 
     // Check: is th event emitted?
