@@ -125,7 +125,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         uint256 _pledgesForDispute = _escalation.amountOfPledgesForDispute;
         uint256 _pledgesAgainstDispute = _escalation.amountOfPledgesAgainstDispute;
 
-        if (_pledgesAgainstDispute > 0) {
+        if (_pledgesAgainstDispute > 0 || _pledgesForDispute > 0) {
           uint256 _amountToPay = _won
             ? _params.bondSize
               + FixedPointMathLib.mulDivDown(_pledgesAgainstDispute, _params.bondSize, _pledgesForDispute)
