@@ -27,6 +27,7 @@ contract CallbackModule is Module, ICallbackModule {
     address _finalizer
   ) external override(Module, ICallbackModule) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.finalityModuleData);
+
     _params.target.call(_params.data);
     emit Callback(_response.requestId, _params.target, _params.data);
     emit RequestFinalized(_response.requestId, _response, _finalizer);
@@ -35,11 +36,24 @@ contract CallbackModule is Module, ICallbackModule {
   /// @inheritdoc IModule
   function validateParameters(bytes calldata _encodedParameters)
     external
-    pure
+    view
     override(Module, IModule)
     returns (bool _valid)
   {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
-    _valid = address(_params.target) != address(0) && _params.data.length != 0;
+    _valid = _params.data.length != 0 && _targetHasBytecode(_params.target);
+  }
+
+  /**
+   * @notice Checks if a target address has bytecode
+   * @param _target The address to check
+   * @return _hasBytecode Whether the target has bytecode or not
+   */
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
   }
 }

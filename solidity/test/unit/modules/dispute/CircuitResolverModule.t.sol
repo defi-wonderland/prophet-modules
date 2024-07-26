@@ -60,6 +60,14 @@ contract BaseTest is Test, Helpers {
 
     circuitResolverModule = new ForTest_CircuitResolverModule(oracle);
   }
+
+  function targetHasBytecode(address _target) public view returns (bool _hasBytecode) {
+    uint256 _size;
+    assembly {
+      _size := extcodesize(_target)
+    }
+    _hasBytecode = _size > 0;
+  }
 }
 
 contract CircuitResolverModule_Unit_ModuleData is BaseTest {
@@ -109,7 +117,7 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
   function test_validateParameters(ICircuitResolverModule.RequestParameters calldata _params) public {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
-        || _params.bondSize == 0 || address(_params.verifier) == address(0) || _params.callData.length == 0
+        || _params.bondSize == 0 || !targetHasBytecode(_params.verifier) || _params.callData.length == 0
     ) {
       assertFalse(circuitResolverModule.validateParameters(abi.encode(_params)));
     } else {
