@@ -495,12 +495,8 @@ contract Integration_BondEscalation is IntegrationBase {
     bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
 
     _bondEscalationAccounting.releasePledge(
-      _requestIdApprovedDisputeModule, //todo
-      _disputeId, //todo
-      _attacker,
-      usdc,
-      _pledgeSize * 4
-    ); // todo
+      _requestIdApprovedDisputeModule, _disputeId, _attacker, usdc, _pledgeSize * 4
+    );
     vm.stopPrank();
 
     uint256 _newAttackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
