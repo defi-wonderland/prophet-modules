@@ -129,6 +129,11 @@ contract AccountingExtension is IAccountingExtension {
     if (!(_approvals[_bonder].contains(msg.sender) || _approvals[_bonder].contains(_sender))) {
       revert AccountingExtension_InsufficientAllowance();
     }
+
+    // if (!(_approvals[_bonder].contains(msg.sender) && (_bonder != _sender && _approvals[_bonder].contains(_sender)))) {
+    //   revert AccountingExtension_InsufficientAllowance();
+    // }
+
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();
 
     bondedAmountOf[_bonder][_token][_requestId] += _amount;
