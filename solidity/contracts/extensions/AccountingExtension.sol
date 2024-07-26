@@ -130,7 +130,7 @@ contract AccountingExtension is IAccountingExtension {
       revert AccountingExtension_InsufficientAllowance();
     }
 
-    // if (!(_approvals[_bonder].contains(msg.sender) && (_bonder != _sender && _approvals[_bonder].contains(_sender)))) {
+    // if (!(_approvals[_bonder].contains(msg.sender) && (_bonder == _sender || _approvals[_bonder].contains(_sender)))) {
     //   revert AccountingExtension_InsufficientAllowance();
     // }
 
