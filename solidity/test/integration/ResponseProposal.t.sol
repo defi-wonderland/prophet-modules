@@ -160,7 +160,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     assertGt(_oldProposerBalance, 0);
 
     vm.startPrank(_otherRequester);
-    // Create a new proposal with another dispute module
+    // Create a new request with another dispute module
     _accountingExtension.approveModule(mockRequest.requestModule);
     bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
 
