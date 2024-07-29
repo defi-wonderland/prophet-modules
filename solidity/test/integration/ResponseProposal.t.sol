@@ -139,6 +139,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     address _approvedDisputeModule = makeAddr('_approvedDisputeModule');
 
     // Approve the new dispute module
+    vm.prank(proposer);
     _accountingExtension.approveModule(_approvedDisputeModule);
 
     mockRequest.nonce += 1;
@@ -163,9 +164,8 @@ contract Integration_ResponseProposal is IntegrationBase {
     _accountingExtension.approveModule(mockRequest.requestModule);
     bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
 
-    vm.stopPrank();
+    changePrank(_approvedDisputeModule);
 
-    vm.startPrank(_approvedDisputeModule);
     // Propose a response from the approved dispute module
     mockResponse.response = _responseBytes;
     mockResponse.proposer = proposer;
