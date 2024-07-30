@@ -127,7 +127,7 @@ contract AccountingExtension is IAccountingExtension {
     address _sender
   ) external onlyAllowedModule(_requestId) onlyParticipant(_requestId, _bonder) {
     bool _moduleApproved = _approvals[_bonder].contains(msg.sender);
-    bool _senderApproved = _bonder == _sender || _approvals[_bonder].contains(_sender);
+    bool _senderApproved = _approvals[_bonder].contains(_sender);
 
     if (!(_moduleApproved && _senderApproved)) {
       revert AccountingExtension_InsufficientAllowance();
