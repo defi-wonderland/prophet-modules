@@ -270,7 +270,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the module is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -292,7 +292,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the caller is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_sender);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
@@ -320,7 +320,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the caller is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
@@ -348,7 +348,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the caller is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});

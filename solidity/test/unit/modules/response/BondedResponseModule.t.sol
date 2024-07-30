@@ -143,7 +143,6 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    address _sender,
     address _proposer
   ) public {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);

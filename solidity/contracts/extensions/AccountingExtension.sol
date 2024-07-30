@@ -106,7 +106,7 @@ contract AccountingExtension is IAccountingExtension {
     IERC20 _token,
     uint256 _amount
   ) external onlyAllowedModule(_requestId) onlyParticipant(_requestId, _bonder) {
-    if (!_approvals[_bonder].contains(msg.sender)) revert AccountingExtension_InsufficientAllowance();
+    if (!_approvals[_bonder].contains(msg.sender)) revert AccountingExtension_NotAllowed();
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();
 
     bondedAmountOf[_bonder][_token][_requestId] += _amount;
@@ -130,7 +130,7 @@ contract AccountingExtension is IAccountingExtension {
     bool _senderApproved = _approvals[_bonder].contains(_sender);
 
     if (!(_moduleApproved && _senderApproved)) {
-      revert AccountingExtension_InsufficientAllowance();
+      revert AccountingExtension_NotAllowed();
     }
 
     if (balanceOf[_bonder][_token] < _amount) revert AccountingExtension_InsufficientFunds();

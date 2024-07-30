@@ -211,7 +211,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     mockResponse.requestId = _requestIdAttacker;
 
     // Should revert as the dispute module is not approved
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
     oracle.proposeResponse(mockRequest, mockResponse);
   }
 }
