@@ -170,19 +170,15 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     uint256 _amount,
     uint256 _initialBalance,
     address _bonder,
-    address _sender,
-    address _module
+    address _sender
   ) public {
     _amount = bound(_amount, 0, _initialBalance);
-
-    vm.prank(_bonder);
-    extension.approveModule(_module);
 
     vm.prank(_bonder);
     extension.approveModule(_sender);
 
     // Mock and expect the module calling validation
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _sender)), abi.encode(true));
 
     // Mock and expect the module checking for participant
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
@@ -194,7 +190,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _expectEmit(address(extension));
     emit Bonded(_requestId, _bonder, token, _amount);
 
-    vm.prank(_module);
+    vm.prank(_sender);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
 
     // Check: is the balanceOf decreased?
@@ -257,12 +253,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if the module is not approved to bond the _bonder funds
    */
-  function test_revertIfInsufficientAllowance(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _bonder,
-    address _module
-  ) public {
+  function test_revertIfNotAllowed(bytes32 _requestId, uint256 _amount, address _bonder, address _module) public {
     // Mock and expect the module calling validation
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
 
@@ -279,7 +270,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if the caller is not approved to bond the _bonder funds
    */
-  function test_withCaller_revertIfInsufficientAllowance(
+  function test_withCaller_revertIfNotAllowed(
     bytes32 _requestId,
     uint256 _amount,
     address _bonder,
@@ -301,7 +292,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if only the sender is approved but not the module
    */
-  function test_withCaller_revertIfInsufficientAllowance_onlySender(
+  function test_withCaller_revertIfNotAllowed_onlySender(
     bytes32 _requestId,
     uint256 _amount,
     address _bonder,
@@ -329,7 +320,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if only the module is approved but not the sender
    */
-  function test_withCaller_revertIfInsufficientAllowance_onlyModule(
+  function test_withCaller_revertIfNotAllowed_onlyModule(
     bytes32 _requestId,
     uint256 _amount,
     address _bonder,

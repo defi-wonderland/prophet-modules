@@ -110,9 +110,8 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
-    address _sender,
     address _proposer
-  ) public assumeFuzzable(_sender) assumeFuzzable(_proposer) {
+  ) public assumeFuzzable(_proposer) {
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
     _bondSize = bound(_bondSize, 0, type(uint248).max);
