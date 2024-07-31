@@ -253,12 +253,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if the module is not approved to bond the _bonder funds
    */
-  function test_revertIfInsufficientAllowance(
-    bytes32 _requestId,
-    uint256 _amount,
-    address _bonder,
-    address _module
-  ) public {
+  function test_revertIfNotAllowed(bytes32 _requestId, uint256 _amount, address _bonder, address _module) public {
     // Mock and expect the module calling validation
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
 
@@ -266,7 +261,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the module is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount});
@@ -275,7 +270,7 @@ contract AccountingExtension_Unit_Bond is BaseTest {
   /**
    * @notice Test bonding reverting if the caller is not approved to bond the _bonder funds
    */
-  function test_withCaller_revertIfInsufficientAllowance(
+  function test_withCaller_revertIfNotAllowed(
     bytes32 _requestId,
     uint256 _amount,
     address _bonder,
@@ -288,9 +283,65 @@ contract AccountingExtension_Unit_Bond is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
 
     // Check: does it revert if the caller is not approved?
-    vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientAllowance.selector);
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
 
     vm.prank(_sender);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
+  }
+
+  /**
+   * @notice Test bonding reverting if only the sender is approved but not the module
+   */
+  function test_withCaller_revertIfNotAllowed_onlySender(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender,
+    address _module
+  ) public {
+    vm.assume(_sender != _module);
+
+    vm.prank(_bonder);
+    extension.approveModule(_sender);
+
+    // mock the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
+
+    // Mock and expect the module checking for a participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+
+    // Check: does it revert if the caller is not approved?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
+
+    vm.prank(_module);
+    extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
+  }
+
+  /**
+   * @notice Test bonding reverting if only the module is approved but not the sender
+   */
+  function test_withCaller_revertIfNotAllowed_onlyModule(
+    bytes32 _requestId,
+    uint256 _amount,
+    address _bonder,
+    address _sender,
+    address _module
+  ) public {
+    vm.assume(_sender != _module);
+
+    vm.prank(_bonder);
+    extension.approveModule(_module);
+
+    // mock the module calling validation
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _module)), abi.encode(true));
+
+    // Mock and expect the module checking for a participant
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.isParticipant, (_requestId, _bonder)), abi.encode(true));
+
+    // Check: does it revert if the caller is not approved?
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
+
+    vm.prank(_module);
     extension.bond({_bonder: _bonder, _requestId: _requestId, _token: token, _amount: _amount, _sender: _sender});
   }
 }

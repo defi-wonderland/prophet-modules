@@ -78,7 +78,7 @@ interface IAccountingExtension {
   /**
    * @notice Thrown when the module bonding user tokens hasn't been approved by the user.
    */
-  error AccountingExtension_InsufficientAllowance();
+  error AccountingExtension_NotAllowed();
 
   /**
    * @notice Thrown when an `onlyAllowedModule` function is called by something

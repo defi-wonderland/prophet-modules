@@ -130,4 +130,88 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
   }
+
+  /**
+   * @notice Proposing from an approved dispute module
+   */
+  function test_proposeResponse_fromApprovedDisputeModule(bytes memory _responseBytes) public {
+    address _otherRequester = makeAddr('otherRequester');
+    address _approvedDisputeModule = makeAddr('_approvedDisputeModule');
+
+    // Approve the new dispute module
+    vm.prank(proposer);
+    _accountingExtension.approveModule(_approvedDisputeModule);
+
+    mockRequest.nonce += 1;
+    mockRequest.requester = _otherRequester;
+    mockRequest.disputeModule = _approvedDisputeModule;
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    uint256 _oldProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
+    assertGt(_oldProposerBalance, 0);
+
+    vm.startPrank(_otherRequester);
+    // Create a new request with another dispute module
+    _accountingExtension.approveModule(mockRequest.requestModule);
+    bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
+
+    changePrank(_approvedDisputeModule);
+
+    // Propose a response from the approved dispute module
+    mockResponse.response = _responseBytes;
+    mockResponse.proposer = proposer;
+    mockResponse.requestId = _requestIdApprovedDisputeModule;
+
+    oracle.proposeResponse(mockRequest, mockResponse);
+    vm.stopPrank();
+
+    uint256 _newProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
+
+    // Proposer got their balance bonded when they didn't create the response
+    assertTrue(_expectedBondSize != 0);
+    assertEq(_oldProposerBalance, _newProposerBalance + _expectedBondSize);
+  }
+
+  /**
+   * @notice Proposing from an unapproved dispute module
+   */
+  function test_proposeResponse_fromUnapprovedDisputeModule(bytes memory _responseBytes) public {
+    address _attacker = makeAddr('attacker');
+    mockRequest.nonce += 1;
+    mockRequest.requester = _attacker;
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _accountingExtension,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    vm.startPrank(_attacker);
+    // Attacker creates a request with their own address as the dispute module
+    mockRequest.disputeModule = _attacker;
+    _accountingExtension.approveModule(mockRequest.requestModule);
+    bytes32 _requestIdAttacker = oracle.createRequest(mockRequest, _ipfsHash);
+
+    // Attacker proposes a response from their address (the dispute module) and using another user as the proposer
+    mockResponse.response = _responseBytes;
+    mockResponse.proposer = proposer;
+    mockResponse.requestId = _requestIdAttacker;
+
+    // Should revert as the dispute module is not approved
+    vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
+    oracle.proposeResponse(mockRequest, mockResponse);
+  }
 }

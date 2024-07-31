@@ -110,9 +110,79 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     uint256 _bondSize,
     uint256 _deadline,
     uint256 _disputeWindow,
+    address _proposer
+  ) public assumeFuzzable(_proposer) {
+    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
+    _disputeWindow = bound(_disputeWindow, 61, 365 days);
+    _bondSize = bound(_bondSize, 0, type(uint248).max);
+
+    // Set the response module parameters
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+
+    // Mock and expect IOracle.getResponseIds to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
+
+    // Mock and expect IAccountingExtension.bond to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _proposer, _requestId, _token, _bondSize),
+      abi.encode()
+    );
+
+    vm.prank(address(oracle));
+    bondedResponseModule.propose(mockRequest, mockResponse, _proposer);
+  }
+
+  function test_emitsEvent(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow,
+    address _proposer
+  ) public {
+    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
+    _disputeWindow = bound(_disputeWindow, 61, 365 days);
+
+    // Create and set some mock request data
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+
+    // Mock and expect IOracle.getResponseIds to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
+
+    // Mock and expect IOracle.getResponseIds to be called
+    _mockAndExpect(
+      address(accounting),
+      abi.encodeWithSignature('bond(address,bytes32,address,uint256)', _proposer, _requestId, _token, _bondSize),
+      abi.encode()
+    );
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
+    emit ResponseProposed({_requestId: _requestId, _response: mockResponse, _blockNumber: block.number});
+
+    vm.prank(address(oracle));
+    bondedResponseModule.propose(mockRequest, mockResponse, _proposer);
+  }
+
+  /**
+   * @notice Test that the propose function works correctly and bonds the proposer's funds when the sender is different than the proposer
+   */
+  function test_propose_another_sender(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow,
     address _sender,
     address _proposer
   ) public assumeFuzzable(_sender) assumeFuzzable(_proposer) {
+    vm.assume(_sender != _proposer);
     _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
     _bondSize = bound(_bondSize, 0, type(uint248).max);
@@ -135,43 +205,6 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
       ),
       abi.encode()
     );
-
-    vm.prank(address(oracle));
-    bondedResponseModule.propose(mockRequest, mockResponse, _sender);
-  }
-
-  function test_emitsEvent(
-    IERC20 _token,
-    uint256 _bondSize,
-    uint256 _deadline,
-    uint256 _disputeWindow,
-    address _sender,
-    address _proposer
-  ) public {
-    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
-    _disputeWindow = bound(_disputeWindow, 61, 365 days);
-
-    // Create and set some mock request data
-    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
-    bytes32 _requestId = _getId(mockRequest);
-    mockResponse.requestId = _requestId;
-    mockResponse.proposer = _proposer;
-
-    // Mock and expect IOracle.getResponseIds to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.getResponseIds, _requestId), abi.encode(new bytes32[](0)));
-
-    // Mock and expect IOracle.getResponseIds to be called
-    _mockAndExpect(
-      address(accounting),
-      abi.encodeWithSignature(
-        'bond(address,bytes32,address,uint256,address)', _proposer, _requestId, _token, _bondSize, _sender
-      ),
-      abi.encode()
-    );
-
-    // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
-    emit ResponseProposed({_requestId: _requestId, _response: mockResponse, _blockNumber: block.number});
 
     vm.prank(address(oracle));
     bondedResponseModule.propose(mockRequest, mockResponse, _sender);

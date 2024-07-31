@@ -45,13 +45,22 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       if (_status == IOracle.DisputeStatus.Lost) revert BondedResponseModule_AlreadyResponded();
     }
 
-    _params.accountingExtension.bond({
-      _bonder: _response.proposer,
-      _requestId: _response.requestId,
-      _token: _params.bondToken,
-      _amount: _params.bondSize,
-      _sender: _sender
-    });
+    if (_sender != _response.proposer) {
+      _params.accountingExtension.bond({
+        _bonder: _response.proposer,
+        _requestId: _response.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize,
+        _sender: _sender
+      });
+    } else {
+      _params.accountingExtension.bond({
+        _bonder: _response.proposer,
+        _requestId: _response.requestId,
+        _token: _params.bondToken,
+        _amount: _params.bondSize
+      });
+    }
 
     emit ResponseProposed(_response.requestId, _response, block.number);
   }
