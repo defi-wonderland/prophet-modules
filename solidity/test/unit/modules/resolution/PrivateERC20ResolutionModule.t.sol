@@ -7,6 +7,7 @@ import {Helpers} from '../../../utils/Helpers.sol';
 
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
@@ -230,7 +231,8 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
    */
   function test_revertIfInvalidDisputeBody(bytes32 _commitment) public {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    mockDispute.requestId = bytes32(0);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     module.commitVote(mockRequest, mockDispute, _commitment);
   }
 
@@ -240,15 +242,16 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   function test_revertIfNonExistentDispute(bytes32 _commitment) public {
     // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect IOracle.disputeCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(0));
 
     // Check: does it revert if no dispute exists?
-    vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_NonExistentDispute.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    vm.expectRevert(IValidator.Validator_InvalidDispute.selector);
+    module.commitVote(mockRequest, _dispute, _commitment);
   }
 
   /**
@@ -343,8 +346,9 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   function test_revertIfNotEscalated(bytes32 _commitment) public {
     // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect IOracle.disputeCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
@@ -355,7 +359,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: reverts if dispute is not escalated? == no escalation data
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_DisputeNotEscalated.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, _dispute, _commitment);
   }
 
   /**
@@ -415,10 +419,14 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
       })
     );
 
-    // Compute proper ids
+    // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
+
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     // Store mock escalation data with startTime 100_000
     module.forTest_setStartTime(_disputeId, 100_000);
@@ -443,7 +451,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     emit VoteRevealed(_voter, _disputeId, _amountOfVotes);
 
     vm.prank(_voter);
-    module.revealVote(mockRequest, mockDispute, _amountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt);
 
     (, uint256 _totalVotes) = module.escalations(_disputeId);
     // Check: is totalVotes updated?
@@ -459,7 +467,8 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
    */
   function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes, bytes32 _salt) public {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    mockDispute.requestId = bytes32(0);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
   }
 
@@ -467,9 +476,14 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
    * @notice Test that `revealVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes, bytes32 _salt) public {
-    // Compute proper id
+    // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
+
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_DisputeNotEscalated.selector);
@@ -493,10 +507,14 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
       })
     );
 
-    // Compute proper ids
+    // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
+
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, _disputeId), abi.encode(1));
+
     module.forTest_setStartTime(_disputeId, 100_000);
 
     // Jump to timestamp
@@ -505,11 +523,11 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     if (_timestamp <= 140_000) {
       // Check: does it revert if trying to reveal during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
-      module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
+      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt);
     } else {
       // Check: does it revert if trying to reveal after the revealing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_RevealingPhaseOver.selector);
-      module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
+      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt);
     }
   }
 
@@ -540,10 +558,14 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
       })
     );
 
-    // Compute proper ids
+    // Compute proper IDs
     bytes32 _requestId = _getId(mockRequest);
-    mockDispute.requestId = _requestId;
-    bytes32 _disputeId = _getId(mockDispute);
+    IOracle.Response memory _response = _getResponse(mockRequest, proposer);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
+    bytes32 _disputeId = _getId(_dispute);
+
+    // Mock and expect IOracle.disputeCreatedAt to be called
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     module.forTest_setStartTime(_disputeId, 100_000);
 
@@ -557,18 +579,18 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
 
     // Check: does it revert if the commitment is not valid? (wrong salt)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
-    module.revealVote(mockRequest, mockDispute, _amountOfVotes, _wrongSalt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _wrongSalt);
 
     // Check: does it revert if the commitment is not valid? (wrong amount of votes)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
-    module.revealVote(mockRequest, mockDispute, _wrongAmountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _wrongAmountOfVotes, _salt);
 
     vm.stopPrank();
 
     // Check: does it revert if the commitment is not valid? (wrong voter)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
     vm.prank(_wrongVoter);
-    module.revealVote(mockRequest, mockDispute, _amountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt);
   }
 }
 

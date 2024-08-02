@@ -6,18 +6,36 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 
 contract Helpers is DSTestPlus, TestConstants {
-  // 100% random sequence of bytes representing request, response, or dispute id
-  bytes32 public mockId = bytes32('69');
-
   // Placeholder addresses
   address public disputer = makeAddr('disputer');
   address public proposer = makeAddr('proposer');
 
   // Mock objects
-  IOracle.Request public mockRequest;
-  IOracle.Response public mockResponse = IOracle.Response({proposer: proposer, requestId: mockId, response: bytes('')});
+  IOracle.Request public mockRequest = IOracle.Request({
+    requestModule: address(0),
+    responseModule: address(0),
+    disputeModule: address(0),
+    resolutionModule: address(0),
+    finalityModule: address(0),
+    requestModuleData: bytes(''),
+    responseModuleData: bytes(''),
+    disputeModuleData: bytes(''),
+    resolutionModuleData: bytes(''),
+    finalityModuleData: bytes(''),
+    requester: address(this),
+    nonce: 1
+  });
+  bytes32 _mockRequestId = keccak256(abi.encode(mockRequest));
+
+  IOracle.Response public mockResponse =
+    IOracle.Response({proposer: proposer, requestId: _mockRequestId, response: bytes('')});
+
+  bytes32 _mockResponseId = keccak256(abi.encode(mockResponse));
+
   IOracle.Dispute public mockDispute =
-    IOracle.Dispute({disputer: disputer, responseId: mockId, proposer: proposer, requestId: mockId});
+    IOracle.Dispute({disputer: disputer, responseId: _mockResponseId, proposer: proposer, requestId: _mockRequestId});
+
+  bytes32 _mockDisputeId = keccak256(abi.encode(mockDispute));
 
   // Shared events that all modules emit
   event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
@@ -25,6 +43,25 @@ contract Helpers is DSTestPlus, TestConstants {
   modifier assumeFuzzable(address _address) {
     _assumeFuzzable(_address);
     _;
+  }
+
+  function _getResponse(
+    IOracle.Request memory _request,
+    address _proposer
+  ) internal pure returns (IOracle.Response memory _response) {
+    return IOracle.Response({proposer: _proposer, requestId: _getId(_request), response: bytes('')});
+  }
+
+  function _getDispute(
+    IOracle.Request memory _request,
+    IOracle.Response memory _response
+  ) internal view returns (IOracle.Dispute memory _dispute) {
+    return IOracle.Dispute({
+      disputer: disputer,
+      responseId: _getId(_response),
+      proposer: proposer,
+      requestId: _getId(_request)
+    });
   }
 
   /**

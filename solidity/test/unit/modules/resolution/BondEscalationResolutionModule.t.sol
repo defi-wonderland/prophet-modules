@@ -11,6 +11,7 @@ import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
 import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
 
 import {
   BondEscalationResolutionModule,
@@ -155,12 +156,24 @@ contract BaseTest is Test, Helpers {
     mockRequest.resolutionModuleData = abi.encode(_params);
     _requestId = _getId(mockRequest);
 
-    mockResponse.requestId = _requestId;
+    mockResponse = _getResponse(mockRequest, proposer);
     _responseId = _getId(mockResponse);
 
-    mockDispute.requestId = _requestId;
-    mockDispute.responseId = _responseId;
+    mockDispute = _getDispute(mockRequest, mockResponse);
     _disputeId = _getId(mockDispute);
+
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp));
+  }
+
+  function _getRequestResponseDispute(IBondEscalationResolutionModule.RequestParameters memory _params)
+    internal
+    returns (IOracle.Request memory _request, IOracle.Response memory _response, IOracle.Dispute memory _dispute)
+  {
+    _request = mockRequest;
+    _request.resolutionModuleData = abi.encode(_params);
+    _response = _getResponse(mockRequest, proposer);
+    _dispute = _getDispute(mockRequest, mockResponse);
   }
 }
 
@@ -256,7 +269,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    mockDispute.requestId = bytes32(0);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -308,7 +322,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+        IBondEscalationAccounting.pledge, (pledgerFor, mockRequest, mockDispute, _params.bondToken, _pledgeAmount)
       ),
       abi.encode()
     );
@@ -348,7 +362,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+        IBondEscalationAccounting.pledge, (pledgerFor, mockRequest, mockDispute, _params.bondToken, _pledgeAmount)
       ),
       abi.encode()
     );
@@ -397,7 +411,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -448,7 +462,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -496,7 +510,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerFor, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -541,7 +555,8 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    mockDispute.requestId = bytes32(0);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -593,7 +608,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, _params.bondToken, _pledgeAmount)
+        IBondEscalationAccounting.pledge, (pledgerAgainst, mockRequest, mockDispute, _params.bondToken, _pledgeAmount)
       ),
       abi.encode()
     );
@@ -632,7 +647,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
       address(requestParameters.accountingExtension),
       abi.encodeCall(
         IBondEscalationAccounting.pledge,
-        (pledgerAgainst, _requestId, _disputeId, requestParameters.bondToken, _pledgeAmount)
+        (pledgerAgainst, mockRequest, mockDispute, requestParameters.bondToken, _pledgeAmount)
       ),
       abi.encode()
     );
@@ -681,7 +696,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -732,7 +747,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -780,7 +795,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Mock and expect IBondEscalationAccounting.pledge to be called
     _mockAndExpect(
       address(accounting),
-      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, _requestId, _disputeId, token, _pledgeAmount)),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (pledgerAgainst, mockRequest, mockDispute, token, _pledgeAmount)),
       abi.encode()
     );
 
@@ -1014,7 +1029,8 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     IBondEscalationResolutionModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IModule.Module_InvalidDisputeBody.selector);
+    mockDispute.requestId = bytes32(0);
+    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     module.claimPledge(mockRequest, mockDispute);
 
     (,, bytes32 _disputeId) = _setResolutionModuleData(_params);
@@ -1063,7 +1079,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _amountToRelease)
+        accounting.releasePledge, (mockRequest, mockDispute, _randomPledger, _params.bondToken, _amountToRelease)
       ),
       abi.encode(true)
     );
@@ -1117,7 +1133,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _amountToRelease)
+        accounting.releasePledge, (mockRequest, mockDispute, _randomPledger, _params.bondToken, _amountToRelease)
       ),
       abi.encode(true)
     );
@@ -1163,7 +1179,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _userForPledge)
+        accounting.releasePledge, (mockRequest, mockDispute, _randomPledger, _params.bondToken, _userForPledge)
       ),
       abi.encode(true)
     );
@@ -1172,7 +1188,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     _mockAndExpect(
       address(_params.accountingExtension),
       abi.encodeCall(
-        accounting.releasePledge, (_requestId, _disputeId, _randomPledger, _params.bondToken, _userAgainstPledge)
+        accounting.releasePledge, (mockRequest, mockDispute, _randomPledger, _params.bondToken, _userAgainstPledge)
       ),
       abi.encode(true)
     );

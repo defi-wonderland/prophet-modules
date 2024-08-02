@@ -110,15 +110,10 @@ contract BaseTest is Test, Helpers {
 }
 
 contract BondEscalationAccounting_Unit_Pledge is BaseTest {
-  function test_revertIfDisallowedModule(
-    address _pledger,
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amount
-  ) public {
+  function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(false)
     );
 
     // Check: does it revert if called by an unauthorized module?
@@ -126,24 +121,19 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
     bondEscalationAccounting.pledge({
       _pledger: _pledger,
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amount: _amount
     });
   }
 
-  function test_revertIfNotEnoughDeposited(
-    address _pledger,
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amount
-  ) public {
+  function test_revertIfNotEnoughDeposited(address _pledger, uint256 _amount) public {
     vm.assume(_amount > 0);
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(true)
     );
 
     // Check: does it revert if the pledger doesn't have enough deposited?
@@ -151,14 +141,16 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
     bondEscalationAccounting.pledge({
       _pledger: _pledger,
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amount: _amount
     });
   }
 
-  function test_successfulCall(address _pledger, bytes32 _requestId, bytes32 _disputeId, uint256 _amount) public {
+  function test_successfulCall(address _pledger, uint256 _amount) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
@@ -175,8 +167,8 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
     bondEscalationAccounting.pledge({
       _pledger: _pledger,
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amount: _amount
     });
@@ -192,12 +184,9 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 }
 
 contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
-  function test_revertIfDisallowedModule(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _numOfWinningPledgers,
-    uint256 _amountPerPledger
-  ) public {
+  function test_revertIfDisallowedModule(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
+    bytes32 _requestId = _getId(mockRequest);
+
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
@@ -207,29 +196,29 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
 
     bondEscalationAccounting.onSettleBondEscalation({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
     });
   }
 
-  function test_revertIfAlreadySettled(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _numOfWinningPledgers,
-    uint256 _amountPerPledger
-  ) public {
+  function test_revertIfAlreadySettled(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+
     vm.assume(_amountPerPledger > 0);
     vm.assume(_numOfWinningPledgers > 0);
     vm.assume(_amountPerPledger < type(uint256).max / _numOfWinningPledgers);
-    vm.assume(_requestId != bytes32(0));
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
     );
+
+    // Mock and expect the call to oracle checking if the dispute exists
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     bondEscalationAccounting.forTest_setEscalationResult(
       _disputeId, _requestId, token, _amountPerPledger, IBondEscalationModule(address(this))
@@ -241,20 +230,17 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_AlreadySettled.selector);
 
     bondEscalationAccounting.onSettleBondEscalation({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
     });
   }
 
-  function test_revertIfInsufficientFunds(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amountPerPledger,
-    uint256 _numOfWinningPledgers
-  ) public {
+  function test_revertIfInsufficientFunds(uint256 _amountPerPledger, uint256 _numOfWinningPledgers) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
     // Note, bounding to a max of 30 so that the tests doesn't take forever to run
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
@@ -275,20 +261,18 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
 
     bondEscalationAccounting.onSettleBondEscalation({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
     });
   }
 
-  function test_successfulCall(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _numOfWinningPledgers,
-    uint256 _amountPerPledger
-  ) public {
+  function test_successfulCall(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Note, bounding to a max of 30 so that the tests doesn't take forever to run
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
@@ -308,8 +292,8 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     emit BondEscalationSettled(_requestId, _disputeId, token, _amountPerPledger, _numOfWinningPledgers);
 
     bondEscalationAccounting.onSettleBondEscalation({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _token: token,
       _amountPerPledger: _amountPerPledger,
       _winningPledgersLength: _numOfWinningPledgers
@@ -331,12 +315,9 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 }
 
 contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
-  function test_revertIfDisallowedModule(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    address _pledger,
-    uint256 _amount
-  ) public {
+  function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
+    bytes32 _requestId = _getId(mockRequest);
+
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
@@ -346,21 +327,19 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
     vm.expectRevert(IAccountingExtension.AccountingExtension_UnauthorizedModule.selector);
 
     bondEscalationAccounting.releasePledge({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _pledger: _pledger,
       _token: token,
       _amount: _amount
     });
   }
 
-  function test_revertIfInsufficientFunds(
-    bytes32 _requestId,
-    bytes32 _disputeId,
-    uint256 _amount,
-    address _pledger
-  ) public {
+  function test_revertIfInsufficientFunds(uint256 _amount, address _pledger) public {
     vm.assume(_amount < type(uint256).max);
+
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
@@ -374,15 +353,18 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_InsufficientFunds.selector);
 
     bondEscalationAccounting.releasePledge({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _pledger: _pledger,
       _token: token,
       _amount: _underflowAmount
     });
   }
 
-  function test_successfulCall(bytes32 _requestId, bytes32 _disputeId, uint256 _amount, address _pledger) public {
+  function test_successfulCall(uint256 _amount, address _pledger) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
@@ -391,8 +373,8 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
     bondEscalationAccounting.forTest_setPledge(_disputeId, token, _amount);
 
     bondEscalationAccounting.releasePledge({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _pledger: _pledger,
       _token: token,
       _amount: _amount
@@ -402,7 +384,10 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
     assertEq(bondEscalationAccounting.balanceOf(_pledger, token), _amount);
   }
 
-  function test_emitsEvent(bytes32 _requestId, bytes32 _disputeId, uint256 _amount, address _pledger) public {
+  function test_emitsEvent(uint256 _amount, address _pledger) public {
+    bytes32 _requestId = _getId(mockRequest);
+    bytes32 _disputeId = _getId(mockDispute);
+
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
@@ -415,8 +400,8 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
     emit PledgeReleased(_requestId, _disputeId, _pledger, token, _amount);
 
     bondEscalationAccounting.releasePledge({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: mockRequest,
+      _dispute: mockDispute,
       _pledger: _pledger,
       _token: token,
       _amount: _amount

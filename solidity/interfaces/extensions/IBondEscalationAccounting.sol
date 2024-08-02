@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import {IBondEscalationModule} from '../modules/dispute/IBondEscalationModule.sol';
 import {IAccountingExtension} from './IAccountingExtension.sol';
+
+import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**
@@ -107,6 +109,11 @@ interface IBondEscalationAccounting is IAccountingExtension {
    */
   error BondEscalationAccounting_AlreadySettled();
 
+  /**
+   * @notice Thrown when the dispute is invalid
+   */
+  error BondEscalationAccounting_InvalidDispute();
+
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
@@ -170,26 +177,32 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @dev This function must be called by an allowed module
    *
    * @param _pledger           Address of the pledger
-   * @param _requestId         The ID of the bond-escalated request
-   * @param _disputeId         The ID of the bond-escalated dispute
+   * @param _request           The bond-escalated request
+   * @param _dispute           The bond-escalated dispute
    * @param _token             Address of the token being paid as a reward for winning the bond escalation
    * @param _amount            Amount of token to pledge
    */
-  function pledge(address _pledger, bytes32 _requestId, bytes32 _disputeId, IERC20 _token, uint256 _amount) external;
+  function pledge(
+    address _pledger,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IERC20 _token,
+    uint256 _amount
+  ) external;
 
   /**
    * @notice Updates the accounting of the given dispute to reflect the result of the bond escalation
    * @dev This function must be called by an allowed module
    *
-   * @param _requestId              The ID of the bond-escalated request
-   * @param _disputeId              The ID of the bond-escalated dispute
+   * @param _request                The bond-escalated request
+   * @param _dispute                The bond-escalated dispute
    * @param _token                  Address of the token being paid as a reward for winning the bond escalation
    * @param _amountPerPledger       Amount of `_token` to be rewarded to each of the winning pledgers
    * @param _winningPledgersLength  Amount of pledges that won the dispute
    */
   function onSettleBondEscalation(
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
@@ -200,15 +213,15 @@ interface IBondEscalationAccounting is IAccountingExtension {
    *
    * @dev This function must be called by an allowed module
    *
-   * @param _requestId         The ID of the bond-escalated request
-   * @param _disputeId         The ID of the bond-escalated dispute
+   * @param _request           The bond-escalated request
+   * @param _dispute           The bond-escalated dispute
    * @param _pledger           Address of the pledger
    * @param _token             Address of the token to be released
    * @param _amount            Amount of `_token` to be released to the pledger
    */
   function releasePledge(
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     address _pledger,
     IERC20 _token,
     uint256 _amount
