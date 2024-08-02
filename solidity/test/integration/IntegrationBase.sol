@@ -34,6 +34,8 @@ import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/req
 import {ArbitratorModule, IArbitratorModule} from '../../contracts/modules/resolution/ArbitratorModule.sol';
 import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
 
+import {IProphetCallback} from '../../interfaces/IProphetCallback.sol';
+
 import {MockArbitrator} from '../mocks/MockArbitrator.sol';
 import {MockCallback} from '../mocks/MockCallback.sol';
 

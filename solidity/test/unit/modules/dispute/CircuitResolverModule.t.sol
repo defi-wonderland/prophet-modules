@@ -14,6 +14,7 @@ import {
   ICircuitResolverModule
 } from '../../../../contracts/modules/dispute/CircuitResolverModule.sol';
 
+import {IProphetCallback} from '../../../../interfaces/IProphetCallback.sol';
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {MockVerifier} from '../../../mocks/MockVerifier.sol';
 
@@ -136,8 +137,6 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     uint256 _bondSize,
     bytes memory _callData
   ) public {
-    _callData = abi.encodeWithSelector(mockVerifier.calculateRoot.selector, _callData);
-
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
@@ -148,14 +147,18 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
       })
     );
 
-    bool _correctResponse = false;
+    bytes memory _correctResponse = abi.encode(false);
 
     mockResponse.requestId = _getId(mockRequest);
     mockDispute.requestId = mockResponse.requestId;
     mockDispute.responseId = _getId(mockResponse);
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(address(mockVerifier), _callData, abi.encode(_correctResponse));
+    _mockAndExpect(
+      address(mockVerifier),
+      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encode(_correctResponse)
+    );
 
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
@@ -187,14 +190,17 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
       })
     );
 
-    bytes32 _requestId = _getId(mockRequest);
-    bool _correctResponse = false;
+    bytes memory _correctResponse = abi.encode(false);
 
-    mockResponse.requestId = _requestId;
+    mockResponse.requestId = _getId(mockRequest);
     mockResponse.response = abi.encode(true);
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(address(mockVerifier), _callData, abi.encode(_correctResponse));
+    _mockAndExpect(
+      address(mockVerifier),
+      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encode(_correctResponse)
+    );
 
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
@@ -228,8 +234,6 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     uint256 _bondSize,
     bytes memory _callData
   ) public {
-    _callData = abi.encodeWithSelector(mockVerifier.calculateRoot.selector, _callData);
-
     mockRequest.disputeModuleData = abi.encode(
       ICircuitResolverModule.RequestParameters({
         callData: _callData,
@@ -240,13 +244,17 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
       })
     );
 
-    bytes memory _encodedCorrectResponse = abi.encode(true);
+    bytes memory _correctResponse = abi.encode(true);
 
     mockResponse.requestId = _getId(mockRequest);
-    mockResponse.response = _encodedCorrectResponse;
+    mockResponse.response = _correctResponse;
 
     // Mock and expect the call to the verifier
-    _mockAndExpect(address(mockVerifier), _callData, _encodedCorrectResponse);
+    _mockAndExpect(
+      address(mockVerifier),
+      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encode(_correctResponse)
+    );
 
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(

@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
+import {IProphetCallback} from '../../../interfaces/IProphetCallback.sol';
 import {IMultipleCallbacksModule} from '../../../interfaces/modules/finality/IMultipleCallbacksModule.sol';
 
 contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
@@ -30,7 +31,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
-      _params.targets[_i].call(_params.data[_i]);
+      IProphetCallback(_params.targets[_i]).prophetCallback(_params.data[_i]);
       emit Callback(_response.requestId, _params.targets[_i], _params.data[_i]);
       unchecked {
         ++_i;

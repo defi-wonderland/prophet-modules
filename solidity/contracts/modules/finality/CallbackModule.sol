@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
+import {IProphetCallback} from '../../../interfaces/IProphetCallback.sol';
 import {ICallbackModule} from '../../../interfaces/modules/finality/ICallbackModule.sol';
 
 contract CallbackModule is Module, ICallbackModule {
@@ -28,7 +29,7 @@ contract CallbackModule is Module, ICallbackModule {
   ) external override(Module, ICallbackModule) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.finalityModuleData);
 
-    _params.target.call(_params.data);
+    IProphetCallback(_params.target).prophetCallback(_params.data);
     emit Callback(_response.requestId, _params.target, _params.data);
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }

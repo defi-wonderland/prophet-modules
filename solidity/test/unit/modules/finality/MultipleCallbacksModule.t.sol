@@ -13,6 +13,8 @@ import {
   MultipleCallbacksModule
 } from '../../../../contracts/modules/finality/MultipleCallbacksModule.sol';
 
+import {IProphetCallback} from '../../../../interfaces/IProphetCallback.sol';
+
 contract BaseTest is Test, Helpers {
   // The target contract
   MultipleCallbacksModule public multipleCallbackModule;
@@ -102,7 +104,9 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
 
       // Skip precompiles, VM, console.log addresses, etc
       _assumeFuzzable(_target);
-      _mockAndExpect(_target, _calldata, abi.encode());
+      _mockAndExpect(
+        _target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _calldata), abi.encode('')
+      );
 
       // Check: is the event emitted?
       vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
