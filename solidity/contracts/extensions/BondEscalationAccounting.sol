@@ -29,13 +29,11 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     IERC20 _token,
     uint256 _amount
   ) external {
-    if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
-
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert BondEscalationAccounting_InvalidDispute();
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
+    if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
 
