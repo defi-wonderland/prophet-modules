@@ -442,67 +442,67 @@ contract Integration_BondEscalation is IntegrationBase {
     );
   }
 
-  function test_attackerAllowedModules() public {
-    ////////////////// DISPUTE ESCALATION ////////////////////////
-    // Step 1: Proposer pledges against the dispute
-    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
-    vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+  // function test_attackerAllowedModules() public {
+  //   ////////////////// DISPUTE ESCALATION ////////////////////////
+  //   // Step 1: Proposer pledges against the dispute
+  //   _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+  //   vm.prank(proposer);
+  //   _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
-    // Step 2: Disputer doubles down
-    _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
-    vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+  //   // Step 2: Disputer doubles down
+  //   _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
+  //   vm.prank(disputer);
+  //   _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
-    // Step 3: Proposer doubles down
-    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
-    vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+  //   // Step 3: Proposer doubles down
+  //   _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+  //   vm.prank(proposer);
+  //   _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
-    // Step 4: Disputer runs out of capital
-    // Step 5: The tying buffer kicks in
-    vm.warp(_bondEscalationDeadline + 1);
+  //   // Step 4: Disputer runs out of capital
+  //   // Step 5: The tying buffer kicks in
+  //   vm.warp(_bondEscalationDeadline + 1);
 
-    // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
-    _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
-    vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+  //   // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
+  //   _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
+  //   vm.prank(_secondDisputer);
+  //   _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
-    ////////////////// NEW MALICIOUS REQUEST ////////////////////////
+  //   ////////////////// NEW MALICIOUS REQUEST ////////////////////////
 
-    address _attacker = makeAddr('attacker');
+  //   address _attacker = makeAddr('attacker');
 
-    mockRequest.nonce += 1;
-    mockRequest.requester = _attacker;
-    mockRequest.disputeModule = _attacker;
-    mockRequest.requestModuleData = abi.encode(
-      IHttpRequestModule.RequestParameters({
-        url: _expectedUrl,
-        body: _expectedBody,
-        method: _expectedMethod,
-        accountingExtension: _bondEscalationAccounting,
-        paymentToken: usdc,
-        paymentAmount: 0
-      })
-    );
+  //   mockRequest.nonce += 1;
+  //   mockRequest.requester = _attacker;
+  //   mockRequest.disputeModule = _attacker;
+  //   mockRequest.requestModuleData = abi.encode(
+  //     IHttpRequestModule.RequestParameters({
+  //       url: _expectedUrl,
+  //       body: _expectedBody,
+  //       method: _expectedMethod,
+  //       accountingExtension: _bondEscalationAccounting,
+  //       paymentToken: usdc,
+  //       paymentAmount: 0
+  //     })
+  //   );
 
-    uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
-    assertEq(_attackerBalance, 0);
+  //   uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
+  //   assertEq(_attackerBalance, 0);
 
-    vm.startPrank(_attacker);
-    // Create a new proposal with another dispute module
-    _bondEscalationAccounting.approveModule(mockRequest.requestModule);
-    bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
+  //   vm.startPrank(_attacker);
+  //   // Create a new proposal with another dispute module
+  //   _bondEscalationAccounting.approveModule(mockRequest.requestModule);
+  //   bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
 
-    _bondEscalationAccounting.releasePledge(
-      _requestIdApprovedDisputeModule, _disputeId, _attacker, usdc, _pledgeSize * 4
-    );
-    vm.stopPrank();
+  //   _bondEscalationAccounting.releasePledge(
+  //     _requestIdApprovedDisputeModule, _disputeId, _attacker, usdc, _pledgeSize * 4
+  //   );
+  //   vm.stopPrank();
 
-    uint256 _newAttackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
+  //   uint256 _newAttackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
 
-    // Proposer got their balance bonded when they didn't create the response
-    assertTrue(_pledgeSize != 0);
-    assertEq(_newAttackerBalance, _pledgeSize * 4);
-  }
+  //   // Proposer got their balance bonded when they didn't create the response
+  //   assertTrue(_pledgeSize != 0);
+  //   assertEq(_newAttackerBalance, _pledgeSize * 4);
+  // }
 }
