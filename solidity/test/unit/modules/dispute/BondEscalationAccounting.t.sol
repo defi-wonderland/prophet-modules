@@ -113,7 +113,6 @@ contract BaseTest is Test, Helpers {
     returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute)
   {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     _response = _getResponse(mockRequest, proposer);
     _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -125,9 +124,7 @@ contract BaseTest is Test, Helpers {
 
 contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
-    bytes32 _requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(_dispute);
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
@@ -149,9 +146,8 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   function test_revertIfNotEnoughDeposited(address _pledger, uint256 _amount) public {
     vm.assume(_amount > 0);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(_dispute);
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(true)
@@ -170,7 +166,7 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   }
 
   function test_successfulCall(address _pledger, uint256 _amount) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -208,9 +204,8 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
 contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   function test_revertIfDisallowedModule(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(

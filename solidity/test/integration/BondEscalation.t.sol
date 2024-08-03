@@ -493,7 +493,6 @@ contract Integration_BondEscalation is IntegrationBase {
     vm.startPrank(_attacker);
     // Create a new proposal with another dispute module
     _bondEscalationAccounting.approveModule(mockRequest.requestModule);
-    bytes32 _requestIdApprovedDisputeModule = oracle.createRequest(mockRequest, _ipfsHash);
 
     vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
     _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
