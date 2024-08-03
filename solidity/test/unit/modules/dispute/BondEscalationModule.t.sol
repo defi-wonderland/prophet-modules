@@ -977,7 +977,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -1003,7 +1003,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -1032,7 +1032,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _params.bondEscalationDeadline = block.timestamp + 1;
     mockRequest.disputeModuleData = abi.encode(_params);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
