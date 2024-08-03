@@ -128,7 +128,6 @@ contract BaseTest is Test, Helpers {
     returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute)
   {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     _response = _getResponse(mockRequest, proposer);
     _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -958,9 +957,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
    * @notice Tests that pledgeForDispute reverts if the dispute is not going through the bond escalation mechanism.
    */
   function test_revertIfTheDisputeIsNotGoingThroughTheBondEscalationProcess() public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
-    bytes32 _requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(_dispute);
+    (, IOracle.Dispute memory _dispute) = _getRequestAndDispute();
 
     // Check: does it revert if the dispute is not escalated yet?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
