@@ -14,7 +14,7 @@ import {
   ICircuitResolverModule
 } from '../../../../contracts/modules/dispute/CircuitResolverModule.sol';
 
-import {IProphetCallback} from '../../../../interfaces/IProphetCallback.sol';
+import {IProphetVerifier} from '../../../../interfaces/IProphetVerifier.sol';
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 import {MockVerifier} from '../../../mocks/MockVerifier.sol';
 
@@ -156,7 +156,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call to the verifier
     _mockAndExpect(
       address(mockVerifier),
-      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encodeWithSelector(IProphetVerifier.prophetVerify.selector, _callData),
       abi.encode(_correctResponse)
     );
 
@@ -198,7 +198,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call to the verifier
     _mockAndExpect(
       address(mockVerifier),
-      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encodeWithSelector(IProphetVerifier.prophetVerify.selector, _callData),
       abi.encode(_correctResponse)
     );
 
@@ -252,7 +252,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call to the verifier
     _mockAndExpect(
       address(mockVerifier),
-      abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _callData),
+      abi.encodeWithSelector(IProphetVerifier.prophetVerify.selector, _callData),
       abi.encode(_correctResponse)
     );
 

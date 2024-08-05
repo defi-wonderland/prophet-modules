@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
 import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
-import {IProphetCallback} from '../../../interfaces/IProphetCallback.sol';
+import {IProphetVerifier} from '../../../interfaces/IProphetVerifier.sol';
 import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
 
 contract CircuitResolverModule is Module, ICircuitResolverModule {
@@ -71,7 +71,7 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     IOracle.DisputeStatus _status;
 
-    try IProphetCallback(_params.verifier).prophetCallback(_params.callData) returns (bytes memory _correctResponse) {
+    try IProphetVerifier(_params.verifier).prophetVerify(_params.callData) returns (bytes memory _correctResponse) {
       _correctResponses[_response.requestId] = _correctResponse;
 
       _status = _response.response.length != _correctResponse.length
