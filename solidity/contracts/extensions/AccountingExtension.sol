@@ -6,14 +6,13 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import {Validator} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Validator.sol';
+
 import {IAccountingExtension} from '../../interfaces/extensions/IAccountingExtension.sol';
 
-contract AccountingExtension is IAccountingExtension {
+contract AccountingExtension is Validator, IAccountingExtension {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
-
-  /// @inheritdoc IAccountingExtension
-  IOracle public immutable ORACLE;
 
   /// @inheritdoc IAccountingExtension
   mapping(address _bonder => mapping(IERC20 _token => uint256 _balance)) public balanceOf;
@@ -27,9 +26,7 @@ contract AccountingExtension is IAccountingExtension {
    */
   mapping(address _bonder => EnumerableSet.AddressSet _modules) internal _approvals;
 
-  constructor(IOracle _oracle) {
-    ORACLE = _oracle;
-  }
+  constructor(IOracle _oracle) Validator(_oracle) {}
 
   /**
    * @notice Checks that the caller is an allowed module used in the request.

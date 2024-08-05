@@ -102,8 +102,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
         if (_escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute > 0) {
           _params.accountingExtension.onSettleBondEscalation({
-            _requestId: _dispute.requestId,
-            _disputeId: _disputeId,
+            _request: _request,
+            _dispute: _dispute,
             _token: _params.bondToken,
             _amountPerPledger: _params.bondSize,
             _winningPledgersLength: _escalation.amountOfPledgesForDispute + _escalation.amountOfPledgesAgainstDispute
@@ -133,8 +133,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
               + FixedPointMathLib.mulDivDown(_pledgesForDispute, _params.bondSize, _pledgesAgainstDispute);
 
           _params.accountingExtension.onSettleBondEscalation({
-            _requestId: _dispute.requestId,
-            _disputeId: _escalation.disputeId,
+            _request: _request,
+            _dispute: _dispute,
             _token: _params.bondToken,
             _amountPerPledger: _amountToPay,
             _winningPledgersLength: _won ? _pledgesForDispute : _pledgesAgainstDispute
@@ -217,8 +217,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     pledgesForDispute[_dispute.requestId][msg.sender] += 1;
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
-      _requestId: _dispute.requestId,
-      _disputeId: _disputeId,
+      _request: _request,
+      _dispute: _dispute,
       _token: _params.bondToken,
       _amount: _params.bondSize
     });
@@ -235,8 +235,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     pledgesAgainstDispute[_dispute.requestId][msg.sender] += 1;
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
-      _requestId: _dispute.requestId,
-      _disputeId: _disputeId,
+      _request: _request,
+      _dispute: _dispute,
       _token: _params.bondToken,
       _amount: _params.bondSize
     });

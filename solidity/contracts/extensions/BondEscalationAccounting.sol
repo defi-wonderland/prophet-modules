@@ -24,11 +24,15 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
     address _pledger,
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     IERC20 _token,
     uint256 _amount
-  ) external onlyAllowedModule(_requestId) {
+  ) external {
+    bytes32 _requestId = _getId(_request);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
+
+    if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
@@ -42,12 +46,17 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
 
   /// @inheritdoc IBondEscalationAccounting
   function onSettleBondEscalation(
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
-  ) external onlyAllowedModule(_requestId) {
+  ) external {
+    bytes32 _requestId = _getId(_request);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
+
+    if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
+
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
       revert BondEscalationAccounting_InsufficientFunds();
     }
@@ -113,12 +122,17 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
 
   /// @inheritdoc IBondEscalationAccounting
   function releasePledge(
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     address _pledger,
     IERC20 _token,
     uint256 _amount
-  ) external onlyAllowedModule(_requestId) {
+  ) external {
+    bytes32 _requestId = _getId(_request);
+    bytes32 _disputeId = _validateDispute(_request, _dispute);
+
+    if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
+
     if (pledges[_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     balanceOf[_pledger][_token] += _amount;

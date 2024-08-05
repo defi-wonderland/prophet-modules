@@ -140,8 +140,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesAgainst, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _claimPledge({
-        _requestId: _dispute.requestId,
-        _disputeId: _disputeId,
+        _request: _request,
+        _dispute: _dispute,
         _amountToRelease: _amountToRelease,
         _resolution: _escalation.resolution,
         _params: _params
@@ -153,8 +153,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       _reward = FixedPointMathLib.mulDivDown(_escalation.pledgesFor, _pledgerProportion, BASE);
       _amountToRelease = _reward + _pledgerBalanceBefore;
       _claimPledge({
-        _requestId: _dispute.requestId,
-        _disputeId: _disputeId,
+        _request: _request,
+        _dispute: _dispute,
         _amountToRelease: _amountToRelease,
         _resolution: _escalation.resolution,
         _params: _params
@@ -166,8 +166,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       if (_pledgerBalanceFor > 0) {
         pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
         _claimPledge({
-          _requestId: _dispute.requestId,
-          _disputeId: _disputeId,
+          _request: _request,
+          _dispute: _dispute,
           _amountToRelease: _pledgerBalanceFor,
           _resolution: _escalation.resolution,
           _params: _params
@@ -177,8 +177,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
       if (_pledgerBalanceAgainst > 0) {
         pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
         _claimPledge({
-          _requestId: _dispute.requestId,
-          _disputeId: _disputeId,
+          _request: _request,
+          _dispute: _dispute,
           _amountToRelease: _pledgerBalanceAgainst,
           _resolution: _escalation.resolution,
           _params: _params
@@ -220,8 +220,8 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
 
     _params.accountingExtension.pledge({
       _pledger: msg.sender,
-      _requestId: _dispute.requestId,
-      _disputeId: _disputeId,
+      _request: _request,
+      _dispute: _dispute,
       _token: _params.bondToken,
       _amount: _pledgeAmount
     });
@@ -308,30 +308,30 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   /**
    * @notice Releases the pledged funds to the pledger
    *
-   * @param _requestId The ID of the request
-   * @param _disputeId The ID of the dispute
+   * @param _request The request
+   * @param _dispute The dispute
    * @param _amountToRelease The amount to release
    * @param _resolution The resolution of the dispute
    * @param _params The request parameters
    */
   function _claimPledge(
-    bytes32 _requestId,
-    bytes32 _disputeId,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
     uint256 _amountToRelease,
     Resolution _resolution,
     RequestParameters memory _params
   ) internal {
     _params.accountingExtension.releasePledge({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _request: _request,
+      _dispute: _dispute,
       _pledger: msg.sender,
       _token: _params.bondToken,
       _amount: _amountToRelease
     });
 
     emit PledgeClaimed({
-      _requestId: _requestId,
-      _disputeId: _disputeId,
+      _requestId: _getId(_request),
+      _disputeId: _getId(_dispute),
       _pledger: msg.sender,
       _token: _params.bondToken,
       _pledgeReleased: _amountToRelease,
