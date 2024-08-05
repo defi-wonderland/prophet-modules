@@ -55,8 +55,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert BondEscalationAccounting_InvalidDispute();
-
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
 
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
@@ -132,8 +130,6 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   ) external {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
-
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert BondEscalationAccounting_InvalidDispute();
 
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
 

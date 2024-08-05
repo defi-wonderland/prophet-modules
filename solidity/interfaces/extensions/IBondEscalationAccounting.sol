@@ -109,11 +109,6 @@ interface IBondEscalationAccounting is IAccountingExtension {
    */
   error BondEscalationAccounting_AlreadySettled();
 
-  /**
-   * @notice Thrown when the dispute is invalid
-   */
-  error BondEscalationAccounting_InvalidDispute();
-
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/

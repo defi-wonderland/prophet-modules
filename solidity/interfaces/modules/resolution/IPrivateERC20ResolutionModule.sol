@@ -71,11 +71,6 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   error PrivateERC20ResolutionModule_OnGoingRevealingPhase();
 
   /**
-   * @notice Thrown when trying to resolve a dispute that does not exist
-   */
-  error PrivateERC20ResolutionModule_NonExistentDispute();
-
-  /**
    * @notice Thrown when trying to commit an empty commitment
    */
   error PrivateERC20ResolutionModule_EmptyCommitment();

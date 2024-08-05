@@ -112,7 +112,6 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
-    if (ORACLE.disputeCreatedAt(_disputeId) == 0) revert PrivateERC20ResolutionModule_NonExistentDispute();
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
     }
