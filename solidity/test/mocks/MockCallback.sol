@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-contract MockCallback {
-  uint256 public randomValue;
+import {IProphetCallback} from '../../interfaces/IProphetCallback.sol';
 
-  function callback(bytes32, /* _requestId */ bytes calldata _data) external {
-    uint256 _randomValue = abi.decode(_data, (uint256));
-    randomValue = _randomValue;
+contract MockCallback is IProphetCallback {
+  function prophetCallback(bytes calldata /* _callData */ ) external pure returns (bytes memory _callResponse) {
+    _callResponse = abi.encode(true);
   }
 }

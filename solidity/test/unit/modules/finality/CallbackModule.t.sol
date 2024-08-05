@@ -10,6 +10,8 @@ import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfac
 
 import {CallbackModule, ICallbackModule} from '../../../../contracts/modules/finality/CallbackModule.sol';
 
+import {IProphetCallback} from '../../../../interfaces/IProphetCallback.sol';
+
 /**
  * @title Callback Module Unit tests
  */
@@ -84,6 +86,9 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     mockResponse.requestId = _getId(mockRequest);
 
+    // Mock and expect the callback
+    _mockAndExpect(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data), abi.encode(''));
+
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(callbackModule));
     emit Callback(mockResponse.requestId, _target, _data);
@@ -108,7 +113,7 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     mockResponse.requestId = _getId(mockRequest);
 
     // Mock and expect the callback
-    _mockAndExpect(_target, _data, abi.encode(''));
+    _mockAndExpect(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data), abi.encode(''));
 
     vm.prank(address(oracle));
     callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);

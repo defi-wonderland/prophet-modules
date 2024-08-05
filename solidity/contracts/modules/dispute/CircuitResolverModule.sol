@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
 
+import {IProphetVerifier} from '../../../interfaces/IProphetVerifier.sol';
 import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
 
 contract CircuitResolverModule is Module, ICircuitResolverModule {
@@ -68,17 +69,18 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
     IOracle.Dispute calldata _dispute
   ) external onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
+    IOracle.DisputeStatus _status;
 
-    (bool _success, bytes memory _correctResponse) = _params.verifier.call(_params.callData);
+    try IProphetVerifier(_params.verifier).prophetVerify(_params.callData) returns (bytes memory _correctResponse) {
+      _correctResponses[_response.requestId] = _correctResponse;
 
-    if (!_success) revert CircuitResolverModule_VerificationFailed();
-
-    _correctResponses[_response.requestId] = _correctResponse;
-
-    IOracle.DisputeStatus _status = _response.response.length != _correctResponse.length
-      || keccak256(_response.response) != keccak256(_correctResponse)
-      ? IOracle.DisputeStatus.Won
-      : IOracle.DisputeStatus.Lost;
+      _status = _response.response.length != _correctResponse.length
+        || keccak256(_response.response) != keccak256(_correctResponse)
+        ? IOracle.DisputeStatus.Won
+        : IOracle.DisputeStatus.Lost;
+    } catch {
+      revert CircuitResolverModule_VerificationFailed();
+    }
 
     emit ResponseDisputed({
       _requestId: _response.requestId,
