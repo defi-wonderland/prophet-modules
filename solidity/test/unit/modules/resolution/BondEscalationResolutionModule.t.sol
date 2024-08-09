@@ -168,6 +168,7 @@ contract BaseTest is Test, Helpers {
 
   function _getRequestResponseDispute(IBondEscalationResolutionModule.RequestParameters memory _params)
     internal
+    view
     returns (IOracle.Request memory _request, IOracle.Response memory _response, IOracle.Dispute memory _dispute)
   {
     _request = mockRequest;
@@ -183,7 +184,7 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
     uint256 _pledgeThreshold,
     uint256 _timeUntilDeadline,
     uint256 _timeToBreakInequality
-  ) public {
+  ) public view {
     // Storing fuzzed data
     bytes memory _data =
       abi.encode(accounting, token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
@@ -201,14 +202,14 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleName() public {
+  function test_moduleName() public view {
     assertEq(module.moduleName(), 'BondEscalationResolutionModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.percentageDiff == 0 || _params.pledgeThreshold == 0 || _params.timeUntilDeadline == 0

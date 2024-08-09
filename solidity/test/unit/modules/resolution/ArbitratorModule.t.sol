@@ -58,14 +58,14 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(arbitratorModule.moduleName(), 'ArbitratorModule');
   }
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
 
-  function test_decodeRequestData(address _arbitrator) public {
+  function test_decodeRequestData(address _arbitrator) public view {
     // Mock data
     bytes memory _requestData = abi.encode(_arbitrator);
 
@@ -93,7 +93,7 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IArbitratorModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IArbitratorModule.RequestParameters calldata _params) public view {
     if (_params.arbitrator == address(0)) {
       assertFalse(arbitratorModule.validateParameters(abi.encode(_params)));
     } else {

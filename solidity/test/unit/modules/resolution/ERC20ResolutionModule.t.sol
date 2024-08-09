@@ -82,7 +82,7 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleName() public {
+  function test_moduleName() public view {
     assertEq(module.moduleName(), 'ERC20ResolutionModule');
   }
 
@@ -93,7 +93,7 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
     address _token,
     uint256 _minVotesForQuorum,
     uint256 _votingTimeWindow
-  ) public {
+  ) public view {
     // Mock data
     bytes memory _requestData = abi.encode(address(accountingExtension), _token, _minVotesForQuorum, _votingTimeWindow);
 
@@ -110,7 +110,7 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IERC20ResolutionModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IERC20ResolutionModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
         || _params.minVotesForQuorum == 0 || _params.timeUntilDeadline == 0
@@ -168,7 +168,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -225,7 +224,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes) public {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -252,7 +250,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -288,7 +285,6 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -438,7 +434,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -469,7 +464,6 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);

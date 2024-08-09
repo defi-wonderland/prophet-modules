@@ -246,7 +246,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   }
 
   function test_revertIfInsufficientFunds(uint256 _amountPerPledger, uint256 _numOfWinningPledgers) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -279,7 +279,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   }
 
   function test_successfulCall(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -326,9 +326,8 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
 contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
-    bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
@@ -350,7 +349,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   function test_revertIfInsufficientFunds(uint256 _amount, address _pledger) public {
     vm.assume(_amount < type(uint256).max);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -375,7 +374,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   }
 
   function test_successfulCall(uint256 _amount, address _pledger) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -399,7 +398,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   }
 
   function test_emitsEvent(uint256 _amount, address _pledger) public {
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 

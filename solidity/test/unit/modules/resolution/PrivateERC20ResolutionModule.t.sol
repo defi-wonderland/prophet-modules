@@ -116,14 +116,14 @@ contract PrivateERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleName() public {
+  function test_moduleName() public view {
     assertEq(module.moduleName(), 'PrivateERC20ResolutionModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IPrivateERC20ResolutionModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IPrivateERC20ResolutionModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
         || _params.minVotesForQuorum == 0 || _params.committingTimeWindow == 0 || _params.revealingTimeWindow == 0
@@ -242,7 +242,6 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
    */
   function test_revertIfNonExistentDispute(bytes32 _commitment) public {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -346,7 +345,6 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
    */
   function test_revertIfNotEscalated(bytes32 _commitment) public {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -421,7 +419,6 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -478,7 +475,6 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
    */
   function test_revertIfNotEscalated(uint256 _numberOfVotes, bytes32 _salt) public {
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -509,7 +505,6 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
@@ -560,7 +555,6 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     );
 
     // Compute proper IDs
-    bytes32 _requestId = _getId(mockRequest);
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);

@@ -80,7 +80,7 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
     IERC20 _randomToken,
     uint256 _bondSize,
     bytes memory _callData
-  ) public {
+  ) public view {
     // Mock data
     bytes memory _requestData = abi.encode(
       ICircuitResolverModule.RequestParameters({
@@ -108,14 +108,14 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleName() public {
+  function test_moduleName() public view {
     assertEq(circuitResolverModule.moduleName(), 'CircuitResolverModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(ICircuitResolverModule.RequestParameters calldata _params) public {
+  function test_validateParameters(ICircuitResolverModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0 || !targetHasBytecode(_params.verifier) || _params.callData.length == 0
