@@ -5,9 +5,10 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {IValidator} from '@defi-wonderland/prophet-core/solidity/interfaces/IValidator.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
@@ -232,7 +233,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   function test_revertIfInvalidDisputeBody(bytes32 _commitment) public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.commitVote(mockRequest, mockDispute, _commitment);
   }
 
@@ -468,7 +469,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
   function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes, bytes32 _salt) public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
   }
 

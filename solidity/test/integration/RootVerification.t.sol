@@ -1,15 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {
-  IRootVerificationModule, RootVerificationModule
-} from '../../contracts/modules/dispute/RootVerificationModule.sol';
-import {
-  ISparseMerkleTreeRequestModule,
-  SparseMerkleTreeRequestModule
-} from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
-import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
-import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
 import './IntegrationBase.sol';
 
 contract Integration_RootVerification is IntegrationBase {

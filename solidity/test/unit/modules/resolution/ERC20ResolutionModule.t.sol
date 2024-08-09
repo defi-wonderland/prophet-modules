@@ -8,9 +8,9 @@ import {Helpers} from '../../../utils/Helpers.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 
 import {
   ERC20ResolutionModule,
@@ -216,7 +216,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes) public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.castVote(mockRequest, mockDispute, _numberOfVotes);
   }
 
@@ -420,7 +420,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   function test_revertIfInvalidDisputeBody() public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.claimVote(mockRequest, mockDispute);
   }
 

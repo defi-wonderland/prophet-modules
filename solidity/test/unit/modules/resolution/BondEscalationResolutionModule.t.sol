@@ -9,9 +9,9 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 
 import {
   BondEscalationResolutionModule,
@@ -270,7 +270,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -556,7 +556,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -1030,7 +1030,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.claimPledge(mockRequest, mockDispute);
 
     (,, bytes32 _disputeId) = _setResolutionModuleData(_params);

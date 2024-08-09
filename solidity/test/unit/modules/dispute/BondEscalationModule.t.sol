@@ -5,9 +5,9 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
@@ -936,7 +936,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
    */
   function test_revertIfInvalidDisputeBody() public {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
   }
 
@@ -1120,7 +1120,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
    */
   function test_revertIfInvalidDisputeBody() public {
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
   }
 
@@ -1310,7 +1310,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
    */
   function test_revertIfInvalidResponseBody() public {
     // Check: does it revert if the response body is invalid?
-    vm.expectRevert(IValidator.Validator_InvalidResponseBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
     bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
   }
 
@@ -1322,7 +1322,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     mockResponse.requestId = _requestId;
 
     // Check: does it revert if the dispute body is invalid?
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
   }
 

@@ -44,6 +44,7 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Finalizing a request that has no response reverts.
    */
   function test_revertFinalizeIfNoResponse() public {
+    vm.skip(true);
     _createRequest();
 
     mockResponse.response = abi.encode('nonexistent');

@@ -8,7 +8,7 @@ import {Helpers} from '../../utils/Helpers.sol';
 import {
   AccountingExtension, IAccountingExtension, IERC20
 } from '../../../contracts/extensions/AccountingExtension.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/contracts/Oracle.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
 import {MockERC20Proxy} from '../../mocks/MockERC20Proxy.sol';

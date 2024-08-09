@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import './IntegrationBase.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
 
 contract Integration_BondEscalation is IntegrationBase {
   address internal _secondDisputer = makeAddr('secondDisputer');
@@ -494,7 +493,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Create a new proposal with another dispute module
     _bondEscalationAccounting.approveModule(mockRequest.requestModule);
 
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
     vm.stopPrank();
   }

@@ -92,7 +92,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     mockResponse.requestId = _nonExistentRequestId;
 
     // Check: does revert if request does not exist?
-    vm.expectRevert(IOracle.Oracle_InvalidResponseBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
 
     vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);

@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
 // solhint-disable-next-line no-unused-import
-import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 contract BondedResponseModule is Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}

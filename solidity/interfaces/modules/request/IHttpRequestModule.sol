@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {IAccountingExtension} from '../../../interfaces/extensions/IAccountingExtension.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IRequestModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/request/IRequestModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {IRequestModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/request/IRequestModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /*
