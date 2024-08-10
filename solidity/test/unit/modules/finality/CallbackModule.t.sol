@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {CallbackModule, ICallbackModule} from '../../../../contracts/modules/finality/CallbackModule.sol';
 
@@ -47,14 +47,14 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(callbackModule.moduleName(), 'CallbackModule');
   }
 
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(address _target, bytes memory _data) public {
+  function test_decodeRequestData(address _target, bytes memory _data) public view {
     // Create and set some mock request data
     bytes memory _requestData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
 
@@ -69,7 +69,7 @@ contract CallbackModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(ICallbackModule.RequestParameters calldata _params) public {
+  function test_validateParameters(ICallbackModule.RequestParameters calldata _params) public view {
     if (address(_params.target) == address(0) || _params.data.length == 0 || !targetHasBytecode(_params.target)) {
       assertFalse(callbackModule.validateParameters(abi.encode(_params)));
     } else {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {TestConstants} from './TestConstants.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 
 contract Helpers is DSTestPlus, TestConstants {
@@ -25,17 +25,17 @@ contract Helpers is DSTestPlus, TestConstants {
     requester: address(this),
     nonce: 1
   });
-  bytes32 _mockRequestId = keccak256(abi.encode(mockRequest));
+  bytes32 internal _mockRequestId = keccak256(abi.encode(mockRequest));
 
   IOracle.Response public mockResponse =
     IOracle.Response({proposer: proposer, requestId: _mockRequestId, response: bytes('')});
 
-  bytes32 _mockResponseId = keccak256(abi.encode(mockResponse));
+  bytes32 internal _mockResponseId = keccak256(abi.encode(mockResponse));
 
   IOracle.Dispute public mockDispute =
     IOracle.Dispute({disputer: disputer, responseId: _mockResponseId, proposer: proposer, requestId: _mockRequestId});
 
-  bytes32 _mockDisputeId = keccak256(abi.encode(mockDispute));
+  bytes32 internal _mockDisputeId = keccak256(abi.encode(mockDispute));
 
   // Shared events that all modules emit
   event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
@@ -64,10 +64,9 @@ contract Helpers is DSTestPlus, TestConstants {
     });
   }
 
-  function _getResponseAndDispute(IOracle _oracle)
-    internal
-    returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute)
-  {
+  function _getResponseAndDispute(
+    IOracle _oracle
+  ) internal returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute) {
     // Compute proper IDs
     _response = _getResponse(mockRequest, proposer);
     _dispute = _getDispute(mockRequest, _response);

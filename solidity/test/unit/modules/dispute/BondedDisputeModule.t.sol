@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
@@ -57,7 +57,7 @@ contract BondedDisputeModule_Unit_ModuleData is BaseTest {
     address _accountingExtension,
     address _token,
     uint256 _bondSize
-  ) public {
+  ) public view {
     // Mock data
     bytes memory _requestData = abi.encode(_accountingExtension, _token, _bondSize);
 
@@ -73,14 +73,14 @@ contract BondedDisputeModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(bondedDisputeModule.moduleName(), 'BondedDisputeModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondedDisputeModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IBondedDisputeModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0

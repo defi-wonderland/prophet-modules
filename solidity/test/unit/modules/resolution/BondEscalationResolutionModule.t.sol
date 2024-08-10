@@ -9,9 +9,9 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
-import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 
 import {
   BondEscalationResolutionModule,
@@ -149,10 +149,9 @@ contract BaseTest is Test, Helpers {
     return (_pledgers, _pledgedAmounts);
   }
 
-  function _setResolutionModuleData(IBondEscalationResolutionModule.RequestParameters memory _params)
-    internal
-    returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId)
-  {
+  function _setResolutionModuleData(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) internal returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) {
     mockRequest.resolutionModuleData = abi.encode(_params);
     _requestId = _getId(mockRequest);
 
@@ -166,8 +165,11 @@ contract BaseTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp));
   }
 
-  function _getRequestResponseDispute(IBondEscalationResolutionModule.RequestParameters memory _params)
+  function _getRequestResponseDispute(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  )
     internal
+    view
     returns (IOracle.Request memory _request, IOracle.Response memory _response, IOracle.Dispute memory _dispute)
   {
     _request = mockRequest;
@@ -183,7 +185,7 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
     uint256 _pledgeThreshold,
     uint256 _timeUntilDeadline,
     uint256 _timeToBreakInequality
-  ) public {
+  ) public view {
     // Storing fuzzed data
     bytes memory _data =
       abi.encode(accounting, token, _percentageDiff, _pledgeThreshold, _timeUntilDeadline, _timeToBreakInequality);
@@ -201,14 +203,14 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleName() public {
+  function test_moduleName() public view {
     assertEq(module.moduleName(), 'BondEscalationResolutionModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.percentageDiff == 0 || _params.pledgeThreshold == 0 || _params.timeUntilDeadline == 0
@@ -270,7 +272,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -556,7 +558,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
 
     // 1. BondEscalationResolutionModule_NotEscalated
@@ -835,10 +837,9 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_resolveDisputeReverts(IBondEscalationResolutionModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_resolveDisputeReverts(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // 1. BondEscalationResolutionModule_AlreadyResolved
     (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
@@ -1030,7 +1031,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     module.claimPledge(mockRequest, mockDispute);
 
     (,, bytes32 _disputeId) = _setResolutionModuleData(_params);

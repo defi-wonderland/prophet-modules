@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IArbitrator} from '../../interfaces/IArbitrator.sol';
-import {MockAtomicArbitrator} from '../mocks/MockAtomicArbitrator.sol';
 import './IntegrationBase.sol';
 
 contract Integration_Arbitration is IntegrationBase {

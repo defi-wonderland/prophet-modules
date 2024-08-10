@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {IBondEscalationModule} from '../modules/dispute/IBondEscalationModule.sol';
 import {IAccountingExtension} from './IAccountingExtension.sol';
 
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /**
@@ -149,7 +149,9 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @return _amountPerPledger     Amount of `_token` to be rewarded to each of the winning pledgers
    * @return _bondEscalationModule The address of the bond escalation module that was used
    */
-  function escalationResults(bytes32 _disputeId)
+  function escalationResults(
+    bytes32 _disputeId
+  )
     external
     returns (bytes32 _requestId, IERC20 _token, uint256 _amountPerPledger, IBondEscalationModule _bondEscalationModule);
 

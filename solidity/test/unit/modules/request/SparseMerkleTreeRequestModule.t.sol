@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {
@@ -80,7 +80,7 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(sparseMerkleTreeRequestModule.moduleName(), 'SparseMerkleTreeRequestModule', 'Wrong module name');
   }
 
@@ -92,7 +92,7 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
     uint256 _paymentAmount,
     IAccountingExtension _accounting,
     ITreeVerifier _treeVerifier
-  ) public {
+  ) public view {
     bytes memory _requestData = abi.encode(
       ISparseMerkleTreeRequestModule.RequestParameters({
         treeData: _treeData,
@@ -128,7 +128,7 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(ISparseMerkleTreeRequestModule.RequestParameters calldata _params) public {
+  function test_validateParameters(ISparseMerkleTreeRequestModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
         || address(_params.treeVerifier) == address(0) || _params.paymentAmount == 0 || _params.treeData.length == 0

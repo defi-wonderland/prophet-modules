@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line no-unused-import
-import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IProphetVerifier} from '../../../interfaces/IProphetVerifier.sol';
 import {ICircuitResolverModule} from '../../../interfaces/modules/dispute/ICircuitResolverModule.sol';
@@ -94,12 +93,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    view
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external view override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
       && _params.bondSize != 0 && _targetHasBytecode(_params.verifier) && _params.callData.length != 0;

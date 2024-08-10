@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 import {Script, console} from 'forge-std/Script.sol';
 
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IResolutionModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
+  '@defi-wonderland/prophet-core/solidity/interfaces/modules/resolution/IResolutionModule.sol';
 
 import {BondEscalationModule} from '../contracts/modules/dispute/BondEscalationModule.sol';
 import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';

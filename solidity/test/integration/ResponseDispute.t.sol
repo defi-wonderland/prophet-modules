@@ -49,7 +49,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.assume(_nonExistentResponseId != _getId(mockResponse));
     mockDispute.responseId = _nonExistentResponseId;
 
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
 
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
@@ -63,7 +63,7 @@ contract Integration_ResponseDispute is IntegrationBase {
 
     mockDispute.requestId = _requestId;
 
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
 
     vm.prank(disputer);
     oracle.disputeResponse(mockRequest, mockResponse, mockDispute);

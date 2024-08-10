@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line no-unused-import
-import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
 import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
@@ -68,12 +67,9 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    pure
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external pure override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = _params.arbitrator != address(0);
   }

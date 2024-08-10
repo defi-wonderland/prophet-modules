@@ -51,14 +51,19 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(bondedResponseModule.moduleName(), 'BondedResponseModule');
   }
 
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(IERC20 _token, uint256 _bondSize, uint256 _deadline, uint256 _disputeWindow) public {
+  function test_decodeRequestData(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _deadline,
+    uint256 _disputeWindow
+  ) public view {
     // Create and set some mock request data
     bytes memory _data = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
 
@@ -76,7 +81,7 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondedResponseModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IBondedResponseModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0 || _params.disputeWindow == 0 || _params.deadline == 0

@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// solhint-disable-next-line no-unused-import
-import {IModule, Module} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Module.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {ISparseMerkleTreeRequestModule} from '../../../interfaces/modules/request/ISparseMerkleTreeRequestModule.sol';
 
@@ -61,12 +60,9 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    pure
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external pure override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.paymentToken) != address(0)
       && address(_params.treeVerifier) != address(0) && _params.paymentAmount != 0 && _params.treeData.length != 0

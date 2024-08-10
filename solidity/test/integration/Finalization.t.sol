@@ -46,9 +46,8 @@ contract Integration_Finalization is IntegrationBase {
   function test_revertFinalizeIfNoResponse() public {
     _createRequest();
 
-    mockResponse.response = abi.encode('nonexistent');
     // Check: reverts if request has no response?
-    vm.expectRevert(IOracle.Oracle_InvalidFinalizedResponse.selector);
+    vm.expectRevert(IOracle.Oracle_InvalidResponse.selector);
 
     vm.prank(_finalizer);
     oracle.finalize(mockRequest, mockResponse);

@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {
   IMultipleCallbacksModule,
@@ -50,14 +50,14 @@ contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(multipleCallbackModule.moduleName(), 'MultipleCallbacksModule');
   }
 
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IMultipleCallbacksModule.RequestParameters calldata _params) public {
+  function test_validateParameters(IMultipleCallbacksModule.RequestParameters calldata _params) public view {
     bool _valid = true;
     for (uint256 _i; _i < _params.targets.length; ++_i) {
       if (_params.targets[_i] == address(0) || !targetHasBytecode(_params.targets[_i])) {

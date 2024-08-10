@@ -193,10 +193,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@defi-wonderland/prophet-core-contracts@0.0.0-d01bc1a0":
-  version "0.0.0-d01bc1a0"
-  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core-contracts/-/prophet-core-contracts-0.0.0-d01bc1a0.tgz#ee4e8d970289a26966f6565b2f691d68d7b4232a"
-  integrity sha512-n4Dl1QgQAZafOtV7ef/fSoew2qlxWSdS389Z6PdIn7LxrHrzzRJi+nmJ1DJazMvMuhk/0dZbMhnaXMBi05E1zQ==
+"@defi-wonderland/prophet-core@0.0.0-2e39539b":
+  version "0.0.0-2e39539b"
+  resolved "https://registry.yarnpkg.com/@defi-wonderland/prophet-core/-/prophet-core-0.0.0-2e39539b.tgz#dbf01ed05a9af302841123c77e84bc0b3b4a6176"
+  integrity sha512-EdYpDEO1XeO08uQikhOQ6NzG0LWYxANFk272j4vCyLSJ8kRyJNMv69JJCLcq5kV0B9IzXybmqjreemkZ05z3kQ==
 
 "@defi-wonderland/solidity-utils@0.0.0-3e9c8e8b":
   version "0.0.0-3e9c8e8b"

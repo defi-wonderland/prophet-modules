@@ -72,7 +72,7 @@ contract Integration_EscalateDispute is IntegrationBase {
   function test_escalateDispute() public {
     // Escalate dispute reverts if dispute does not exist
     mockDispute.requestId = bytes32(0);
-    vm.expectRevert(IOracle.Oracle_InvalidDisputeBody.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     mockDispute.requestId = _requestId;

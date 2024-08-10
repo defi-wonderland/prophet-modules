@@ -5,38 +5,44 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
-import {IOracle, Oracle} from '@defi-wonderland/prophet-core-contracts/solidity/contracts/Oracle.sol';
-import {IDisputeModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/dispute/IDisputeModule.sol';
-
-import {IFinalityModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/finality/IFinalityModule.sol';
-import {IRequestModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/request/IRequestModule.sol';
+import {IOracle, Oracle} from '@defi-wonderland/prophet-core/solidity/contracts/Oracle.sol';
+import {IDisputeModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/dispute/IDisputeModule.sol';
+import {IFinalityModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/finality/IFinalityModule.sol';
+import {IRequestModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/request/IRequestModule.sol';
 import {IResolutionModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/resolution/IResolutionModule.sol';
-import {IResponseModule} from
-  '@defi-wonderland/prophet-core-contracts/solidity/interfaces/modules/response/IResponseModule.sol';
+  '@defi-wonderland/prophet-core/solidity/interfaces/modules/resolution/IResolutionModule.sol';
+import {IResponseModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/response/IResponseModule.sol';
+import {ValidatorLib} from '@defi-wonderland/prophet-core/solidity/libraries/ValidatorLib.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {IWETH9} from '../utils/external/IWETH9.sol';
 
 import {AccountingExtension, IAccountingExtension} from '../../contracts/extensions/AccountingExtension.sol';
-
 import {
   BondEscalationAccounting, IBondEscalationAccounting
 } from '../../contracts/extensions/BondEscalationAccounting.sol';
 import {BondEscalationModule, IBondEscalationModule} from '../../contracts/modules/dispute/BondEscalationModule.sol';
 import {BondedDisputeModule, IBondedDisputeModule} from '../../contracts/modules/dispute/BondedDisputeModule.sol';
+import {
+  IRootVerificationModule, RootVerificationModule
+} from '../../contracts/modules/dispute/RootVerificationModule.sol';
 import {CallbackModule, ICallbackModule} from '../../contracts/modules/finality/CallbackModule.sol';
 import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
+import {
+  ISparseMerkleTreeRequestModule,
+  SparseMerkleTreeRequestModule
+} from '../../contracts/modules/request/SparseMerkleTreeRequestModule.sol';
 import {ArbitratorModule, IArbitratorModule} from '../../contracts/modules/resolution/ArbitratorModule.sol';
 import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
+import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
 
+import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {IProphetCallback} from '../../interfaces/IProphetCallback.sol';
+import {ITreeVerifier} from '../../interfaces/ITreeVerifier.sol';
 
 import {MockArbitrator} from '../mocks/MockArbitrator.sol';
+import {MockAtomicArbitrator} from '../mocks/MockAtomicArbitrator.sol';
 import {MockCallback} from '../mocks/MockCallback.sol';
 
 import {Helpers} from '../utils/Helpers.sol';

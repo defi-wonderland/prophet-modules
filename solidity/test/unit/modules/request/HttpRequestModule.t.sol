@@ -5,8 +5,8 @@ import 'forge-std/Test.sol';
 
 import {Helpers} from '../../../utils/Helpers.sol';
 
-import {IModule} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IModule.sol';
-import {IOracle} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IOracle.sol';
+import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import {HttpRequestModule, IHttpRequestModule} from '../../../../contracts/modules/request/HttpRequestModule.sol';
@@ -46,14 +46,14 @@ contract HttpRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the moduleName function returns the correct name
    */
-  function test_moduleNameReturnsName() public {
+  function test_moduleNameReturnsName() public view {
     assertEq(httpRequestModule.moduleName(), 'HttpRequestModule');
   }
 
   /**
    * @notice Test that the decodeRequestData function returns the correct values
    */
-  function test_decodeRequestData(string memory _url, string memory _body, uint256 _amount, IERC20 _token) public {
+  function test_decodeRequestData(string memory _url, string memory _body, uint256 _amount, IERC20 _token) public view {
     bytes memory _requestData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: _url,
@@ -87,7 +87,7 @@ contract HttpRequestModule_Unit_ModuleData is BaseTest {
     address _accountingExtension,
     address _paymentToken,
     uint256 _paymentAmount
-  ) public {
+  ) public view {
     _method = bound(_method, 0, 1);
 
     IHttpRequestModule.RequestParameters memory _params = IHttpRequestModule.RequestParameters({
