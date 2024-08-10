@@ -41,12 +41,9 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    view
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external view override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = true;
 

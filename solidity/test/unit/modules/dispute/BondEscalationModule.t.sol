@@ -165,10 +165,9 @@ contract BondEscalationModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Tests that decodeRequestData decodes the data correctly
    */
-  function test_decodeRequestDataReturnTheCorrectData(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_decodeRequestDataReturnTheCorrectData(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     mockRequest.disputeModuleData = abi.encode(_params);
 
     IBondEscalationModule.RequestParameters memory _decodedParams =
@@ -207,10 +206,9 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
    *                                         - The _requestId tied to the dispute tied to _disputeId must be valid (non-zero)
    *                                         - The block.timestamp has to be <= bond escalation deadline
    */
-  function test_revertEscalationDuringBondEscalation(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertEscalationDuringBondEscalation(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Set _bondEscalationDeadline to be the current timestamp to reach the second condition.
     _params.bondEscalationDeadline = block.timestamp;
 
@@ -289,10 +287,9 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
    *             - The dispute has to have gone or be going through the bond escalation process
    *             - The pledges must not be tied
    */
-  function test_revertIfEscalatingDisputeIsNotTied(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfEscalatingDisputeIsNotTied(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Set a tying buffer to make the test more explicit
     _params.tyingBuffer = 1000;
     // Set bond escalation deadline to be the current timestamp. We will warp this.
@@ -607,10 +604,9 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
   /**
    * @notice Tests that onDisputeStatusChange pays the proposer if the disputer lost
    */
-  function test_callPayIfNormalDisputeLost(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_callPayIfNormalDisputeLost(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.accountingExtension = IBondEscalationAccounting(makeAddr('BondEscalationAccounting'));
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -640,10 +636,9 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
   /**
    * @notice Tests that onDisputeStatusChange pays the disputer if the disputer won
    */
-  function test_callPayIfNormalDisputeWon(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_callPayIfNormalDisputeWon(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.accountingExtension = IBondEscalationAccounting(makeAddr('BondEscalationAccounting'));
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -679,10 +674,9 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
     bondEscalationModule.onDisputeStatusChange(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_emitsEvent(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_emitsEvent(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     IOracle.DisputeStatus _status = IOracle.DisputeStatus.Won;
 
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -725,10 +719,9 @@ contract BondEscalationModule_Unit_OnDisputeStatusChange is BaseTest {
    * @notice Tests that onDisputeStatusChange returns early if the dispute has gone through the bond
    *         escalation mechanism but no one pledged
    */
-  function test_earlyReturnIfBondEscalatedDisputeHashNoPledgers(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_earlyReturnIfBondEscalatedDisputeHashNoPledgers(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
 
@@ -954,10 +947,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Tests that pledgeForDispute reverts if someone tries to pledge after the tying buffer.
    */
-  function test_revertIfTimestampBeyondTyingBuffer(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfTimestampBeyondTyingBuffer(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 1;
     _params.bondEscalationDeadline = block.timestamp;
@@ -980,10 +972,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Tests that pledgeForDispute reverts if the maximum number of escalations has been reached.
    */
-  function test_revertIfMaxNumberOfEscalationsReached(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfMaxNumberOfEscalationsReached(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 2;
     _params.bondEscalationDeadline = block.timestamp - 1;
@@ -1038,10 +1029,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
    * @notice Tests that pledgeForDispute reverts if the timestamp is within the tying buffer and someone attempts
    *         to pledge when the funds are tied, effectively breaking the tie
    */
-  function test_revertIfAttemptToBreakTieDuringTyingBuffer(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfAttemptToBreakTieDuringTyingBuffer(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
     _params.bondEscalationDeadline = block.timestamp - 1;
@@ -1067,10 +1057,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Tests that pledgeForDispute is called successfully
    */
-  function test_successfulCall(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_successfulCall(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1000;
     _params.maxNumberOfEscalations = 3;
     _params.bondEscalationDeadline = block.timestamp - 1;
@@ -1138,10 +1127,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Tests that pledgeAgainstDispute reverts if someone tries to pledge after the tying buffer.
    */
-  function test_revertIfTimestampBeyondTyingBuffer(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfTimestampBeyondTyingBuffer(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 1;
     _params.bondEscalationDeadline = block.timestamp;
@@ -1165,10 +1153,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Tests that pledgeAgainstDispute reverts if the maximum number of escalations has been reached.
    */
-  function test_revertIfMaxNumberOfEscalationsReached(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfMaxNumberOfEscalationsReached(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 2;
     _params.bondEscalationDeadline = block.timestamp - 1;
@@ -1196,10 +1183,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
    * @notice Tests that pledgeAgainstDispute reverts if someone tries to pledge in favor of the dispute when there are
    *         more pledges against of the dispute than in favor of it
    */
-  function test_revertIfThereIsMorePledgedAgainstDisputeThanFor(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfThereIsMorePledgedAgainstDisputeThanFor(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
@@ -1227,10 +1213,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
    * @notice Tests that pledgeAgainstDispute reverts if the timestamp is within the tying buffer and someone attempts
    *         to pledge when the funds are tied, effectively breaking the tie
    */
-  function test_revertIfAttemptToBreakTieDuringTyingBuffer(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfAttemptToBreakTieDuringTyingBuffer(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Set mock request parameters
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
@@ -1257,10 +1242,9 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Tests that pledgeAgainstDispute is called successfully
    */
-  function test_successfulCall(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_successfulCall(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1000;
     _params.maxNumberOfEscalations = 3;
     _params.bondEscalationDeadline = block.timestamp - 1;
@@ -1328,10 +1312,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
    * @notice Tests that settleBondEscalation reverts if someone tries to settle the escalation before the tying buffer
    *         has elapsed.
    */
-  function test_revertIfTimestampLessThanEndOfTyingBuffer(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfTimestampLessThanEndOfTyingBuffer(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
     _params.bondEscalationDeadline = block.timestamp;
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -1347,10 +1330,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
    * @notice Tests that settleBondEscalation reverts if someone tries to settle a bond-escalated dispute that
    *         is not active.
    */
-  function test_revertIfStatusOfBondEscalationIsNotActive(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfStatusOfBondEscalationIsNotActive(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -1371,10 +1353,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
    * @notice Tests that settleBondEscalation reverts if someone tries to settle a bond-escalated dispute that
    *         has the same number of pledgers.
    */
-  function test_revertIfSameNumberOfPledgers(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_revertIfSameNumberOfPledgers(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -1401,10 +1382,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
   /**
    * @notice Tests that settleBondEscalation is called successfully.
    */
-  function test_successfulCallDisputerWon(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_successfulCallDisputerWon(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1000;
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;
@@ -1445,10 +1425,9 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
   /**
    * @notice Tests that settleBondEscalation is called successfully.
    */
-  function test_successfulCallDisputerLost(IBondEscalationModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_successfulCallDisputerLost(
+    IBondEscalationModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     _params.bondSize = 1000;
     _params.bondEscalationDeadline = block.timestamp;
     _params.tyingBuffer = 1000;

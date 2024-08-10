@@ -149,7 +149,9 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @return _amountPerPledger     Amount of `_token` to be rewarded to each of the winning pledgers
    * @return _bondEscalationModule The address of the bond escalation module that was used
    */
-  function escalationResults(bytes32 _disputeId)
+  function escalationResults(
+    bytes32 _disputeId
+  )
     external
     returns (bytes32 _requestId, IERC20 _token, uint256 _amountPerPledger, IBondEscalationModule _bondEscalationModule);
 

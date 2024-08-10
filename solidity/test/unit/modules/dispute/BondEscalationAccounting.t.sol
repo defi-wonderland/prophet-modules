@@ -82,10 +82,9 @@ contract BaseTest is Test, Helpers {
     bytes32 indexed _requestId, bytes32 indexed _disputeId, address indexed _pledger, IERC20 _token, uint256 _amount
   );
 
-  function _createWinningPledgersArray(uint256 _numWinningPledgers)
-    internal
-    returns (address[] memory _winningPledgers)
-  {
+  function _createWinningPledgersArray(
+    uint256 _numWinningPledgers
+  ) internal returns (address[] memory _winningPledgers) {
     _winningPledgers = new address[](_numWinningPledgers);
     address _winningPledger;
 

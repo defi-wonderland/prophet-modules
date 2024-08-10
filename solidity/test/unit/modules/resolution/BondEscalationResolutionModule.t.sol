@@ -149,10 +149,9 @@ contract BaseTest is Test, Helpers {
     return (_pledgers, _pledgedAmounts);
   }
 
-  function _setResolutionModuleData(IBondEscalationResolutionModule.RequestParameters memory _params)
-    internal
-    returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId)
-  {
+  function _setResolutionModuleData(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) internal returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) {
     mockRequest.resolutionModuleData = abi.encode(_params);
     _requestId = _getId(mockRequest);
 
@@ -166,7 +165,9 @@ contract BaseTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp));
   }
 
-  function _getRequestResponseDispute(IBondEscalationResolutionModule.RequestParameters memory _params)
+  function _getRequestResponseDispute(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  )
     internal
     view
     returns (IOracle.Request memory _request, IOracle.Response memory _response, IOracle.Dispute memory _dispute)
@@ -836,10 +837,9 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_resolveDisputeReverts(IBondEscalationResolutionModule.RequestParameters memory _params)
-    public
-    assumeFuzzable(address(_params.accountingExtension))
-  {
+  function test_resolveDisputeReverts(
+    IBondEscalationResolutionModule.RequestParameters memory _params
+  ) public assumeFuzzable(address(_params.accountingExtension)) {
     // 1. BondEscalationResolutionModule_AlreadyResolved
     (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) = _setResolutionModuleData(_params);
 

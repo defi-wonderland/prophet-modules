@@ -220,10 +220,9 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @return _pledgesFor The amount of pledges in favor of the dispute.
    * @return _pledgesAgainst The amount of pledges against the dispute.
    */
-  function escalations(bytes32 _disputeId)
-    external
-    view
-    returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);
+  function escalations(
+    bytes32 _disputeId
+  ) external view returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);
 
   /**
    * @notice Returns the inequality status and its last update time of a given dispute.

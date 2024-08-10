@@ -131,12 +131,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    pure
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external pure override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.votingToken) != address(0)
       && _params.minVotesForQuorum != 0 && _params.timeUntilDeadline != 0;

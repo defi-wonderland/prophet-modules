@@ -60,12 +60,9 @@ contract SparseMerkleTreeRequestModule is Module, ISparseMerkleTreeRequestModule
   }
 
   /// @inheritdoc IModule
-  function validateParameters(bytes calldata _encodedParameters)
-    external
-    pure
-    override(Module, IModule)
-    returns (bool _valid)
-  {
+  function validateParameters(
+    bytes calldata _encodedParameters
+  ) external pure override(Module, IModule) returns (bool _valid) {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.paymentToken) != address(0)
       && address(_params.treeVerifier) != address(0) && _params.paymentAmount != 0 && _params.treeData.length != 0
