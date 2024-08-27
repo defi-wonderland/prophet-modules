@@ -168,7 +168,7 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
 
     // Oracle confirms that the response has been created
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.number)
     );
 
     // Mock and expect IAccountingExtension.pay to be called

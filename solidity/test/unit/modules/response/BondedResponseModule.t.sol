@@ -311,7 +311,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
 
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.number)
     );
 
     // Mock and expect IAccountingExtension.release to be called
@@ -542,9 +542,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
       address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
     );
 
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp)
-    );
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.number));
 
     // We're going to test all possible dispute statuses
     for (uint256 _i = 0; _i < uint256(type(IOracle.DisputeStatus).max); _i++) {

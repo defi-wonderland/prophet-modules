@@ -161,8 +161,8 @@ contract BaseTest is Test, Helpers {
     mockDispute = _getDispute(mockRequest, mockResponse);
     _disputeId = _getId(mockDispute);
 
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp));
-    vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.number));
+    vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.number));
   }
 
   function _getRequestResponseDispute(

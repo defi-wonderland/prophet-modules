@@ -47,11 +47,11 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing a response after the deadline reverts
    */
-  function test_proposeResponse_afterDeadline(uint256 _timestamp, bytes memory _responseBytes) public {
-    vm.assume(_timestamp > _expectedDeadline);
+  function test_proposeResponse_afterDeadline(uint256 _blockNumber, bytes memory _responseBytes) public {
+    vm.assume(_blockNumber > _expectedDeadline);
 
     // Warp to timestamp after deadline
-    vm.warp(_timestamp);
+    vm.roll(_blockNumber);
 
     mockResponse.response = _responseBytes;
 

@@ -133,7 +133,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     vm.stopPrank();
 
     // Set the expected deadline
-    _expectedDeadline = block.timestamp + BLOCK_TIME * _blocksDeadline;
+    _expectedDeadline = block.number + _blocksDeadline;
 
     // Configure the mock request
     mockRequest.requestModuleData = abi.encode(

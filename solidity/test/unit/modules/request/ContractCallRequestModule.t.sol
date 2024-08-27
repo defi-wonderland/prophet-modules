@@ -153,7 +153,7 @@ contract ContractCallRequestModule_Unit_FinalizeRequest is BaseTest {
 
     // Mock and expect oracle to return the response's creation time
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.number)
     );
 
     // Mock and expect IAccountingExtension.pay to be called

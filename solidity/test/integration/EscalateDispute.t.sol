@@ -40,7 +40,7 @@ contract Integration_EscalateDispute is IntegrationBase {
         bondToken: usdc,
         bondSize: _expectedBondSize,
         maxNumberOfEscalations: 1,
-        bondEscalationDeadline: _expectedDeadline,
+        bondEscalationDeadline: block.timestamp + BLOCK_TIME * _blocksDeadline,
         tyingBuffer: 0,
         disputeWindow: 0
       })
