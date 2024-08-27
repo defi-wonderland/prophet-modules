@@ -28,7 +28,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     // Cannot propose after the deadline
-    if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
+    if (block.number >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
 
     // Cannot propose to a request with a response, unless the response is being disputed
     bytes32[] memory _responseIds = ORACLE.getResponseIds(_response.requestId);
