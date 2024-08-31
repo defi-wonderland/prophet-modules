@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IValidator} from '@defi-wonderland/prophet-core/solidity/interfaces/IValidator.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 /*
@@ -8,7 +9,7 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
   * @notice Extension allowing users to deposit and bond funds
   * to be used for payments and disputes.
   */
-interface IAccountingExtension {
+interface IAccountingExtension is IValidator {
   /*///////////////////////////////////////////////////////////////
                               EVENTS
   //////////////////////////////////////////////////////////////*/
