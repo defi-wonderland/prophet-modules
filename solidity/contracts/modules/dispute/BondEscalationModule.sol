@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
@@ -19,7 +19,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    */
   mapping(bytes32 _requestId => BondEscalation) internal _escalations;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -328,12 +330,16 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   ////////////////////////////////////////////////////////////////////
 
   /// @inheritdoc IBondEscalationModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IBondEscalationModule
-  function getEscalation(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
+  function getEscalation(
+    bytes32 _requestId
+  ) public view returns (BondEscalation memory _escalation) {
     _escalation = _escalations[_requestId];
   }
 

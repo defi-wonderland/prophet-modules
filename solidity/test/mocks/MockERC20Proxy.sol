@@ -10,7 +10,9 @@ contract MockERC20Proxy {
   uint256 internal _calls;
   bool internal _mocked;
 
-  constructor(IERC20 _token) {
+  constructor(
+    IERC20 _token
+  ) {
     token = _token;
   }
 
@@ -19,7 +21,9 @@ contract MockERC20Proxy {
     _mocked = true;
   }
 
-  function balanceOf(address _account) external view returns (uint256 _amount) {
+  function balanceOf(
+    address _account
+  ) external view returns (uint256 _amount) {
     if (_mocked) {
       _amount = _balancesPerCall[_calls][_account];
     } else {

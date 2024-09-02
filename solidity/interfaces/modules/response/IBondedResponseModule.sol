@@ -87,7 +87,9 @@ interface IBondedResponseModule is IResponseModule {
    * @param _data The encoded data
    * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes calldata _data) external pure returns (RequestParameters memory _params);
+  function decodeRequestData(
+    bytes calldata _data
+  ) external pure returns (RequestParameters memory _params);
 
   /**
    * @notice Proposes a response for a request, bonding the proposer's tokens

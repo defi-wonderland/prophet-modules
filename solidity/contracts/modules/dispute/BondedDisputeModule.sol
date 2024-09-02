@@ -7,7 +7,9 @@ import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle
 import {IBondedDisputeModule} from '../../../interfaces/modules/dispute/IBondedDisputeModule.sol';
 
 contract BondedDisputeModule is Module, IBondedDisputeModule {
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -15,7 +17,9 @@ contract BondedDisputeModule is Module, IBondedDisputeModule {
   }
 
   /// @inheritdoc IBondedDisputeModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 

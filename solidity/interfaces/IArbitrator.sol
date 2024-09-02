@@ -9,7 +9,9 @@ interface IArbitrator {
    * @param _dispute The ID of the dispute
    * @return _status The status of the dispute
    */
-  function getAnswer(bytes32 _dispute) external returns (IOracle.DisputeStatus _status);
+  function getAnswer(
+    bytes32 _dispute
+  ) external returns (IOracle.DisputeStatus _status);
 
   /**
    * @notice Resolves a dispute

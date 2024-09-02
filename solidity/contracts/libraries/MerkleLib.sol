@@ -113,7 +113,9 @@ library MerkleLib {
    * @return _current bytes32 root.
    *
    */
-  function root(Tree storage tree) internal view returns (bytes32 _current) {
+  function root(
+    Tree storage tree
+  ) internal view returns (bytes32 _current) {
     uint256 _index = tree.count;
 
     if (_index == 0) {

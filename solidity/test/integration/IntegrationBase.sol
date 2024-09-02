@@ -187,7 +187,9 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _mineBlocks(1);
   }
 
-  function _mineBlocks(uint256 _blocks) internal {
+  function _mineBlocks(
+    uint256 _blocks
+  ) internal {
     vm.warp(block.timestamp + _blocks * BLOCK_TIME);
     vm.roll(block.number + _blocks);
   }

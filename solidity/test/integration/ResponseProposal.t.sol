@@ -27,7 +27,9 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing a response updates the state of the oracle, including the list of participants and the response's creation time
    */
-  function test_proposeResponse_validResponse(bytes memory _responseBytes) public {
+  function test_proposeResponse_validResponse(
+    bytes memory _responseBytes
+  ) public {
     mockResponse.response = _responseBytes;
 
     vm.prank(proposer);
@@ -65,7 +67,9 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing a response to an already answered request reverts
    */
-  function test_proposeResponse_alreadyResponded(bytes memory _responseBytes) public {
+  function test_proposeResponse_alreadyResponded(
+    bytes memory _responseBytes
+  ) public {
     mockResponse.response = _responseBytes;
 
     // First response
@@ -101,7 +105,9 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing without enough funds bonded reverts
    */
-  function test_proposeResponse_insufficientFunds(bytes memory _responseBytes) public {
+  function test_proposeResponse_insufficientFunds(
+    bytes memory _responseBytes
+  ) public {
     // Using WETH as the bond token
     mockRequest.nonce += 1;
     mockRequest.responseModuleData = abi.encode(
@@ -134,7 +140,9 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing from an approved dispute module
    */
-  function test_proposeResponse_fromApprovedDisputeModule(bytes memory _responseBytes) public {
+  function test_proposeResponse_fromApprovedDisputeModule(
+    bytes memory _responseBytes
+  ) public {
     address _otherRequester = makeAddr('otherRequester');
     address _approvedDisputeModule = makeAddr('_approvedDisputeModule');
 
@@ -184,7 +192,9 @@ contract Integration_ResponseProposal is IntegrationBase {
   /**
    * @notice Proposing from an unapproved dispute module
    */
-  function test_proposeResponse_fromUnapprovedDisputeModule(bytes memory _responseBytes) public {
+  function test_proposeResponse_fromUnapprovedDisputeModule(
+    bytes memory _responseBytes
+  ) public {
     address _attacker = makeAddr('attacker');
     mockRequest.nonce += 1;
     mockRequest.requester = _attacker;

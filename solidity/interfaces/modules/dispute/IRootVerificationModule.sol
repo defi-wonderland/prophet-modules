@@ -55,7 +55,9 @@ interface IRootVerificationModule is IDisputeModule {
    * @param _data The encoded request parameters
    * @return _params The decoded parameters of the request
    */
-  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
+  function decodeRequestData(
+    bytes calldata _data
+  ) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Initiates and resolves the dispute by comparing the proposed response with the one returned by the verifier

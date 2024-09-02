@@ -22,7 +22,9 @@ import {MockVerifier} from '../../../mocks/MockVerifier.sol';
  * @dev Harness to set an entry in the correctResponses mapping
  */
 contract ForTest_CircuitResolverModule is CircuitResolverModule {
-  constructor(IOracle _oracle) CircuitResolverModule(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) CircuitResolverModule(_oracle) {}
 
   function forTest_setCorrectResponse(bytes32 _requestId, bytes memory _data) public {
     _correctResponses[_requestId] = _data;
@@ -62,7 +64,9 @@ contract BaseTest is Test, Helpers {
     circuitResolverModule = new ForTest_CircuitResolverModule(oracle);
   }
 
-  function targetHasBytecode(address _target) public view returns (bool _hasBytecode) {
+  function targetHasBytecode(
+    address _target
+  ) public view returns (bool _hasBytecode) {
     uint256 _size;
     assembly {
       _size := extcodesize(_target)
@@ -115,7 +119,9 @@ contract CircuitResolverModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(ICircuitResolverModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    ICircuitResolverModule.RequestParameters calldata _params
+  ) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0 || !targetHasBytecode(_params.verifier) || _params.callData.length == 0
@@ -272,7 +278,9 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute response reverts when called by caller who's not the oracle
    */
-  function test_revertWrongCaller(address _randomCaller) public {
+  function test_revertWrongCaller(
+    address _randomCaller
+  ) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?

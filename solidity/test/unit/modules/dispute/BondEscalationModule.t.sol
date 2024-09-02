@@ -22,7 +22,9 @@ import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBond
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
 contract ForTest_BondEscalationModule is BondEscalationModule {
-  constructor(IOracle _oracle) BondEscalationModule(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) BondEscalationModule(_oracle) {}
 
   function forTest_setBondEscalation(
     bytes32 _requestId,
@@ -123,7 +125,9 @@ contract BaseTest is Test, Helpers {
     bondEscalationModule = new ForTest_BondEscalationModule(oracle);
   }
 
-  function _getRandomDispute(bytes32 _requestId) internal view returns (IOracle.Dispute memory _dispute) {
+  function _getRandomDispute(
+    bytes32 _requestId
+  ) internal view returns (IOracle.Dispute memory _dispute) {
     _dispute =
       IOracle.Dispute({disputer: disputer, responseId: bytes32('response'), proposer: proposer, requestId: _requestId});
   }
@@ -186,7 +190,9 @@ contract BondEscalationModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondEscalationModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    IBondEscalationModule.RequestParameters calldata _params
+  ) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0 || _params.bondEscalationDeadline == 0 || _params.maxNumberOfEscalations == 0

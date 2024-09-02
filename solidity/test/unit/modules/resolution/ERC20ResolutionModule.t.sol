@@ -22,7 +22,9 @@ import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountin
 contract ForTest_ERC20ResolutionModule is ERC20ResolutionModule {
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  constructor(IOracle _oracle) ERC20ResolutionModule(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) ERC20ResolutionModule(_oracle) {}
 
   function forTest_setStartTime(bytes32 _disputeId, uint256 _startTime) public {
     escalations[_disputeId] = IERC20ResolutionModule.Escalation({
@@ -110,7 +112,9 @@ contract ERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IERC20ResolutionModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    IERC20ResolutionModule.RequestParameters calldata _params
+  ) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
         || _params.minVotesForQuorum == 0 || _params.timeUntilDeadline == 0
@@ -126,13 +130,17 @@ contract ERC20ResolutionModule_Unit_StartResolution is BaseTest {
   /**
    * @notice Test that the `startResolution` is correctly called and the voting phase is started
    */
-  function test_revertIfNotOracle(bytes32 _disputeId) public {
+  function test_revertIfNotOracle(
+    bytes32 _disputeId
+  ) public {
     // Check: does revert if called by address != oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     module.startResolution(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_setsStartTime(bytes32 _disputeId) public {
+  function test_setsStartTime(
+    bytes32 _disputeId
+  ) public {
     vm.prank(address(oracle));
     module.startResolution(_disputeId, mockRequest, mockResponse, mockDispute);
 
@@ -141,7 +149,9 @@ contract ERC20ResolutionModule_Unit_StartResolution is BaseTest {
     assertEq(_startTime, block.timestamp);
   }
 
-  function test_emitsEvent(bytes32 _disputeId) public {
+  function test_emitsEvent(
+    bytes32 _disputeId
+  ) public {
     // Check: emits VotingPhaseStarted event?
     vm.expectEmit(true, true, true, true, address(module));
     emit VotingPhaseStarted(block.timestamp, _disputeId);
@@ -212,7 +222,9 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   /**
    * @notice Test that `castVote` reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidDisputeBody(uint256 _numberOfVotes) public {
+  function test_revertIfInvalidDisputeBody(
+    uint256 _numberOfVotes
+  ) public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
@@ -222,7 +234,9 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
   /**
    * @notice Test that `castVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
-  function test_revertIfNotEscalated(uint256 _numberOfVotes) public {
+  function test_revertIfNotEscalated(
+    uint256 _numberOfVotes
+  ) public {
     // Compute proper IDs
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
@@ -311,7 +325,9 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that a dispute is resolved, the tokens are transferred back to the voters and the dispute status updated.
    */
-  function test_resolveDispute(uint16 _minVotesForQuorum) public {
+  function test_resolveDispute(
+    uint16 _minVotesForQuorum
+  ) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
         accountingExtension: accountingExtension,
@@ -377,7 +393,9 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that `resolveDispute` reverts if called during voting phase.
    */
-  function test_revertIfOnGoingVotePhase(uint256 _timestamp) public {
+  function test_revertIfOnGoingVotePhase(
+    uint256 _timestamp
+  ) public {
     _timestamp = bound(_timestamp, 500_000, 999_999);
 
     uint256 _minVotesForQuorum = 1;
@@ -423,7 +441,9 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
   /**
    * @notice Reverts if the vote is still ongoing
    */
-  function test_revertIfVoteIsOnGoing(address _voter) public {
+  function test_revertIfVoteIsOnGoing(
+    address _voter
+  ) public {
     mockRequest.resolutionModuleData = abi.encode(
       IERC20ResolutionModule.RequestParameters({
         accountingExtension: accountingExtension,
@@ -496,7 +516,9 @@ contract ERC20ResolutionModule_Unit_GetVoters is BaseTest {
   /**
    * @notice Test that `getVoters` returns an array of addresses of users that have voted.
    */
-  function test_getVoters(bytes32 _disputeId) public {
+  function test_getVoters(
+    bytes32 _disputeId
+  ) public {
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
 

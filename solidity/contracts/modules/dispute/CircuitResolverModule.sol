@@ -11,7 +11,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   /// @notice Keeps track of the correct responses to requests
   mapping(bytes32 _requestId => bytes _correctResponse) internal _correctResponses;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -19,7 +21,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   }
 
   /// @inheritdoc ICircuitResolverModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -106,7 +110,9 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
    * @param _target The address to check
    * @return _hasBytecode Whether the target has bytecode or not
    */
-  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
+  function _targetHasBytecode(
+    address _target
+  ) private view returns (bool _hasBytecode) {
     uint256 _size;
     assembly {
       _size := extcodesize(_target)

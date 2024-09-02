@@ -26,7 +26,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
    */
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -34,7 +36,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   }
 
   /// @inheritdoc IERC20ResolutionModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -126,7 +130,9 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   }
 
   /// @inheritdoc IERC20ResolutionModule
-  function getVoters(bytes32 _disputeId) external view returns (address[] memory __voters) {
+  function getVoters(
+    bytes32 _disputeId
+  ) external view returns (address[] memory __voters) {
     __voters = _voters[_disputeId].values();
   }
 

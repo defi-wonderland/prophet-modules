@@ -39,7 +39,9 @@ interface IBondedDisputeModule is IDisputeModule {
    * @param   _data The encoded request parameters
    * @return  _params The struct containing the parameters for the request
    */
-  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
+  function decodeRequestData(
+    bytes calldata _data
+  ) external view returns (RequestParameters memory _params);
 
   /**
    * @notice  Called by the oracle when a dispute has been made on a response

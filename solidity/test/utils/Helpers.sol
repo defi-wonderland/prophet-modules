@@ -40,7 +40,9 @@ contract Helpers is DSTestPlus, TestConstants {
   // Shared events that all modules emit
   event RequestFinalized(bytes32 indexed _requestId, IOracle.Response _response, address _finalizer);
 
-  modifier assumeFuzzable(address _address) {
+  modifier assumeFuzzable(
+    address _address
+  ) {
     _assumeFuzzable(_address);
     _;
   }
@@ -81,7 +83,9 @@ contract Helpers is DSTestPlus, TestConstants {
    *
    * @param _address The address to check
    */
-  function _assumeFuzzable(address _address) internal view {
+  function _assumeFuzzable(
+    address _address
+  ) internal view {
     assumeNotForgeAddress(_address);
     assumeNotZeroAddress(_address);
     assumeNotPrecompile(_address, block.chainid); // using Optimism chaind id for precompiles filtering
@@ -105,7 +109,9 @@ contract Helpers is DSTestPlus, TestConstants {
    * @param _request The request to compute the ID for
    * @return _id The ID of the request
    */
-  function _getId(IOracle.Request memory _request) internal pure returns (bytes32 _id) {
+  function _getId(
+    IOracle.Request memory _request
+  ) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_request));
   }
 
@@ -115,7 +121,9 @@ contract Helpers is DSTestPlus, TestConstants {
    * @param _response The response to compute the ID for
    * @return _id The ID of the response
    */
-  function _getId(IOracle.Response memory _response) internal pure returns (bytes32 _id) {
+  function _getId(
+    IOracle.Response memory _response
+  ) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_response));
   }
 
@@ -125,7 +133,9 @@ contract Helpers is DSTestPlus, TestConstants {
    * @param _dispute The dispute to compute the ID for
    * @return _id The ID of the dispute
    */
-  function _getId(IOracle.Dispute memory _dispute) internal pure returns (bytes32 _id) {
+  function _getId(
+    IOracle.Dispute memory _dispute
+  ) internal pure returns (bytes32 _id) {
     _id = keccak256(abi.encode(_dispute));
   }
 
@@ -135,7 +145,9 @@ contract Helpers is DSTestPlus, TestConstants {
    * @param _label The label to use for the mock contract
    * @return _contract The address of the mock contract
    */
-  function _mockContract(string memory _label) internal returns (address _contract) {
+  function _mockContract(
+    string memory _label
+  ) internal returns (address _contract) {
     _contract = makeAddr(_label);
     vm.etch(_contract, hex'69');
   }
@@ -145,7 +157,9 @@ contract Helpers is DSTestPlus, TestConstants {
    *
    * @param _contract The contract to expect the event on
    */
-  function _expectEmit(address _contract) internal {
+  function _expectEmit(
+    address _contract
+  ) internal {
     vm.expectEmit(true, true, true, true, _contract);
   }
 }

@@ -45,7 +45,9 @@ contract Integration_ResponseDispute is IntegrationBase {
   /**
    * @notice Disputing a non-existent response should revert
    */
-  function test_disputeResponse_nonExistentResponse(bytes32 _nonExistentResponseId) public {
+  function test_disputeResponse_nonExistentResponse(
+    bytes32 _nonExistentResponseId
+  ) public {
     vm.assume(_nonExistentResponseId != _getId(mockResponse));
     mockDispute.responseId = _nonExistentResponseId;
 
@@ -58,7 +60,9 @@ contract Integration_ResponseDispute is IntegrationBase {
   /**
    * @notice Sending an an invalid dispute in should revert
    */
-  function test_disputeResponse_requestAndResponseMismatch(bytes32 _requestId) public {
+  function test_disputeResponse_requestAndResponseMismatch(
+    bytes32 _requestId
+  ) public {
     vm.assume(_requestId != _getId(mockRequest));
 
     mockDispute.requestId = _requestId;

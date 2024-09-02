@@ -233,7 +233,9 @@ contract HttpRequestModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_revertsIfWrongCaller(address _caller) public {
+  function test_revertsIfWrongCaller(
+    address _caller
+  ) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?

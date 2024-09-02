@@ -81,7 +81,9 @@ contract BondedResponseModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondedResponseModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    IBondedResponseModule.RequestParameters calldata _params
+  ) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0 || _params.disputeWindow == 0 || _params.deadline == 0
@@ -97,7 +99,9 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
   /**
    * @notice Test that the propose function is only callable by the oracle
    */
-  function test_revertIfNotOracle(address _sender) public {
+  function test_revertIfNotOracle(
+    address _sender
+  ) public {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?
@@ -220,7 +224,9 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that the propose function is only callable by the oracle
    */
-  function test_revertIfNotOracle(address _sender) public {
+  function test_revertIfNotOracle(
+    address _sender
+  ) public {
     vm.assume(_sender != address(oracle));
 
     // Check: does it revert if not called by the Oracle?

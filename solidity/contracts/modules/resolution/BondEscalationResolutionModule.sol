@@ -2,9 +2,10 @@
 pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
@@ -34,7 +35,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => mapping(address _pledger => uint256 pledges)) public pledgesAgainstDispute;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -42,7 +45,9 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   }
 
   /// @inheritdoc IBondEscalationResolutionModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 

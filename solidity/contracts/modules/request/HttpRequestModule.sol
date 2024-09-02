@@ -7,7 +7,9 @@ import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle
 import {IHttpRequestModule} from '../../../interfaces/modules/request/IHttpRequestModule.sol';
 
 contract HttpRequestModule is Module, IHttpRequestModule {
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
@@ -15,7 +17,9 @@ contract HttpRequestModule is Module, IHttpRequestModule {
   }
 
   /// @inheritdoc IHttpRequestModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 

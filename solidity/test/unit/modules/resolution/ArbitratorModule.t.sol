@@ -18,7 +18,9 @@ import {
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
 contract ForTest_ArbitratorModule is ArbitratorModule {
-  constructor(IOracle _oracle) ArbitratorModule(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) ArbitratorModule(_oracle) {}
 
   function forTest_setDisputeStatus(bytes32 _disputeId, IArbitratorModule.ArbitrationStatus _status) public {
     _disputeData[_disputeId] = _status;
@@ -65,7 +67,9 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
    * @notice Test that the decodeRequestData function returns the correct values
    */
 
-  function test_decodeRequestData(address _arbitrator) public view {
+  function test_decodeRequestData(
+    address _arbitrator
+  ) public view {
     // Mock data
     bytes memory _requestData = abi.encode(_arbitrator);
 
@@ -93,7 +97,9 @@ contract ArbitratorModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IArbitratorModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    IArbitratorModule.RequestParameters calldata _params
+  ) public view {
     if (_params.arbitrator == address(0)) {
       assertFalse(arbitratorModule.validateParameters(abi.encode(_params)));
     } else {
@@ -106,7 +112,9 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
   /**
    * @notice Test that the escalate function works as expected
    */
-  function test_startResolution(address _arbitrator) public assumeFuzzable(_arbitrator) {
+  function test_startResolution(
+    address _arbitrator
+  ) public assumeFuzzable(_arbitrator) {
     mockRequest.resolutionModuleData = abi.encode(_arbitrator);
     bytes32 _requestId = _getId(mockRequest);
 
@@ -126,7 +134,9 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     assertEq(uint256(arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
   }
 
-  function test_emitsEvent(address _arbitrator) public assumeFuzzable(_arbitrator) {
+  function test_emitsEvent(
+    address _arbitrator
+  ) public assumeFuzzable(_arbitrator) {
     mockRequest.resolutionModuleData = abi.encode(_arbitrator);
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;
@@ -146,7 +156,9 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
     arbitratorModule.startResolution(_disputeId, mockRequest, mockResponse, mockDispute);
   }
 
-  function test_revertInvalidCaller(address _caller) public {
+  function test_revertInvalidCaller(
+    address _caller
+  ) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if the caller is not the Oracle?
@@ -266,7 +278,9 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice resolve dispute reverts if the dispute status isn't Active
    */
-  function test_revertIfInvalidDispute(IOracle.Request calldata _request) public {
+  function test_revertIfInvalidDispute(
+    IOracle.Request calldata _request
+  ) public {
     // Test the 3 different invalid status (None, Won, Lost)
     for (uint256 _status; _status < uint256(type(IOracle.DisputeStatus).max); _status++) {
       if (IOracle.DisputeStatus(_status) == IOracle.DisputeStatus.Escalated) continue;
@@ -288,7 +302,9 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that the resolve function reverts if the caller isn't the arbitrator
    */
-  function test_revertIfWrongSender(address _caller) public {
+  function test_revertIfWrongSender(
+    address _caller
+  ) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?

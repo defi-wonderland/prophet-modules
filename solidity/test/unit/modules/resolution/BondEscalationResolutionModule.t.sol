@@ -7,7 +7,7 @@ import {Helpers} from '../../../utils/Helpers.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
@@ -23,7 +23,9 @@ import {IBondEscalationAccounting} from '../../../../interfaces/extensions/IBond
  * @dev Harness to set an entry in the requestData mapping, without triggering setup request hooks
  */
 contract ForTest_BondEscalationResolutionModule is BondEscalationResolutionModule {
-  constructor(IOracle _oracle) BondEscalationResolutionModule(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) BondEscalationResolutionModule(_oracle) {}
 
   function forTest_setEscalation(
     bytes32 _disputeId,
@@ -210,7 +212,9 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(IBondEscalationResolutionModule.RequestParameters calldata _params) public view {
+  function test_validateParameters(
+    IBondEscalationResolutionModule.RequestParameters calldata _params
+  ) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.percentageDiff == 0 || _params.pledgeThreshold == 0 || _params.timeUntilDeadline == 0
@@ -224,7 +228,9 @@ contract BondEscalationResolutionModule_Unit_ModuleData is BaseTest {
 }
 
 contract BondEscalationResolutionModule_Unit_StartResolution is BaseTest {
-  function test_startResolution(IOracle.Request calldata _request) public {
+  function test_startResolution(
+    IOracle.Request calldata _request
+  ) public {
     bytes32 _requestId = _getId(_request);
 
     mockResponse.requestId = _requestId;
@@ -390,7 +396,9 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Testing _forPercentageDifference >= _scaledPercentageDiffAsInt
    */
-  function test_changesStatusIfForSideIsWinning(uint256 _pledgeAmount) public {
+  function test_changesStatusIfForSideIsWinning(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // I'm setting the values so that the percentage diff is 20% in favor of pledgesFor.
@@ -440,7 +448,9 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Testing _againstPercentageDifference >= _scaledPercentageDiffAsInt
    */
-  function test_changesStatusIfAgainstSideIsWinning(uint256 _pledgeAmount) public {
+  function test_changesStatusIfAgainstSideIsWinning(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // Making the against percentage 60% of the total as percentageDiff is 20%
@@ -491,7 +501,9 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
   /**
    * @notice Testing _status == forTurnToEqualize && both diffs < percentageDiff
    */
-  function test_changesStatusIfSidesAreEqual(uint256 _pledgeAmount) public {
+  function test_changesStatusIfSidesAreEqual(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // Making both the same so the percentage diff is not reached
@@ -621,7 +633,9 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
   }
 
-  function test_earlyReturnIfThresholdNotSurpassed(uint256 _pledgeAmount) public {
+  function test_earlyReturnIfThresholdNotSurpassed(
+    uint256 _pledgeAmount
+  ) public {
     vm.assume(_pledgeAmount < type(uint256).max - 1000);
 
     // block.timestamp < _startTime + _timeUntilDeadline
@@ -675,7 +689,9 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Testing _againstPercentageDifference >= _scaledPercentageDiffAsInt
    */
-  function test_changesStatusIfAgainstSideIsWinning(uint256 _pledgeAmount) public {
+  function test_changesStatusIfAgainstSideIsWinning(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // I'm setting the values so that the percentage diff is 20% in favor of pledgesAgainst.
@@ -725,7 +741,9 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Testing _forPercentageDifference >= _scaledPercentageDiffAsInt
    */
-  function test_changesStatusIfForSideIsWinning(uint256 _pledgeAmount) public {
+  function test_changesStatusIfForSideIsWinning(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // Making the against percentage 60% of the total as percentageDiff is 20%
@@ -776,7 +794,9 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
   /**
    * @notice Testing _status == againstTurnToEqualize && both diffs < percentageDiff
    */
-  function test_changesStatusIfSidesAreEqual(uint256 _pledgeAmount) public {
+  function test_changesStatusIfSidesAreEqual(
+    uint256 _pledgeAmount
+  ) public {
     _pledgeAmount = bound(_pledgeAmount, 1, type(uint192).max);
 
     // Making both the same so the percentage diff is not reached

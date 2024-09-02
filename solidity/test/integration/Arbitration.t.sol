@@ -148,11 +148,15 @@ contract Integration_Arbitration is IntegrationBase {
     assertEq(_disputerBondedAmount, 0);
   }
 
-  function _setArbitrator(address _arbitrator) internal {
+  function _setArbitrator(
+    address _arbitrator
+  ) internal {
     mockRequest.resolutionModuleData = abi.encode(IArbitratorModule.RequestParameters({arbitrator: _arbitrator}));
   }
 
-  function _setupDispute(address _arbitrator) internal returns (bytes32 _disputeId) {
+  function _setupDispute(
+    address _arbitrator
+  ) internal returns (bytes32 _disputeId) {
     _setArbitrator(_arbitrator);
     _resetMockIds();
 

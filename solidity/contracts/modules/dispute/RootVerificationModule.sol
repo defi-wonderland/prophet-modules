@@ -15,7 +15,9 @@ contract RootVerificationModule is Module, IRootVerificationModule {
    */
   mapping(bytes32 _requestId => bytes32 _correctRoot) internal _correctRoots;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(
+    IOracle _oracle
+  ) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -23,7 +25,9 @@ contract RootVerificationModule is Module, IRootVerificationModule {
   }
 
   /// @inheritdoc IRootVerificationModule
-  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(
+    bytes calldata _data
+  ) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 

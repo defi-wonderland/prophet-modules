@@ -111,7 +111,9 @@ contract Integration_RootVerification is IntegrationBase {
     oracle.finalize(mockRequest, mockResponse);
   }
 
-  function test_disputeResponse_incorrectResponse(bytes32 _invalidRoot) public {
+  function test_disputeResponse_incorrectResponse(
+    bytes32 _invalidRoot
+  ) public {
     vm.assume(_correctRoot != _invalidRoot);
 
     _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
