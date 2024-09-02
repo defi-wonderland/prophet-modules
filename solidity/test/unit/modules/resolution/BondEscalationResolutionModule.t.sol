@@ -7,7 +7,7 @@ import {Helpers} from '../../../utils/Helpers.sol';
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IModule} from '@defi-wonderland/prophet-core/solidity/interfaces/IModule.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
@@ -149,9 +149,10 @@ contract BaseTest is Test, Helpers {
     return (_pledgers, _pledgedAmounts);
   }
 
-  function _setResolutionModuleData(
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) internal returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) {
+  function _setResolutionModuleData(IBondEscalationResolutionModule.RequestParameters memory _params)
+    internal
+    returns (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId)
+  {
     mockRequest.resolutionModuleData = abi.encode(_params);
     _requestId = _getId(mockRequest);
 
@@ -165,9 +166,7 @@ contract BaseTest is Test, Helpers {
     vm.mockCall(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp));
   }
 
-  function _getRequestResponseDispute(
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  )
+  function _getRequestResponseDispute(IBondEscalationResolutionModule.RequestParameters memory _params)
     internal
     view
     returns (IOracle.Request memory _request, IOracle.Response memory _response, IOracle.Dispute memory _dispute)
@@ -837,9 +836,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
        the disputer.
   */
 
-  function test_resolveDisputeReverts(
-    IBondEscalationResolutionModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
+  function test_resolveDisputeReverts(IBondEscalationResolutionModule.RequestParameters memory _params)
+    public
+    assumeFuzzable(address(_params.accountingExtension))
+  {
     // 1. BondEscalationResolutionModule_AlreadyResolved
     (bytes32 _requestId, bytes32 _responseId, bytes32 _disputeId) = _setResolutionModuleData(_params);
 

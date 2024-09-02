@@ -64,9 +64,10 @@ contract Helpers is DSTestPlus, TestConstants {
     });
   }
 
-  function _getResponseAndDispute(
-    IOracle _oracle
-  ) internal returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute) {
+  function _getResponseAndDispute(IOracle _oracle)
+    internal
+    returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute)
+  {
     // Compute proper IDs
     _response = _getResponse(mockRequest, proposer);
     _dispute = _getDispute(mockRequest, _response);

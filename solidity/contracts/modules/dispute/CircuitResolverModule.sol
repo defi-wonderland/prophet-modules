@@ -93,9 +93,12 @@ contract CircuitResolverModule is Module, ICircuitResolverModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external view override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    view
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
       && _params.bondSize != 0 && _targetHasBytecode(_params.verifier) && _params.callData.length != 0;

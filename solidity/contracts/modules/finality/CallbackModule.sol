@@ -34,9 +34,12 @@ contract CallbackModule is Module, ICallbackModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external view override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    view
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = _params.data.length != 0 && _targetHasBytecode(_params.target);
   }

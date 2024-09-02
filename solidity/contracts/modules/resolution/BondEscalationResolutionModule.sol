@@ -2,9 +2,10 @@
 pragma solidity ^0.8.19;
 
 // solhint-disable-next-line no-unused-import
+
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
@@ -339,9 +340,12 @@ contract BondEscalationResolutionModule is Module, IBondEscalationResolutionModu
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
       && _params.percentageDiff != 0 && _params.pledgeThreshold != 0 && _params.timeUntilDeadline != 0

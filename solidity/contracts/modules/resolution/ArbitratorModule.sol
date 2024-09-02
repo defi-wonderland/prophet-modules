@@ -67,9 +67,12 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = _params.arbitrator != address(0);
   }

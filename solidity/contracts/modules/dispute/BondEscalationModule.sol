@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
-import {FixedPointMathLib} from 'solmate/utils/FixedPointMathLib.sol';
+import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
@@ -338,9 +338,12 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
       && _params.bondSize != 0 && _params.bondEscalationDeadline != 0 && _params.maxNumberOfEscalations != 0
