@@ -135,9 +135,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @return _startTime The timestamp at which the dispute was escalated
    * @return _totalVotes The total amount of votes cast for the dispute
    */
-  function escalations(
-    bytes32 _disputeId
-  ) external view returns (uint256 _startTime, uint256 _totalVotes);
+  function escalations(bytes32 _disputeId) external view returns (uint256 _startTime, uint256 _totalVotes);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC
@@ -206,9 +204,7 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
    * @param _data The encoded request parameters
    * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(
-    bytes calldata _data
-  ) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Computes a valid commitment for the revealing phase

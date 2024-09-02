@@ -80,9 +80,7 @@ contract BondedDisputeModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(
-    IBondedDisputeModule.RequestParameters calldata _params
-  ) public view {
+  function test_validateParameters(IBondedDisputeModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || _params.bondSize == 0
@@ -225,9 +223,7 @@ contract BondedDisputeModule_Unit_OnDisputeStatusChange is BaseTest {
   /**
    * @notice Test if onDisputeStatusChange reverts when called by caller who's not the oracle
    */
-  function test_revertWrongCaller(
-    address _randomCaller
-  ) public {
+  function test_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller
@@ -273,9 +269,7 @@ contract BondedDisputeModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute response reverts when called by caller who's not the oracle
    */
-  function test_revertWrongCaller(
-    address _randomCaller
-  ) public {
+  function test_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if wrong caller

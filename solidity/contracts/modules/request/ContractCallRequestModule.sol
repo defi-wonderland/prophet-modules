@@ -7,9 +7,7 @@ import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle
 import {IContractCallRequestModule} from '../../../interfaces/modules/request/IContractCallRequestModule.sol';
 
 contract ContractCallRequestModule is Module, IContractCallRequestModule {
-  constructor(
-    IOracle _oracle
-  ) Module(_oracle) {}
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {
@@ -17,9 +15,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
   }
 
   /// @inheritdoc IContractCallRequestModule
-  function decodeRequestData(
-    bytes calldata _data
-  ) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -64,9 +60,12 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.paymentToken) != address(0)
       && _params.target != address(0) && _params.paymentAmount != 0 && _params.functionSelector != bytes4(0);

@@ -39,9 +39,7 @@ contract SparseMerkleTreeL32Verifier_UnitTest is Test {
   /**
    * @notice Test that the calculateRoot function returns a correct root
    */
-  function test_calculateRoot_returnsCorrectRoot(
-    bytes32[] memory _leavesToInsert
-  ) public {
+  function test_calculateRoot_returnsCorrectRoot(bytes32[] memory _leavesToInsert) public {
     vm.assume(_leavesToInsert.length > 10 && _leavesToInsert.length < 100);
 
     for (uint256 _i; _i < mockLeaves.length; _i++) {

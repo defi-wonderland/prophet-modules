@@ -128,9 +128,7 @@ contract SparseMerkleTreeRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(
-    ISparseMerkleTreeRequestModule.RequestParameters calldata _params
-  ) public view {
+  function test_validateParameters(ISparseMerkleTreeRequestModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
         || address(_params.treeVerifier) == address(0) || _params.paymentAmount == 0 || _params.treeData.length == 0
@@ -236,9 +234,7 @@ contract SparseMerkleTreeRequestModule_Unit_FinalizeRequest is BaseTest {
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */
-  function test_revertsIfWrongCaller(
-    address _caller
-  ) public {
+  function test_revertsIfWrongCaller(address _caller) public {
     vm.assume(_caller != address(oracle));
 
     // Check: does it revert if not called by the Oracle?

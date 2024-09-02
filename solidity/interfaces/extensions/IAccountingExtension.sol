@@ -177,24 +177,18 @@ interface IAccountingExtension is IValidator {
    * @notice Allows a user to approve a module for bonding tokens
    * @param _module The address of the module to be approved
    */
-  function approveModule(
-    address _module
-  ) external;
+  function approveModule(address _module) external;
 
   /**
    * @notice Allows a user to revoke a module's approval for bonding tokens
    * @param _module The address of the module to be revoked
    */
-  function revokeModule(
-    address _module
-  ) external;
+  function revokeModule(address _module) external;
 
   /**
    * @notice Returns a list of all modules a user has approved
    * @param _user The address of the user
    * @return _approvedModules The array of all modules approved by the user
    */
-  function approvedModules(
-    address _user
-  ) external view returns (address[] memory _approvedModules);
+  function approvedModules(address _user) external view returns (address[] memory _approvedModules);
 }

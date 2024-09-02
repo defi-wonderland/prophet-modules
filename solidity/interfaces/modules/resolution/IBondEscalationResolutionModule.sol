@@ -220,9 +220,10 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @return _pledgesFor The amount of pledges in favor of the dispute.
    * @return _pledgesAgainst The amount of pledges against the dispute.
    */
-  function escalations(
-    bytes32 _disputeId
-  ) external view returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);
+  function escalations(bytes32 _disputeId)
+    external
+    view
+    returns (Resolution _resolution, uint128 _startTime, uint256 _pledgesFor, uint256 _pledgesAgainst);
 
   /**
    * @notice Returns the inequality status and its last update time of a given dispute.
@@ -232,9 +233,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @return _inequalityStatus The current status of the inequality.
    * @return _time             The time at which the inequality was last updated.
    */
-  function inequalityData(
-    bytes32 _disputeId
-  ) external view returns (InequalityStatus _inequalityStatus, uint256 _time);
+  function inequalityData(bytes32 _disputeId) external view returns (InequalityStatus _inequalityStatus, uint256 _time);
 
   /**
    * @notice Returns the amount pledged by a user for a given dispute.
@@ -264,9 +263,7 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @param _data The encoded request parameters
    * @return _params The struct containing the parameters for the request
    */
-  function decodeRequestData(
-    bytes calldata _data
-  ) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

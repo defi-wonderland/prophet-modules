@@ -18,9 +18,7 @@ import {
 import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountingExtension.sol';
 
 contract ForTest_PrivateERC20ResolutionModule is PrivateERC20ResolutionModule {
-  constructor(
-    IOracle _oracle
-  ) PrivateERC20ResolutionModule(_oracle) {}
+  constructor(IOracle _oracle) PrivateERC20ResolutionModule(_oracle) {}
 
   function forTest_setStartTime(bytes32 _disputeId, uint256 _startTime) public {
     escalations[_disputeId] = IPrivateERC20ResolutionModule.Escalation({
@@ -125,9 +123,7 @@ contract PrivateERC20ResolutionModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(
-    IPrivateERC20ResolutionModule.RequestParameters calldata _params
-  ) public view {
+  function test_validateParameters(IPrivateERC20ResolutionModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.votingToken) == address(0)
         || _params.minVotesForQuorum == 0 || _params.committingTimeWindow == 0 || _params.revealingTimeWindow == 0
@@ -234,9 +230,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if the dispute body is invalid.
    */
-  function test_revertIfInvalidDisputeBody(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfInvalidDisputeBody(bytes32 _commitment) public {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
@@ -246,9 +240,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if there is no dispute with the given`_disputeId`.
    */
-  function test_revertIfNonExistentDispute(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfNonExistentDispute(bytes32 _commitment) public {
     // Compute proper IDs
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
@@ -265,9 +257,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of an already active dispute.
    */
-  function test_revertIfActive(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfActive(bytes32 _commitment) public {
     // Computer proper IDs
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
@@ -288,9 +278,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute with no resolution.
    */
-  function test_revertIfNoResolution(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfNoResolution(bytes32 _commitment) public {
     // Computer proper IDs
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
@@ -313,9 +301,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a dispute that has already been won.
    */
-  function test_revertIfWon(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfWon(bytes32 _commitment) public {
     // Computer proper IDs
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
@@ -336,9 +322,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of an already resolved dispute.
    */
-  function test_revertIfAlreadyResolved(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfAlreadyResolved(bytes32 _commitment) public {
     // Computer proper IDs
     bytes32 _requestId = _getId(mockRequest);
     mockDispute.requestId = _requestId;
@@ -359,9 +343,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
   /**
    * @notice Test that `commitVote` reverts if called with `_disputeId` of a non-escalated dispute.
    */
-  function test_revertIfNotEscalated(
-    bytes32 _commitment
-  ) public {
+  function test_revertIfNotEscalated(bytes32 _commitment) public {
     // Compute proper IDs
     IOracle.Response memory _response = _getResponse(mockRequest, proposer);
     IOracle.Dispute memory _dispute = _getDispute(mockRequest, _response);
@@ -611,9 +593,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that a dispute is resolved, the tokens are transferred back to the voters and the dispute status updated.
    */
-  function test_resolveDispute(
-    uint16 _minVotesForQuorum
-  ) public {
+  function test_resolveDispute(uint16 _minVotesForQuorum) public {
     // Set request data
     mockRequest.resolutionModuleData = abi.encode(
       IPrivateERC20ResolutionModule.RequestParameters({
@@ -692,9 +672,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
   /**
    * @notice Test that `resolveDispute` reverts if called during committing or revealing time window.
    */
-  function test_revertIfWrongPhase(
-    uint256 _timestamp
-  ) public {
+  function test_revertIfWrongPhase(uint256 _timestamp) public {
     _timestamp = bound(_timestamp, 1, 1_000_000);
 
     // Set request data

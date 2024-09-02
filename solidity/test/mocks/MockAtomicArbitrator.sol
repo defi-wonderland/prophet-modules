@@ -8,9 +8,7 @@ contract MockAtomicArbitrator is IArbitrator {
   IOracle.DisputeStatus public answer;
   IOracle public oracle;
 
-  constructor(
-    IOracle _oracle
-  ) {
+  constructor(IOracle _oracle) {
     oracle = _oracle;
   }
 
@@ -24,15 +22,11 @@ contract MockAtomicArbitrator is IArbitrator {
     oracle.resolveDispute(_request, _response, _dispute);
   }
 
-  function getAnswer(
-    bytes32 /* _dispute */
-  ) external view returns (IOracle.DisputeStatus _answer) {
+  function getAnswer(bytes32 /* _dispute */ ) external view returns (IOracle.DisputeStatus _answer) {
     _answer = answer;
   }
 
-  function supportsInterface(
-    bytes4 /* interfaceId */
-  ) external pure returns (bool _supported) {
+  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool _supported) {
     _supported = true;
   }
 }

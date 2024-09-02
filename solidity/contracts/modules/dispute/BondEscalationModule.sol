@@ -19,9 +19,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
    */
   mapping(bytes32 _requestId => BondEscalation) internal _escalations;
 
-  constructor(
-    IOracle _oracle
-  ) Module(_oracle) {}
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -330,23 +328,22 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   ////////////////////////////////////////////////////////////////////
 
   /// @inheritdoc IBondEscalationModule
-  function decodeRequestData(
-    bytes calldata _data
-  ) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IBondEscalationModule
-  function getEscalation(
-    bytes32 _requestId
-  ) public view returns (BondEscalation memory _escalation) {
+  function getEscalation(bytes32 _requestId) public view returns (BondEscalation memory _escalation) {
     _escalation = _escalations[_requestId];
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.bondToken) != address(0)
       && _params.bondSize != 0 && _params.bondEscalationDeadline != 0 && _params.maxNumberOfEscalations != 0

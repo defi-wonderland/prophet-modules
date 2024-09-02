@@ -26,9 +26,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
    */
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
-  constructor(
-    IOracle _oracle
-  ) Module(_oracle) {}
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -36,9 +34,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   /// @inheritdoc IPrivateERC20ResolutionModule
-  function decodeRequestData(
-    bytes calldata _data
-  ) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -162,9 +158,12 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = address(_params.accountingExtension) != address(0) && address(_params.votingToken) != address(0)
       && _params.minVotesForQuorum != 0 && _params.committingTimeWindow != 0 && _params.revealingTimeWindow != 0;

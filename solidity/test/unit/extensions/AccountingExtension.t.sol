@@ -16,9 +16,7 @@ import {MockERC20Proxy} from '../../mocks/MockERC20Proxy.sol';
 contract ForTest_AccountingExtension is AccountingExtension {
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  constructor(
-    IOracle _oracle
-  ) AccountingExtension(_oracle) {}
+  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
   function forTest_setBalanceOf(address _user, IERC20 _token, uint256 _amount) public {
     balanceOf[_user][_token] = _amount;

@@ -13,9 +13,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
    */
   mapping(bytes32 _disputeId => ArbitrationStatus _status) internal _disputeData;
 
-  constructor(
-    IOracle _oracle
-  ) Module(_oracle) {}
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
@@ -23,16 +21,12 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IArbitratorModule
-  function decodeRequestData(
-    bytes calldata _data
-  ) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
   /// @inheritdoc IArbitratorModule
-  function getStatus(
-    bytes32 _disputeId
-  ) external view returns (ArbitrationStatus _disputeStatus) {
+  function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus) {
     _disputeStatus = _disputeData[_disputeId];
   }
 
@@ -73,9 +67,12 @@ contract ArbitratorModule is Module, IArbitratorModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external pure override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    pure
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = _params.arbitrator != address(0);
   }

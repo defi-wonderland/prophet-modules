@@ -19,9 +19,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
-  constructor(
-    IOracle _oracle
-  ) AccountingExtension(_oracle) {}
+  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
 
   /// @inheritdoc IBondEscalationAccounting
   function pledge(

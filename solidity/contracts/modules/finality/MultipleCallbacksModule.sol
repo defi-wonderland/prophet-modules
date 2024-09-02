@@ -8,14 +8,10 @@ import {IProphetCallback} from '../../../interfaces/IProphetCallback.sol';
 import {IMultipleCallbacksModule} from '../../../interfaces/modules/finality/IMultipleCallbacksModule.sol';
 
 contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
-  constructor(
-    IOracle _oracle
-  ) Module(_oracle) {}
+  constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IMultipleCallbacksModule
-  function decodeRequestData(
-    bytes calldata _data
-  ) public pure returns (RequestParameters memory _params) {
+  function decodeRequestData(bytes calldata _data) public pure returns (RequestParameters memory _params) {
     _params = abi.decode(_data, (RequestParameters));
   }
 
@@ -45,9 +41,12 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
   }
 
   /// @inheritdoc IModule
-  function validateParameters(
-    bytes calldata _encodedParameters
-  ) external view override(Module, IModule) returns (bool _valid) {
+  function validateParameters(bytes calldata _encodedParameters)
+    external
+    view
+    override(Module, IModule)
+    returns (bool _valid)
+  {
     RequestParameters memory _params = decodeRequestData(_encodedParameters);
     _valid = true;
 
@@ -71,9 +70,7 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
    * @param _target The address to check
    * @return _hasBytecode Whether the target has bytecode or not
    */
-  function _targetHasBytecode(
-    address _target
-  ) private view returns (bool _hasBytecode) {
+  function _targetHasBytecode(address _target) private view returns (bool _hasBytecode) {
     uint256 _size;
     assembly {
       _size := extcodesize(_target)

@@ -17,9 +17,7 @@ import {IAccountingExtension} from '../../../../interfaces/extensions/IAccountin
 import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
-  constructor(
-    IOracle _oracle
-  ) BondEscalationAccounting(_oracle) {}
+  constructor(IOracle _oracle) BondEscalationAccounting(_oracle) {}
 
   function forTest_setPledge(bytes32 _disputeId, IERC20 _token, uint256 _amount) public {
     pledges[_disputeId][_token] = _amount;
@@ -84,9 +82,10 @@ contract BaseTest is Test, Helpers {
     bytes32 indexed _requestId, bytes32 indexed _disputeId, address indexed _pledger, IERC20 _token, uint256 _amount
   );
 
-  function _createWinningPledgersArray(
-    uint256 _numWinningPledgers
-  ) internal returns (address[] memory _winningPledgers) {
+  function _createWinningPledgersArray(uint256 _numWinningPledgers)
+    internal
+    returns (address[] memory _winningPledgers)
+  {
     _winningPledgers = new address[](_numWinningPledgers);
     address _winningPledger;
 
@@ -425,9 +424,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
 }
 
 contract BondEscalationAccounting_Unit_ClaimEscalationReward is BaseTest {
-  function test_revertIfInvalidEscalation(
-    bytes32 _disputeId
-  ) public {
+  function test_revertIfInvalidEscalation(bytes32 _disputeId) public {
     // Check: does it revert if the escalation is not valid?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_NoEscalationResult.selector);
 

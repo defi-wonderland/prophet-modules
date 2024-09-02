@@ -90,9 +90,7 @@ contract ContractCallRequestModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(
-    IContractCallRequestModule.RequestParameters calldata _params
-  ) public view {
+  function test_validateParameters(IContractCallRequestModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.paymentToken) == address(0)
         || _params.target == address(0) || _params.paymentAmount == 0 || _params.functionSelector == bytes4(0)

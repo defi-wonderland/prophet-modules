@@ -6,9 +6,7 @@ import {IArbitrator, IOracle} from '../../interfaces/IArbitrator.sol';
 contract MockArbitrator is IArbitrator {
   IOracle.DisputeStatus internal _answer = IOracle.DisputeStatus.Won;
 
-  function setAnswer(
-    IOracle.DisputeStatus _disputeStatus
-  ) external {
+  function setAnswer(IOracle.DisputeStatus _disputeStatus) external {
     _answer = _disputeStatus;
   }
 
@@ -20,15 +18,11 @@ contract MockArbitrator is IArbitrator {
     _result = new bytes(0);
   }
 
-  function getAnswer(
-    bytes32 /* _dispute */
-  ) external view returns (IOracle.DisputeStatus _disputeStatus) {
+  function getAnswer(bytes32 /* _dispute */ ) external view returns (IOracle.DisputeStatus _disputeStatus) {
     _disputeStatus = _answer;
   }
 
-  function supportsInterface(
-    bytes4 /* interfaceId */
-  ) external pure returns (bool _supported) {
+  function supportsInterface(bytes4 /* interfaceId */ ) external pure returns (bool _supported) {
     _supported = true;
   }
 }

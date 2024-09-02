@@ -148,9 +148,7 @@ contract RootVerificationModule_Unit_ModuleData is BaseTest {
   /**
    * @notice Test that the validateParameters function correctly checks the parameters
    */
-  function test_validateParameters(
-    IRootVerificationModule.RequestParameters calldata _params
-  ) public view {
+  function test_validateParameters(IRootVerificationModule.RequestParameters calldata _params) public view {
     if (
       address(_params.accountingExtension) == address(0) || address(_params.bondToken) == address(0)
         || address(_params.treeVerifier) == address(0) || _params.bondSize == 0 || _params.treeData.length == 0
@@ -167,9 +165,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute response reverts when the response length is invalid
    */
-  function test_revertIfResponseLengthIsInvalid(
-    uint8 _length
-  ) public {
+  function test_revertIfResponseLengthIsInvalid(uint8 _length) public {
     vm.assume(_length != 32);
 
     // Create new Response memory struct with random values
@@ -327,9 +323,7 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
   /**
    * @notice Test if dispute response reverts when called by caller who's not the oracle
    */
-  function test_revertWrongCaller(
-    address _randomCaller
-  ) public {
+  function test_revertWrongCaller(address _randomCaller) public {
     vm.assume(_randomCaller != address(oracle));
 
     // Check: revert if not called by the Oracle?

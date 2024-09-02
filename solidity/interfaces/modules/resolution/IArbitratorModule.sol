@@ -66,9 +66,7 @@ interface IArbitratorModule is IResolutionModule {
    * @param _data     The encoded request parameters
    * @return _params  The struct containing the parameters for the request
    */
-  function decodeRequestData(
-    bytes calldata _data
-  ) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Returns the current arbitration status of a dispute
@@ -76,9 +74,7 @@ interface IArbitratorModule is IResolutionModule {
    * @param _disputeId The ID of the dispute
    * @return _disputeStatus The `ArbitrationStatus` of the dispute
    */
-  function getStatus(
-    bytes32 _disputeId
-  ) external view returns (ArbitrationStatus _disputeStatus);
+  function getStatus(bytes32 _disputeId) external view returns (ArbitrationStatus _disputeStatus);
 
   /**
    * @notice Starts the arbitration process by calling `resolve` on the arbitrator and flags the dispute as Active

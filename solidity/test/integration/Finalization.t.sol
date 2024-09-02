@@ -17,9 +17,7 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Finalization data is set and callback calls are made.
    */
-  function test_makeAndIgnoreLowLevelCalls(
-    bytes memory _calldata
-  ) public {
+  function test_makeAndIgnoreLowLevelCalls(bytes memory _calldata) public {
     _setFinalizationModule(
       address(_callbackModule),
       abi.encode(ICallbackModule.RequestParameters({target: address(_mockCallback), data: _calldata}))
@@ -71,9 +69,7 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Finalizing a request with a ongoing dispute reverts.
    */
-  function test_revertFinalizeInDisputeWindow(
-    uint256 _block
-  ) public {
+  function test_revertFinalizeInDisputeWindow(uint256 _block) public {
     _block = bound(_block, block.number, _expectedDeadline - _baseDisputeWindow - 1);
 
     _createRequest();
@@ -90,9 +86,7 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Finalizing a request without disputes triggers callback calls and executes without reverting.
    */
-  function test_finalizeWithUndisputedResponse(
-    bytes calldata _calldata
-  ) public {
+  function test_finalizeWithUndisputedResponse(bytes calldata _calldata) public {
     _setFinalizationModule(
       address(_callbackModule),
       abi.encode(ICallbackModule.RequestParameters({target: address(_mockCallback), data: _calldata}))
@@ -116,9 +110,7 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Finalizing a request before the disputing deadline reverts.
    */
-  function test_revertFinalizeBeforeDeadline(
-    bytes calldata _calldata
-  ) public {
+  function test_revertFinalizeBeforeDeadline(bytes calldata _calldata) public {
     _setFinalizationModule(
       address(_callbackModule),
       abi.encode(ICallbackModule.RequestParameters({target: address(_mockCallback), data: _calldata}))

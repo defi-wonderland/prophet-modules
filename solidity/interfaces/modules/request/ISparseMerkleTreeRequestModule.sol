@@ -46,9 +46,7 @@ interface ISparseMerkleTreeRequestModule is IRequestModule {
    * @param _data     The encoded request parameters
    * @return _params  The struct containing the parameters for the request
    */
-  function decodeRequestData(
-    bytes calldata _data
-  ) external view returns (RequestParameters memory _params);
+  function decodeRequestData(bytes calldata _data) external view returns (RequestParameters memory _params);
 
   /**
    * @notice Executes pre-request logic, bonding the requester's funds
