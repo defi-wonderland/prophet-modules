@@ -4,6 +4,9 @@ pragma solidity ^0.8.19;
 import './IntegrationBase.sol';
 import {IValidator} from '@defi-wonderland/prophet-core-contracts/solidity/interfaces/IValidator.sol';
 
+import {IBondEscalationAccounting} from '../../interfaces/extensions/IBondEscalationAccounting.sol';
+import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
+
 contract Integration_BondEscalation is IntegrationBase {
   address internal _secondDisputer = makeAddr('secondDisputer');
   address internal _secondProposer = makeAddr('secondProposer');
@@ -447,6 +450,178 @@ contract Integration_BondEscalation is IntegrationBase {
     ////////////////// DISPUTE ESCALATION ////////////////////////
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+    // vm.prank(proposer);
+    // _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    // // Step 2: Disputer doubles down
+    // _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
+    // vm.prank(disputer);
+    // _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // // Step 3: Proposer doubles down
+    // _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+    // vm.prank(proposer);
+    // _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    // Step 4: Disputer runs out of capital
+    // Step 5: The tying buffer kicks in
+    // vm.warp(_bondEscalationDeadline + 1);
+
+    // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
+    // _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
+    // vm.prank(_secondDisputer);
+    // _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    ////////////////// NEW MALICIOUS REQUEST ////////////////////////
+
+    address _attacker = makeAddr('attacker');
+    address _attackerDisputeModule = address(new AllowedModulesAttacker());
+
+    mockRequest.nonce += 1;
+    mockRequest.requester = _attacker;
+    mockRequest.disputeModule = _attackerDisputeModule;
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _bondEscalationAccounting,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    vm.startPrank(_attacker);
+
+    // Requester creates a request
+    _bondEscalationAccounting.approveModule(mockRequest.requestModule);
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+
+    mockResponse.proposer = _attacker;
+    mockResponse.requestId = _requestId;
+
+    // msg.sender != _response.proposer && msg.sender != address(_request.disputeModule)
+    // msg.sender = _attacker;
+    // _response.proposer = _attacker;
+    // address(_request.disputeModule) = _attackerDisputeModule;
+    // false && true = false
+
+    // Proposer proposes a response¿
+    _bondEscalationAccounting.approveModule(mockRequest.responseModule);
+    vm.stopPrank();
+
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _expectedBondSize);
+
+    vm.startPrank(_attacker);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+
+    mockDispute.disputer = _attacker;
+    mockDispute.responseId = _responseId;
+    mockDispute.proposer = _attacker;
+    mockDispute.requestId = _requestId;
+
+    _bondEscalationAccounting.approveModule(_attackerDisputeModule);
+    vm.stopPrank();
+
+    // Disputer disputes the response
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _pledgeSize);
+
+    vm.startPrank(_attacker);
+
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+
+    uint256 _proposerBalance = _bondEscalationAccounting.balanceOf(proposer, usdc);
+    assertEq(_proposerBalance, _pledgeSize);
+
+    // Pledge for a user
+    AllowedModulesAttacker(_attackerDisputeModule).pledge(
+      _bondEscalationAccounting, proposer, mockRequest, mockDispute, usdc, _pledgeSize
+    );
+
+    uint256 _newProposerBalance = _bondEscalationAccounting.balanceOf(proposer, usdc);
+    assertEq(_newProposerBalance, 0);
+
+    // vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    // _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
+    vm.stopPrank();
+  }
+
+  function test_attackerPledge() public {
+    ////////////////// DISPUTE ESCALATION ////////////////////////
+    // Step 1: Proposer deposits in the accounting extension
+    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+
+    ////////////////// NEW MALICIOUS REQUEST ////////////////////////
+
+    address _attacker = makeAddr('attacker');
+    address _attackerDisputeModule = address(new AllowedModulesAttacker());
+
+    mockRequest.nonce += 1;
+    mockRequest.requester = _attacker;
+    mockRequest.disputeModule = _attackerDisputeModule;
+    mockRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _bondEscalationAccounting,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    vm.startPrank(_attacker);
+
+    // Requester creates a request
+    _bondEscalationAccounting.approveModule(mockRequest.requestModule);
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+
+    mockResponse.proposer = _attacker;
+    mockResponse.requestId = _requestId;
+
+    // Proposer proposes a response
+    _bondEscalationAccounting.approveModule(mockRequest.responseModule);
+    vm.stopPrank();
+
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _expectedBondSize);
+
+    vm.startPrank(_attacker);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+
+    mockDispute.disputer = _attacker;
+    mockDispute.responseId = _responseId;
+    mockDispute.proposer = _attacker;
+    mockDispute.requestId = _requestId;
+
+    _bondEscalationAccounting.approveModule(_attackerDisputeModule);
+    vm.stopPrank();
+
+    // Disputer disputes the response
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _pledgeSize);
+
+    vm.startPrank(_attacker);
+
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+
+    uint256 _proposerBalance = _bondEscalationAccounting.balanceOf(proposer, usdc);
+    assertEq(_proposerBalance, _pledgeSize);
+
+    // Pledge for a user
+    AllowedModulesAttacker(_attackerDisputeModule).pledge(
+      _bondEscalationAccounting, proposer, mockRequest, mockDispute, usdc, _pledgeSize
+    );
+
+    // Succesfully pledged for the proposer
+    uint256 _newProposerBalance = _bondEscalationAccounting.balanceOf(proposer, usdc);
+    assertEq(_newProposerBalance, 0);
+
+    vm.stopPrank();
+  }
+
+  function test_attackerReleasePledge() public {
+    ////////////////// DISPUTE ESCALATION ////////////////////////
+    // Step 1: Proposer pledges against the dispute
+    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
     _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
@@ -472,10 +647,11 @@ contract Integration_BondEscalation is IntegrationBase {
     ////////////////// NEW MALICIOUS REQUEST ////////////////////////
 
     address _attacker = makeAddr('attacker');
+    address _attackerDisputeModule = address(new AllowedModulesAttacker());
 
     mockRequest.nonce += 1;
     mockRequest.requester = _attacker;
-    mockRequest.disputeModule = _attacker;
+    mockRequest.disputeModule = _attackerDisputeModule;
     mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: _expectedUrl,
@@ -487,15 +663,80 @@ contract Integration_BondEscalation is IntegrationBase {
       })
     );
 
-    uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
-    assertEq(_attackerBalance, 0);
+    vm.startPrank(_attacker);
+
+    // Requester creates a request
+    _bondEscalationAccounting.approveModule(mockRequest.requestModule);
+    _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+
+    mockResponse.proposer = _attacker;
+    mockResponse.requestId = _requestId;
+
+    // Proposer proposes a response
+    _bondEscalationAccounting.approveModule(mockRequest.responseModule);
+    vm.stopPrank();
+
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _expectedBondSize);
 
     vm.startPrank(_attacker);
-    // Create a new proposal with another dispute module
-    _bondEscalationAccounting.approveModule(mockRequest.requestModule);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
 
-    vm.expectRevert(IValidator.Validator_InvalidDisputeBody.selector);
-    _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
+    mockDispute.disputer = _attacker;
+    mockDispute.responseId = _responseId;
+    mockDispute.proposer = _attacker;
+    mockDispute.requestId = _requestId;
+
+    _bondEscalationAccounting.approveModule(_attackerDisputeModule);
     vm.stopPrank();
+
+    // Disputer disputes the response
+    _deposit(_bondEscalationAccounting, _attacker, usdc, _pledgeSize);
+
+    vm.startPrank(_attacker);
+
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+
+    uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
+    assertEq(_attackerBalance, _pledgeSize);
+
+    // Pledge for a user
+    AllowedModulesAttacker(_attackerDisputeModule).releasePledge(
+      _bondEscalationAccounting, mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4
+    );
+
+    // Succesfully released the pledge to the attacker
+    uint256 _newAttackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
+    assertEq(_newAttackerBalance, _pledgeSize * 5);
+    vm.stopPrank();
+  }
+}
+
+contract AllowedModulesAttacker {
+  function disputeResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external {}
+
+  function pledge(
+    IBondEscalationAccounting _bondEscalationAccounting,
+    address _pledger,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IERC20 _token,
+    uint256 _amount
+  ) external {
+    _bondEscalationAccounting.pledge(_pledger, _request, _dispute, _token, _amount);
+  }
+
+  function releasePledge(
+    IBondEscalationAccounting _bondEscalationAccounting,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    address _pledger,
+    IERC20 _token,
+    uint256 _amount
+  ) external {
+    _bondEscalationAccounting.releasePledge(_request, _dispute, _pledger, _token, _amount);
   }
 }

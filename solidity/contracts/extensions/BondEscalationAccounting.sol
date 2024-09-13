@@ -19,7 +19,11 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
-  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
+  mapping(bytes32 _disputeId => mapping(address _pledger => uint256 _totalPledged)) public totalPledged;
+
+  constructor(
+    IOracle _oracle
+  ) AccountingExtension(_oracle) {}
 
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
@@ -36,6 +40,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
     pledges[_disputeId][_token] += _amount;
+    totalPledged[_disputeId][_pledger] += _amount;
 
     unchecked {
       balanceOf[_pledger][_token] -= _amount;
