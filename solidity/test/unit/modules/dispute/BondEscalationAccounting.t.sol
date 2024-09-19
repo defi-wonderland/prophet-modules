@@ -19,8 +19,8 @@ import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 contract ForTest_BondEscalationAccounting is BondEscalationAccounting {
   constructor(
     IOracle _oracle,
-    address[] memory _authorizedModules
-  ) BondEscalationAccounting(_oracle, _authorizedModules) {}
+    address[] memory _authorizedCallers
+  ) BondEscalationAccounting(_oracle, _authorizedCallers) {}
 
   function forTest_setPledge(bytes32 _disputeId, IERC20 _token, uint256 _amount) public {
     pledges[_disputeId][_token] = _amount;
@@ -119,8 +119,6 @@ contract BaseTest is Test, Helpers {
 
 contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   function test_revertIfCallerIsUnauthorized(address _pledger, uint256 _amount) public {
-    vm.assume(_amount > 0);
-
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
 
     // Check: does it revert if the caller is not authorized?
@@ -221,10 +219,6 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   function test_revertIfCallerIsUnauthorized(uint256 _amountPerPledger, uint256 _numOfWinningPledgers) public {
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
-
-    // Note, bounding to a max of 30 so that the tests doesn't take forever to run
-    _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
-    _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
 
     // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
@@ -379,8 +373,6 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
 contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   function test_revertIfCallerIsUnauthorized(uint256 _amount, address _pledger) public {
-    vm.assume(_amount < type(uint256).max);
-
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
 
     // Check: does it revert if the caller is not authorized?
