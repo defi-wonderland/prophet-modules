@@ -125,7 +125,9 @@ contract Deploy is Script {
     console.log('ACCOUNTING_EXTENSION:', address(accountingExtension));
 
     // Deploy bond escalation accounting
-    bondEscalationAccounting = new BondEscalationAccounting(oracle);
+    address[] memory authorizedCallers = new address[](1);
+    authorizedCallers[0] = address(bondEscalationModule);
+    bondEscalationAccounting = new BondEscalationAccounting(oracle, authorizedCallers);
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
 
     // Deploy circuit resolver module
