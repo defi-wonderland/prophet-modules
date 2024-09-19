@@ -123,6 +123,7 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
 
+    // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
 
     vm.prank(unauthorizedCaller);
@@ -225,7 +226,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
 
-    // Check: does it revert if the pledger does not have enough funds?
+    // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
 
     vm.prank(unauthorizedCaller);
@@ -382,7 +383,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
 
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
 
-    // Check: does it revert if the pledger does not have enough funds pledged?
+    // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
 
     vm.prank(unauthorizedCaller);
