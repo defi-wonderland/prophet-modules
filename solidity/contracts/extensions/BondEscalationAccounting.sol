@@ -19,7 +19,15 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
-  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
+  /// @inheritdoc IBondEscalationAccounting
+  mapping(address _caller => bool _authorized) public authorizedCallers;
+
+  constructor(IOracle _oracle, address[] memory _authorizedCallers) AccountingExtension(_oracle) {
+    uint256 _length = _authorizedCallers.length;
+    for (uint256 _i; _i < _length; ++_i) {
+      authorizedCallers[_authorizedCallers[_i]] = true;
+    }
+  }
 
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
@@ -32,6 +40,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
+    if (!authorizedCallers[msg.sender]) revert BondEscalationAccounting_UnauthorizedCaller();
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
     if (balanceOf[_pledger][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
 
@@ -55,6 +64,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
+    if (!authorizedCallers[msg.sender]) revert BondEscalationAccounting_UnauthorizedCaller();
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
 
     if (pledges[_disputeId][_token] < _amountPerPledger * _winningPledgersLength) {
@@ -131,6 +141,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
+    if (!authorizedCallers[msg.sender]) revert BondEscalationAccounting_UnauthorizedCaller();
     if (!ORACLE.allowedModule(_requestId, msg.sender)) revert AccountingExtension_UnauthorizedModule();
 
     if (pledges[_disputeId][_token] < _amount) revert BondEscalationAccounting_InsufficientFunds();
