@@ -125,9 +125,9 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _bondEscalationModule = new BondEscalationModule(oracle);
     label(address(_bondEscalationModule), 'BondEscalationModule');
 
-    address[] memory authorizedCallers = new address[](1);
-    authorizedCallers[0] = address(_bondEscalationModule);
-    _bondEscalationAccounting = new BondEscalationAccounting(oracle, authorizedCallers);
+    address[] memory _authorizedCallers = new address[](1);
+    _authorizedCallers[0] = address(_bondEscalationModule);
+    _bondEscalationAccounting = new BondEscalationAccounting(oracle, _authorizedCallers);
     label(address(_bondEscalationAccounting), 'BondEscalationAccounting');
 
     _mockCallback = new MockCallback();
