@@ -119,7 +119,7 @@ contract BaseTest is Test, Helpers {
 
 contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   function test_revertIfCallerIsUnauthorized(address _pledger, uint256 _amount) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _getResponse(mockRequest, proposer));
 
     // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
@@ -218,12 +218,12 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
 
 contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   function test_revertIfCallerIsUnauthorized(uint256 _amountPerPledger, uint256 _numOfWinningPledgers) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _getResponse(mockRequest, proposer));
 
+    vm.startPrank(unauthorizedCaller);
     // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
 
-    vm.prank(unauthorizedCaller);
     bondEscalationAccounting.onSettleBondEscalation({
       _request: mockRequest,
       _dispute: _dispute,
@@ -373,7 +373,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
 
 contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   function test_revertIfCallerIsUnauthorized(uint256 _amount, address _pledger) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    IOracle.Dispute memory _dispute = _getDispute(mockRequest, _getResponse(mockRequest, proposer));
 
     // Check: does it revert if the caller is not authorized?
     vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
