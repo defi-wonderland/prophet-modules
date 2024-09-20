@@ -493,7 +493,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Create a new proposal with another dispute module
     _bondEscalationAccounting.approveModule(mockRequest.requestModule);
 
-    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
+    vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
     _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
     vm.stopPrank();
   }
