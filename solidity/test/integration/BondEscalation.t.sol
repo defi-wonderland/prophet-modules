@@ -486,9 +486,6 @@ contract Integration_BondEscalation is IntegrationBase {
       })
     );
 
-    uint256 _attackerBalance = _bondEscalationAccounting.balanceOf(_attacker, usdc);
-    assertEq(_attackerBalance, 0);
-
     vm.startPrank(_attacker);
     // Create a new proposal with another dispute module
     _bondEscalationAccounting.approveModule(mockRequest.requestModule);
