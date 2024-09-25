@@ -25,6 +25,11 @@ contract Integration_BondEscalation is IntegrationBase {
     _expectedDeadline = block.timestamp + 10 days;
     _bondEscalationDeadline = block.timestamp + 5 days;
 
+    setUpRequest();
+    setUpEscalation();
+  }
+
+  function setUpRequest() public {
     mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: _expectedUrl,
@@ -61,7 +66,9 @@ contract Integration_BondEscalation is IntegrationBase {
     mockRequest.disputeModule = address(_bondEscalationModule);
 
     _resetMockIds();
+  }
 
+  function setUpEscalation() public {
     // Set up all approvals
     vm.prank(requester);
     _bondEscalationAccounting.approveModule(address(_requestModule));
