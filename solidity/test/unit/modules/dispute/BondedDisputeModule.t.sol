@@ -259,7 +259,7 @@ contract BondedDisputeModule_Unit_DisputeResponse is BaseTest {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
-    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute, block.number);
+    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute, block.timestamp);
 
     // Test: call disputeResponse
     vm.prank(address(oracle));

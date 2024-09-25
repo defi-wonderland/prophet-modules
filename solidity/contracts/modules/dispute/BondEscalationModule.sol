@@ -36,7 +36,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (block.number > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
+    if (block.timestamp > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 

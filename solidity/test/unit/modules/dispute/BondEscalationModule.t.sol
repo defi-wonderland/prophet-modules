@@ -430,7 +430,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _responseId;
 
     // Warp to a time after the disputeWindow is over.
-    vm.roll(block.number + _disputeWindow + 1);
+    vm.warp(block.timestamp + _disputeWindow + 1);
 
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(1));
@@ -448,7 +448,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     uint256 _timestamp,
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    _timestamp = bound(_timestamp, 1, type(uint128).max);
+    _timestamp = bound(_timestamp, 1, 365 days);
     //  Set deadline to timestamp so we are still in the bond escalation period
     _params.bondEscalationDeadline = _timestamp - 1;
     _params.disputeWindow = _timestamp + 1;
