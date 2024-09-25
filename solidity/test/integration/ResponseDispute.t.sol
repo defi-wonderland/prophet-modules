@@ -39,7 +39,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     assertEq(oracle.disputeOf(_getId(mockResponse)), _disputeId);
 
     // Check: creation time is correct?
-    assertEq(oracle.disputeCreatedAt(_disputeId), block.number);
+    assertEq(oracle.disputeCreatedAt(_disputeId), block.timestamp);
   }
 
   /**

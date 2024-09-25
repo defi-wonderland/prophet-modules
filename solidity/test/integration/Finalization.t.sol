@@ -70,7 +70,7 @@ contract Integration_Finalization is IntegrationBase {
    * @notice Finalizing a request with a ongoing dispute reverts.
    */
   function test_revertFinalizeInDisputeWindow(uint256 _block) public {
-    _block = bound(_block, block.number, _expectedDeadline - _baseDisputeWindow - 1);
+    _block = bound(_block, block.timestamp, _expectedDeadline - _baseDisputeWindow - 1);
 
     _createRequest();
     _proposeResponse();
