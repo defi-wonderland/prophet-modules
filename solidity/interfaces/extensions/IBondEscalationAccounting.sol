@@ -109,6 +109,11 @@ interface IBondEscalationAccounting is IAccountingExtension {
    */
   error BondEscalationAccounting_AlreadySettled();
 
+  /**
+   * @notice Thrown when caller is not authorized
+   */
+  error BondEscalationAccounting_UnauthorizedCaller();
+
   /*///////////////////////////////////////////////////////////////
                               STRUCTS
   //////////////////////////////////////////////////////////////*/
@@ -161,6 +166,14 @@ interface IBondEscalationAccounting is IAccountingExtension {
    * @return _claimed          True if the pledger has claimed their reward
    */
   function pledgerClaimed(bytes32 _requestId, address _pledger) external returns (bool _claimed);
+
+  /**
+   * @notice Checks whether an address is an authorized caller.
+   *
+   * @param _caller      The address to check
+   * @return _authorized True if the address is authorized, false otherwise
+   */
+  function authorizedCallers(address _caller) external returns (bool _authorized);
 
   /*///////////////////////////////////////////////////////////////
                               LOGIC

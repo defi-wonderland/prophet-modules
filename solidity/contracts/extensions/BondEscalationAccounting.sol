@@ -19,7 +19,20 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
   /// @inheritdoc IBondEscalationAccounting
   mapping(bytes32 _requestId => mapping(address _pledger => bool _claimed)) public pledgerClaimed;
 
-  constructor(IOracle _oracle) AccountingExtension(_oracle) {}
+  /// @inheritdoc IBondEscalationAccounting
+  mapping(address _caller => bool _authorized) public authorizedCallers;
+
+  constructor(IOracle _oracle, address[] memory _authorizedCallers) AccountingExtension(_oracle) {
+    uint256 _length = _authorizedCallers.length;
+    for (uint256 _i; _i < _length; ++_i) {
+      authorizedCallers[_authorizedCallers[_i]] = true;
+    }
+  }
+
+  modifier onlyAuthorizedCaller() {
+    if (!authorizedCallers[msg.sender]) revert BondEscalationAccounting_UnauthorizedCaller();
+    _;
+  }
 
   /// @inheritdoc IBondEscalationAccounting
   function pledge(
@@ -28,7 +41,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     IOracle.Dispute calldata _dispute,
     IERC20 _token,
     uint256 _amount
-  ) external {
+  ) external onlyAuthorizedCaller {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
@@ -51,7 +64,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     IERC20 _token,
     uint256 _amountPerPledger,
     uint256 _winningPledgersLength
-  ) external {
+  ) external onlyAuthorizedCaller {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
@@ -127,7 +140,7 @@ contract BondEscalationAccounting is AccountingExtension, IBondEscalationAccount
     address _pledger,
     IERC20 _token,
     uint256 _amount
-  ) external {
+  ) external onlyAuthorizedCaller {
     bytes32 _requestId = _getId(_request);
     bytes32 _disputeId = _validateDispute(_request, _dispute);
 
