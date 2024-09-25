@@ -152,7 +152,7 @@ contract Integration_BondEscalation is IntegrationBase {
     assertEq(_bondEscalationAccounting.balanceOf(disputer, usdc), 0, 'Mismatch: Disputer balance');
 
     // Step 8: Finalize request and check balances again
-    vm.roll(_expectedDeadline + 1 days);
+    vm.warp(_expectedDeadline + 1 days);
     oracle.finalize(mockRequest, mockResponse);
 
     // Test: The requester has no balance because he has paid the proposer
@@ -248,7 +248,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _responseId = oracle.proposeResponse(mockRequest, _thirdResponse);
 
     // Step 11: It goes undisputed for three days, therefore it's deemed correct and final
-    vm.roll(_expectedDeadline + 1);
+    vm.warp(_expectedDeadline + 1);
     oracle.finalize(mockRequest, _thirdResponse);
 
     // Test: The requester has paid out the reward
@@ -283,7 +283,7 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 12: Two days after the deadline, the resolution module says that Another proposer's answer was correct
     // So Another proposer gets paid Disputer's bond
-    vm.roll(_expectedDeadline + 2 days);
+    vm.warp(_expectedDeadline + 2 days);
     _mockArbitrator.setAnswer(IOracle.DisputeStatus.Lost);
     oracle.resolveDispute(mockRequest, _secondResponse, _secondDispute);
 
