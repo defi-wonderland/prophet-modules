@@ -7,6 +7,7 @@ contract Integration_BondEscalation is IntegrationBase {
   address internal _secondDisputer = makeAddr('secondDisputer');
   address internal _secondProposer = makeAddr('secondProposer');
   address internal _thirdProposer = makeAddr('thirdProposer');
+  address internal _attacker = makeAddr('attacker');
 
   bytes internal _responseData = abi.encode('response');
 
@@ -64,6 +65,7 @@ contract Integration_BondEscalation is IntegrationBase {
     );
 
     mockRequest.disputeModule = address(_bondEscalationModule);
+    mockRequest.nonce = uint96(oracle.totalRequestCount());
 
     _resetMockIds();
   }
@@ -477,7 +479,6 @@ contract Integration_BondEscalation is IntegrationBase {
 
     ////////////////// NEW MALICIOUS REQUEST ////////////////////////
 
-    address _attacker = makeAddr('attacker');
     mockRequest.nonce += 1;
     mockRequest.requester = _attacker;
     mockRequest.disputeModule = _attacker;
@@ -502,6 +503,16 @@ contract Integration_BondEscalation is IntegrationBase {
   }
 
   function test_authorizedAttackerAllowedModules() public {
+    // redeploy BondEscalationAccounting authorizing the attacker
+    address[] memory _authorizedCallers = new address[](3);
+    _authorizedCallers[0] = address(_bondEscalationModule);
+    _authorizedCallers[1] = _attacker;
+    _bondEscalationAccounting = new BondEscalationAccounting(oracle, _authorizedCallers);
+
+    label(address(_bondEscalationAccounting), 'BondEscalationModule');
+    setUpRequest();
+    setUpEscalation();
+
     ////////////////// DISPUTE ESCALATION ////////////////////////
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
@@ -547,7 +558,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Create a new proposal with another dispute module
     _bondEscalationAccounting.approveModule(mockRequest.requestModule);
 
-    vm.expectRevert(IBondEscalationAccounting.BondEscalationAccounting_UnauthorizedCaller.selector);
+    vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
     _bondEscalationAccounting.releasePledge(mockRequest, mockDispute, _attacker, usdc, _pledgeSize * 4);
     vm.stopPrank();
   }
