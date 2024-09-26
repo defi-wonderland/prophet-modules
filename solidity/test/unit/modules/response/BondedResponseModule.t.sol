@@ -231,19 +231,19 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
   }
 
   function test_revertsBeforeDeadline(
-    uint256 _responseCreationBlock,
+    uint256 _responseCreationTimestamp,
     uint256 _finalizationTimestamp,
     uint256 _deadline,
     uint256 _disputeWindow
   ) public {
     // Amount of blocks to wait before finalizing a response
     _disputeWindow = bound(_disputeWindow, 10, 90_000);
-    // Last block in which a response can be proposed
-    _deadline = bound(_deadline, 100_000, type(uint128).max);
+    // Last timestamp in which a response can be proposed
+    _deadline = bound(_deadline, 100_000, 365 days);
     // Block in which the response was proposed
-    _responseCreationBlock = bound(_responseCreationBlock, _deadline - _disputeWindow + 1, _deadline - 1);
+    _responseCreationTimestamp = bound(_responseCreationTimestamp, _deadline - _disputeWindow + 1, _deadline - 1);
     // Block in which the request will be tried to be finalized
-    _finalizationTimestamp = bound(_finalizationTimestamp, _deadline, _responseCreationBlock + _disputeWindow - 1);
+    _finalizationTimestamp = bound(_finalizationTimestamp, _deadline, _responseCreationTimestamp + _disputeWindow - 1);
 
     // Check revert if deadline has not passed
     mockRequest.responseModuleData = abi.encode(
@@ -278,7 +278,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     _mockAndExpect(
       address(oracle),
       abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))),
-      abi.encode(_responseCreationBlock)
+      abi.encode(_responseCreationTimestamp)
     );
 
     // Check: does it revert if it's too early to finalize?
@@ -460,7 +460,9 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
       address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
     );
 
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.number));
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp)
+    );
 
     // Mock and expect IAccountingExtension.release to be called
     _mockAndExpect(
