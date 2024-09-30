@@ -51,8 +51,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _disputeId,
-      _dispute: _dispute,
-      _blockNumber: block.number
+      _dispute: _dispute
     });
 
     // Only the first dispute of a request should go through the bond escalation

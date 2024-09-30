@@ -20,9 +20,8 @@ interface IBondedResponseModule is IResponseModule {
    *
    * @param _requestId The ID of the request that the response was proposed
    * @param _response The proposed response
-   * @param _blockNumber The number of the block in which the response was proposed
    */
-  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
+  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response);
 
   /**
    * @notice Emitted when an uncalled response is released

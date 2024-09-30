@@ -83,8 +83,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       _requestId: _response.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _getId(_dispute),
-      _dispute: _dispute,
-      _blockNumber: block.number
+      _dispute: _dispute
     });
 
     ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);

@@ -62,7 +62,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       });
     }
 
-    emit ResponseProposed(_response.requestId, _response, block.number);
+    emit ResponseProposed(_response.requestId, _response);
   }
 
   /// @inheritdoc IBondedResponseModule
