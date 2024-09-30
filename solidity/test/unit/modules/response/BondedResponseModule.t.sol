@@ -30,7 +30,7 @@ contract BaseTest is Test, Helpers {
   uint256 internal _baseDisputeWindow = 12 hours;
 
   // Events
-  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response, uint256 indexed _blockNumber);
+  event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response);
   event UnutilizedResponseReleased(bytes32 indexed _requestId, bytes32 indexed _responseId);
 
   /**
@@ -170,7 +170,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
-    emit ResponseProposed({_requestId: _requestId, _response: mockResponse, _blockNumber: block.number});
+    emit ResponseProposed({_requestId: _requestId, _response: mockResponse});
 
     vm.prank(address(oracle));
     bondedResponseModule.propose(mockRequest, mockResponse, _proposer);
