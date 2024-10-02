@@ -30,7 +30,8 @@ contract MultipleCallbacksModule is Module, IMultipleCallbacksModule {
     uint256 _length = _params.targets.length;
 
     for (uint256 _i; _i < _length;) {
-      IProphetCallback(_params.targets[_i]).prophetCallback(_params.data[_i]);
+      // purposely skips the return data, so we don't care if the call succeeds or fails
+      _params.targets[_i].call(abi.encodeCall(IProphetCallback.prophetCallback, (_params.data[_i])));
       emit Callback(_response.requestId, _params.targets[_i], _params.data[_i]);
       unchecked {
         ++_i;
