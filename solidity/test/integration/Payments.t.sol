@@ -26,7 +26,7 @@ contract Integration_Payments is IntegrationBase {
     assertEq(_accountingExtension.bondedAmountOf(proposer, usdc, _requestId), _bondSize);
 
     // Warp to finalization time.
-    vm.roll(_expectedDeadline + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
 
     // Finalize request/response
     oracle.finalize(mockRequest, mockResponse);
@@ -66,7 +66,7 @@ contract Integration_Payments is IntegrationBase {
     assertEq(_accountingExtension.bondedAmountOf(proposer, weth, _requestId), _bondSize);
 
     // Warp to finalization time.
-    vm.roll(_expectedDeadline + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
     // Finalize request/response.
     oracle.finalize(mockRequest, mockResponse);
 

@@ -83,11 +83,7 @@ contract BaseTest is Test, Helpers {
     bytes32 indexed _requestId, bytes32 indexed _disputeId, IBondEscalationModule.BondEscalationStatus _status
   );
   event ResponseDisputed(
-    bytes32 indexed _requestId,
-    bytes32 indexed _responseId,
-    bytes32 indexed _disputeId,
-    IOracle.Dispute _dispute,
-    uint256 _blockNumber
+    bytes32 indexed _requestId, bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute
   );
   event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
 
@@ -430,7 +426,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _responseId;
 
     // Warp to a time after the disputeWindow is over.
-    vm.roll(block.number + _disputeWindow + 1);
+    vm.warp(block.timestamp + _disputeWindow + 1);
 
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(1));
@@ -448,7 +444,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     uint256 _timestamp,
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    _timestamp = bound(_timestamp, 1, type(uint128).max);
+    _timestamp = bound(_timestamp, 1, 365 days);
     //  Set deadline to timestamp so we are still in the bond escalation period
     _params.bondEscalationDeadline = _timestamp - 1;
     _params.disputeWindow = _timestamp + 1;
@@ -522,8 +518,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
       _requestId: _requestId,
       _responseId: _responseId,
       _disputeId: _disputeId,
-      _dispute: mockDispute,
-      _blockNumber: block.number
+      _dispute: mockDispute
     });
 
     // Check: is the event emitted?
@@ -578,7 +573,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
 
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
-    emit ResponseDisputed(_requestId, _responseId, _disputeId, mockDispute, block.number);
+    emit ResponseDisputed(_requestId, _responseId, _disputeId, mockDispute);
 
     vm.prank(address(oracle));
     bondEscalationModule.disputeResponse(mockRequest, mockResponse, mockDispute);

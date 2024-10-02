@@ -106,7 +106,7 @@ contract Integration_RootVerification is IntegrationBase {
     vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
 
-    vm.roll(_expectedDeadline + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
 
     oracle.finalize(mockRequest, mockResponse);
   }

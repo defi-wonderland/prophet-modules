@@ -27,7 +27,7 @@ contract Integration_Finalization is IntegrationBase {
     _proposeResponse();
 
     // Traveling to the end of the dispute window
-    vm.roll(_expectedDeadline + 1 + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + 1 + _baseDisputeWindow);
 
     // Check: all external calls are made?
     vm.expectCall(address(_mockCallback), abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _calldata));
@@ -69,13 +69,13 @@ contract Integration_Finalization is IntegrationBase {
   /**
    * @notice Finalizing a request with a ongoing dispute reverts.
    */
-  function test_revertFinalizeInDisputeWindow(uint256 _block) public {
-    _block = bound(_block, block.number, _expectedDeadline - _baseDisputeWindow - 1);
+  function test_revertFinalizeInDisputeWindow(uint256 _timestamp) public {
+    _timestamp = bound(_timestamp, block.timestamp, _expectedDeadline - _baseDisputeWindow - 1);
 
     _createRequest();
     _proposeResponse();
 
-    vm.roll(_block);
+    vm.warp(_timestamp);
 
     // Check: reverts if called during the dispute window?
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooEarlyToFinalize.selector);
@@ -96,7 +96,7 @@ contract Integration_Finalization is IntegrationBase {
     _proposeResponse();
 
     // Traveling to the end of the dispute window
-    vm.roll(_expectedDeadline + 1 + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + 1 + _baseDisputeWindow);
 
     vm.expectCall(address(_mockCallback), abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _calldata));
     vm.prank(_finalizer);

@@ -40,8 +40,8 @@ contract Integration_ResponseProposal is IntegrationBase {
     bytes32[] memory _getResponseIds = oracle.getResponseIds(_requestId);
     assertEq(_getResponseIds[0], _getId(mockResponse));
 
-    // Check: the creation block is correct?
-    assertEq(oracle.responseCreatedAt(_getId(mockResponse)), block.number);
+    // Check: the creation timestamp is correct?
+    assertEq(oracle.responseCreatedAt(_getId(mockResponse)), block.timestamp);
   }
 
   /**

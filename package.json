@@ -38,7 +38,7 @@
     "package.json": "sort-package-json"
   },
   "dependencies": {
-    "@defi-wonderland/prophet-core": "0.0.0-0954a47f",
+    "@defi-wonderland/prophet-core": "0.0.0-4d28a0ec",
     "@openzeppelin/contracts": "4.9.5",
     "solmate": "https://github.com/transmissions11/solmate.git#bfc9c25865a274a7827fea5abf6e4fb64fc64e6c"
   },

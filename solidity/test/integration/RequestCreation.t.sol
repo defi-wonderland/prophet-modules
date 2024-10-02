@@ -34,8 +34,8 @@ contract Integration_RequestCreation is IntegrationBase {
     // Check: saved the correct nonce?
     assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
 
-    // Check: saved the correct creation block?
-    assertEq(oracle.requestCreatedAt(_requestId), block.number);
+    // Check: saved the correct creation timestamp?
+    assertEq(oracle.requestCreatedAt(_requestId), block.timestamp);
 
     // Check: saved the allowed modules?
     assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));
@@ -60,8 +60,8 @@ contract Integration_RequestCreation is IntegrationBase {
     // Check: saved the correct nonce?
     assertEq(oracle.nonceToRequestId(mockRequest.nonce), _requestId);
 
-    // Check: saved the correct creation block?
-    assertEq(oracle.requestCreatedAt(_requestId), block.number);
+    // Check: saved the correct creation timestamp?
+    assertEq(oracle.requestCreatedAt(_requestId), block.timestamp);
 
     // Check: saved the allowed modules?
     assertTrue(oracle.allowedModule(_requestId, mockRequest.requestModule));

@@ -43,11 +43,7 @@ contract BaseTest is Test, Helpers {
   // Events
   event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event ResponseDisputed(
-    bytes32 indexed _requestId,
-    bytes32 indexed _responseId,
-    bytes32 indexed _disputeId,
-    IOracle.Dispute _dispute,
-    uint256 _blockNumber
+    bytes32 indexed _requestId, bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute
   );
 
   /**
@@ -217,8 +213,7 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
       _requestId: mockResponse.requestId,
       _responseId: mockDispute.responseId,
       _disputeId: _getId(mockDispute),
-      _dispute: mockDispute,
-      _blockNumber: block.number
+      _dispute: mockDispute
     });
 
     vm.prank(address(oracle));

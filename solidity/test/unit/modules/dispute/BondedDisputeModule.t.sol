@@ -28,11 +28,7 @@ contract BaseTest is Test, Helpers {
 
   event DisputeStatusChanged(bytes32 indexed _disputeId, IOracle.Dispute _dispute, IOracle.DisputeStatus _status);
   event ResponseDisputed(
-    bytes32 indexed _requestId,
-    bytes32 indexed _responseId,
-    bytes32 indexed _disputeId,
-    IOracle.Dispute _dispute,
-    uint256 _blockNumber
+    bytes32 indexed _requestId, bytes32 indexed _responseId, bytes32 indexed _disputeId, IOracle.Dispute _dispute
   );
 
   /**
@@ -259,7 +255,7 @@ contract BondedDisputeModule_Unit_DisputeResponse is BaseTest {
 
     // Expect the event
     vm.expectEmit(true, true, true, true, address(bondedDisputeModule));
-    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute, block.number);
+    emit ResponseDisputed(_requestId, _getId(mockResponse), _getId(mockDispute), mockDispute);
 
     // Test: call disputeResponse
     vm.prank(address(oracle));

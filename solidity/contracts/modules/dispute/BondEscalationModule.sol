@@ -36,7 +36,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (block.number > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
+    if (block.timestamp > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 
@@ -51,8 +51,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _requestId: _dispute.requestId,
       _responseId: _dispute.responseId,
       _disputeId: _disputeId,
-      _dispute: _dispute,
-      _blockNumber: block.number
+      _dispute: _dispute
     });
 
     // Only the first dispute of a request should go through the bond escalation

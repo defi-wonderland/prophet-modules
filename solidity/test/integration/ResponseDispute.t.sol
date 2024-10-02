@@ -39,7 +39,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     assertEq(oracle.disputeOf(_getId(mockResponse)), _disputeId);
 
     // Check: creation time is correct?
-    assertEq(oracle.disputeCreatedAt(_disputeId), block.number);
+    assertEq(oracle.disputeCreatedAt(_disputeId), block.timestamp);
   }
 
   /**
@@ -83,7 +83,7 @@ contract Integration_ResponseDispute is IntegrationBase {
    * @notice Disputing a finalized response should revert
    */
   function test_disputeResponse_alreadyFinalized() public {
-    vm.roll(_expectedDeadline + _baseDisputeWindow);
+    vm.warp(_expectedDeadline + _baseDisputeWindow);
     oracle.finalize(mockRequest, mockResponse);
 
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _getId(mockRequest)));

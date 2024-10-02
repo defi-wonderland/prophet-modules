@@ -62,7 +62,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
       });
     }
 
-    emit ResponseProposed(_response.requestId, _response, block.number);
+    emit ResponseProposed(_response.requestId, _response);
   }
 
   /// @inheritdoc IBondedResponseModule
@@ -75,14 +75,14 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
-    if (!_isModule && block.number < _params.deadline) {
+    if (!_isModule && block.timestamp < _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
     uint256 _responseCreatedAt = ORACLE.responseCreatedAt(_getId(_response));
 
     if (_responseCreatedAt != 0) {
-      if (!_isModule && block.number < _responseCreatedAt + _params.disputeWindow) {
+      if (!_isModule && block.timestamp < _responseCreatedAt + _params.disputeWindow) {
         revert BondedResponseModule_TooEarlyToFinalize();
       }
 
