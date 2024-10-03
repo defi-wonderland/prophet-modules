@@ -8,3 +8,11 @@ contract MockCallback is IProphetCallback {
     _callResponse = abi.encode(true);
   }
 }
+
+contract MockFailCallback is IProphetCallback {
+  error MockFailCallback_Fail();
+
+  function prophetCallback(bytes calldata /* _callData */ ) external pure returns (bytes memory /* _callResponse */ ) {
+    revert MockFailCallback_Fail();
+  }
+}
