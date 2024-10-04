@@ -74,7 +74,9 @@ contract Helpers is DSTestPlus, TestConstants {
     bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect IOracle.disputeCreatedAt to be called
-    _mockAndExpect(address(_oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
+    _mockAndExpect(
+      address(_oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(block.timestamp + 1 minutes)
+    );
   }
 
   /**
