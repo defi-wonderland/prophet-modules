@@ -24,7 +24,7 @@ The Bond Escalation Module is a contract that allows users to have the first dis
 - `bondToken`: The address of the token associated with the given request.
 - `bondSize`: The amount to bond to dispute or propose an answer for the given request.
 - `maxNumberOfEscalations`: The maximum allowed escalations or pledges for each side during the bond escalation process.
-- `bondEscalationDeadline`: The timestamp at which bond escalation process finishes when pledges are not tied.
+- `bondEscalationDeadline`: The number of seconds after dispute creation required to finish the bond escalation process when pledges are not tied.
 - `tyingBuffer`: The number of seconds to extend the bond escalation process to allow the losing party to tie if at the end of the initial deadline the pledges weren't tied.
 - `disputeWindow`: The number of seconds disputers have to challenge the proposed response since its creation.
 
