@@ -134,9 +134,6 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _mockArbitrator = new MockArbitrator();
     vm.stopPrank();
 
-    // Set the expected deadline
-    // _expectedDeadline = _timestampDeadline;
-
     // Configure the mock request
     mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
