@@ -7,6 +7,7 @@ contract Integration_EscalateDispute is IntegrationBase {
   bytes32 internal _requestId;
   bytes32 internal _disputeId;
   uint256 internal _pledgeSize = _expectedBondSize;
+  uint256 internal _tyingBuffer = 1 days;
 
   function setUp() public override {
     super.setUp();
@@ -40,9 +41,9 @@ contract Integration_EscalateDispute is IntegrationBase {
         accountingExtension: _bondEscalationAccounting,
         bondToken: usdc,
         bondSize: _expectedBondSize,
-        maxNumberOfEscalations: 1,
+        maxNumberOfEscalations: 2,
         bondEscalationDeadline: _expectedDeadline,
-        tyingBuffer: 0,
+        tyingBuffer: _tyingBuffer,
         disputeWindow: 0
       })
     );
@@ -70,7 +71,209 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.stopPrank();
   }
 
-  function test_escalateDisputeResolveNoResolution() public {
+  function test_disputeWonDispute() public {
+    mockDispute.requestId = _requestId;
+
+    // Bond escalation should call pledge
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (disputer, mockRequest, mockDispute, usdc, _pledgeSize))
+    );
+
+    // Pledge for dispute
+    _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize * 3);
+    vm.startPrank(disputer);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // Pledge revert if can be only surpassed by 1
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    vm.stopPrank();
+
+    // Bond escalation should call pledge
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (proposer, mockRequest, mockDispute, usdc, _pledgeSize))
+    );
+
+    // Pledge for dispute
+    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
+    vm.prank(proposer);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    // Get the bond escalation
+    IBondEscalationModule.BondEscalation memory _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+
+    // Check that the pledge was registered
+    assertEq(_bondEscalationModule.pledgesAgainstDispute(_requestId, proposer), 1);
+    assertEq(_bondEscalation.amountOfPledgesAgainstDispute, 1);
+
+    vm.startPrank(disputer);
+
+    // Pledge revert if break tie during tying buffer
+    _mineBlocks(_blocksDeadline + 1);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    _mineBlocks(_tyingBuffer);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // Roll back the blocks because we need to simulate the custom error "break tie during tying buffer" and "bond escalation over"
+    vm.warp(block.timestamp - (_blocksDeadline + _tyingBuffer + 1) * BLOCK_TIME);
+
+    // Pledge second time for dispute
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // Pledge revert if the maximum number of escalations is reached
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // Get the bond escalation
+    _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+
+    // Check that the pledge was registered
+    uint256 _pledgesForDispute = _bondEscalationModule.pledgesForDispute(_requestId, disputer);
+    assertEq(_pledgesForDispute, 2);
+    assertEq(_bondEscalation.amountOfPledgesForDispute, 2);
+
+    // Calculate the amount to pay
+    uint256 _amountToPay = _pledgeSize + (_pledgeSize / 2);
+
+    // Settle bond escalation reverts if bond escalation is not over
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+
+    // Mine blocks to pass the escalation deadline
+    _mineBlocks(_expectedDeadline + 1);
+
+    // The bond escalation accounting should have been called to settle the bond escalation
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (mockRequest, mockDispute, usdc, _amountToPay, _pledgesForDispute)
+      )
+    );
+
+    // The bond escalation accounting should have been called to pay the proposer
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, proposer, disputer, usdc, _pledgeSize))
+    );
+
+    // The bond escalation accounting should have been called to release the proposer's bond
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IAccountingExtension.release, (disputer, _requestId, usdc, _pledgeSize))
+    );
+
+    // Escalate dispute should won the dispute
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+
+    //The oracle should have been called to finalize the dispute
+    assertTrue(IOracle.DisputeStatus.Won == oracle.disputeStatus(_disputeId));
+
+    // //The new bond escalation should have the status DisputerWon
+    _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+    assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.DisputerWon);
+  }
+
+  function test_disputeLostDispute() public {
+    mockDispute.requestId = _requestId;
+
+    // Bond escalation should call pledge
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (proposer, mockRequest, mockDispute, usdc, _pledgeSize))
+    );
+
+    // Pledge for dispute
+    _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize * 3);
+    vm.startPrank(proposer);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    // Pledge revert if can be only surpassed by 1
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    vm.stopPrank();
+
+    // Bond escalation should call pledge
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IBondEscalationAccounting.pledge, (disputer, mockRequest, mockDispute, usdc, _pledgeSize))
+    );
+
+    // Pledge for dispute
+    _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
+    vm.prank(disputer);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+
+    // Get the bond escalation
+    IBondEscalationModule.BondEscalation memory _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+
+    // Check that the pledge was registered
+    assertEq(_bondEscalationModule.pledgesForDispute(_requestId, disputer), 1);
+    assertEq(_bondEscalation.amountOfPledgesForDispute, 1);
+
+    // Pledge revert if the maximum number of escalations is reached
+    vm.startPrank(proposer);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    // Get the bond escalation
+    _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+
+    // Check that the pledge was registered
+    uint256 _pledgesAgainstDispute = _bondEscalationModule.pledgesAgainstDispute(_requestId, proposer);
+    assertEq(_pledgesAgainstDispute, 2);
+    assertEq(_bondEscalation.amountOfPledgesAgainstDispute, 2);
+
+    // Calculate the amount to pay
+    uint256 _amountToPay = _pledgeSize + (_pledgeSize / 2);
+
+    // Settle bond escalation reverts if bond escalation is not over
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+
+    // Mine blocks to pass the escalation deadline
+    _mineBlocks(_expectedDeadline + 1);
+
+    // The bond escalation accounting should have been called to settle the bond escalation
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(
+        IBondEscalationAccounting.onSettleBondEscalation,
+        (mockRequest, mockDispute, usdc, _amountToPay, _pledgesAgainstDispute)
+      )
+    );
+
+    // The bond escalation accounting should have been called to pay the proposer
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IAccountingExtension.pay, (_requestId, disputer, proposer, usdc, _pledgeSize))
+    );
+
+    // The bond escalation accounting should not have been called to release the proposer's bond
+    vm.expectCall(
+      address(_bondEscalationAccounting),
+      abi.encodeCall(IAccountingExtension.release, (disputer, _requestId, usdc, _pledgeSize)),
+      0
+    );
+
+    // Escalate dispute should won the dispute
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+
+    //The oracle should have been called to finalize the dispute
+    assertTrue(IOracle.DisputeStatus.Lost == oracle.disputeStatus(_disputeId));
+
+    // //The new bond escalation should have the status DisputerLost
+    _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+    assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.DisputerLost);
+  }
+
+  function test_escalateDisputeArbitratorResolveNoResolution() public {
     // Escalate dispute reverts if dispute does not exist
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
@@ -99,13 +302,22 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
-    // Roll back the blocks
+    // Roll back the blocks because we need to simulate the custom error "not escalatable"
     vm.warp(block.timestamp - (_blocksDeadline + 1) * BLOCK_TIME);
 
     // Pledge against dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
     _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+
+    vm.warp(_expectedDeadline + _tyingBuffer + 1);
+
+    // Settle bond escalation reverts if dispute is not escalated
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_ShouldBeEscalated.selector);
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
+
+    // Create bond escalation
+    IBondEscalationModule.BondEscalation memory _bondEscalation;
 
     // The oracle should call the dispute module
     vm.expectCall(
@@ -125,7 +337,6 @@ contract Integration_EscalateDispute is IntegrationBase {
     );
 
     // We escalate the dispute
-    _mineBlocks(_blocksDeadline + 1);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // We check that the dispute was escalated
@@ -133,7 +344,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     assertTrue(_disputeStatus == IOracle.DisputeStatus.Escalated);
 
     // The BondEscalationModule should now have the escalation status escalated
-    IBondEscalationModule.BondEscalation memory _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
+    _bondEscalation = _bondEscalationModule.getEscalation(_requestId);
     assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.Escalated);
 
     // The ArbitratorModule should have updated the status of the dispute
@@ -142,6 +353,10 @@ contract Integration_EscalateDispute is IntegrationBase {
     // Escalate dispute reverts if dispute is not active
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+
+    // Revert if bond escalation cant be settled
+    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationCantBeSettled.selector);
+    _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
     // The bond escalation accounting should have been called to release the proposer's bond
     vm.expectCall(
@@ -199,7 +414,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     assertTrue(_bondEscalation.status == IBondEscalationModule.BondEscalationStatus.Escalated);
   }
 
-  function test_escalateDisputeResolveLost() public {
+  function test_escalateDisputeArbitratorResolveLost() public {
     mockDispute.requestId = _requestId;
 
     // The oracle should call the dispute module
@@ -258,7 +473,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     assertTrue(oracle.disputeStatus(_disputeId) == IOracle.DisputeStatus.Lost);
   }
 
-  function test_escalateDisputeResolveWon() public {
+  function test_escalateDisputeArbitratorResolveWon() public {
     mockDispute.requestId = _requestId;
 
     // The oracle should call the dispute module
