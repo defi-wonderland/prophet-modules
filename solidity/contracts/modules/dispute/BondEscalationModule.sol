@@ -167,8 +167,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
         // Refund the disputer, the bond escalation status stays Escalated
         _newStatus = BondEscalationStatus.Escalated;
         _params.accountingExtension.release({
-          _requestId: _dispute.requestId,
           _bonder: _dispute.disputer,
+          _requestId: _dispute.requestId,
           _token: _params.bondToken,
           _amount: _params.bondSize
         });
