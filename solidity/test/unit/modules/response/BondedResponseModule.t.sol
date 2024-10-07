@@ -28,8 +28,9 @@ contract BaseTest is Test, Helpers {
   IAccountingExtension public accounting = IAccountingExtension(makeAddr('Accounting'));
   // Base dispute window
   uint256 internal _baseDisputeWindow = 12 hours;
-  // Mock requestCreatedAt timestamp
+  // Mock creation timestamps
   uint256 public requestCreatedAt;
+  uint256 public responseCreatedAt;
 
   // Events
   event ResponseProposed(bytes32 indexed _requestId, IOracle.Response _response);
@@ -45,6 +46,7 @@ contract BaseTest is Test, Helpers {
     // Avoid starting at 0 for time sensitive tests
     vm.warp(123_456);
     requestCreatedAt = block.timestamp;
+    responseCreatedAt = requestCreatedAt + 30 seconds;
 
     bondedResponseModule = new BondedResponseModule(oracle);
   }
@@ -332,13 +334,9 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_getId(mockRequest), address(this))), abi.encode(true)
     );
 
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.requestCreatedAt, (_getId(mockRequest))), abi.encode(requestCreatedAt)
-    );
-
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(responseCreatedAt)
     );
 
     // Mock and expect IAccountingExtension.release to be called
@@ -348,7 +346,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       abi.encode(true)
     );
 
-    vm.warp(block.timestamp + _disputeWindow);
+    vm.warp(responseCreatedAt + _disputeWindow);
 
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
@@ -395,7 +393,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.expectEmit(true, true, true, true, address(bondedResponseModule));
     emit RequestFinalized({_requestId: _getId(mockRequest), _response: mockResponse, _finalizer: address(this)});
 
-    vm.warp(block.timestamp + _deadline + _disputeWindow);
+    vm.warp(requestCreatedAt + _deadline + _disputeWindow);
 
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
@@ -411,7 +409,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     address _proposer,
     address _allowedModule
   ) public assumeFuzzable(_allowedModule) {
-    _deadline = bound(_deadline, block.timestamp + 1, type(uint248).max);
+    _deadline = bound(_deadline, 1, type(uint248).max);
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
 
     bytes32 _requestId = _getId(mockRequest);
@@ -423,13 +421,9 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, _allowedModule)), abi.encode(true)
     );
 
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.requestCreatedAt, (_requestId)), abi.encode(requestCreatedAt)
-    );
-
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(block.timestamp)
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(responseCreatedAt)
     );
 
     // Mock and expect IAccountingExtension.release to be called
