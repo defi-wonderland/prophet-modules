@@ -132,4 +132,16 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
     vm.prank(_caller);
     multipleCallbacksModule.finalizeRequest(_request, mockResponse, address(_caller));
   }
+
+  function test_decodeRequestData(address[] memory _targets, bytes[] memory _data) public view {
+    // Create and set some mock request data
+    bytes memory _requestData = abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
+
+    // Decode the given request data
+    IMultipleCallbacksModule.RequestParameters memory _params = multipleCallbacksModule.decodeRequestData(_requestData);
+
+    // Check: decoded values match original values?
+    assertEq(_params.targets, _targets);
+    assertEq(_params.data, _data);
+  }
 }
