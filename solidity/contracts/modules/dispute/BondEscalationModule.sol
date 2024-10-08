@@ -257,7 +257,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     uint256 _disputeCreatedAt = ORACLE.disputeCreatedAt(_disputeId);
-    // todo: shouldn't tyingBuffer only matter when dispute's pledges are tied?
     if (block.timestamp <= _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
     }
