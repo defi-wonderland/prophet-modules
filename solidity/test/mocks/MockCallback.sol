@@ -12,7 +12,8 @@ contract MockCallback is IProphetCallback {
 contract MockFailCallback is IProphetCallback {
   error MockFailCallback_Fail();
 
-  function prophetCallback(bytes calldata /* _callData */ ) external pure returns (bytes memory /* _callResponse */ ) {
+  function prophetCallback(bytes calldata /* _callData */ ) external pure returns (bytes memory _callResponse) {
+    _callResponse = abi.encode(false);
     revert MockFailCallback_Fail();
   }
 }
