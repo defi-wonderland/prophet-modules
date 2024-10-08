@@ -159,7 +159,7 @@ contract BondedResponseModule_Unit_Propose is BaseTest {
     uint256 _disputeWindow,
     address _proposer
   ) public {
-    _deadline = bound(_deadline, 1, 365 days);
+    _deadline = bound(_deadline, 1, type(uint248).max);
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Create and set some mock request data
@@ -257,7 +257,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     // Amount of blocks to wait before finalizing a response
     _disputeWindow = bound(_disputeWindow, 10, 90_000);
     // Last timestamp in which a response can be proposed
-    _deadline = bound(_deadline, 1, 365 days);
+    _deadline = bound(_deadline, 1, type(uint248).max);
     // Block in which the response was proposed
     _responseCreationTimestamp = bound(
       _responseCreationTimestamp, requestCreatedAt + _deadline - _disputeWindow + 1, requestCreatedAt + _deadline - 1
@@ -324,7 +324,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Check correct calls are made if deadline has passed
-    _deadline = bound(_deadline, 1, 365 days);
+    _deadline = bound(_deadline, 1, type(uint248).max);
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
     mockResponse.requestId = _getId(mockRequest);
     mockResponse.proposer = _proposer;
@@ -362,7 +362,7 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     _disputeWindow = bound(_disputeWindow, 61, 365 days);
 
     // Check correct calls are made if deadline has passed
-    _deadline = bound(_deadline, 1, 365 days);
+    _deadline = bound(_deadline, 1, type(uint248).max);
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
     bytes32 _requestId = _getId(mockRequest);
     mockResponse.requestId = _requestId;

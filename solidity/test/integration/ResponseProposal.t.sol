@@ -48,7 +48,7 @@ contract Integration_ResponseProposal is IntegrationBase {
    * @notice Proposing a response after the deadline reverts
    */
   function test_proposeResponse_afterDeadline(uint256 _secondsAfter, bytes memory _responseBytes) public {
-    _secondsAfter = bound(_secondsAfter, 1, 365 days);
+    _secondsAfter = bound(_secondsAfter, 1, type(uint248).max);
 
     // Warp to timestamp after deadline
     vm.warp(block.timestamp + _expectedDeadline + _secondsAfter);
