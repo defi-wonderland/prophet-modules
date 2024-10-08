@@ -121,6 +121,48 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
     multipleCallbacksModule.finalizeRequest(mockRequest, mockResponse, address(oracle));
   }
 
+  function test_finalizationSucceedsWhenCallbacksRevert(
+    address[10] calldata _fuzzedTargets,
+    bytes[10] calldata _fuzzedData
+  ) public {
+    address[] memory _targets = new address[](_fuzzedTargets.length);
+    bytes[] memory _data = new bytes[](_fuzzedTargets.length);
+
+    // Copying the values to fresh arrays that we can use to build `RequestParameters`
+    for (uint256 _i; _i < _fuzzedTargets.length; _i++) {
+      _targets[_i] = _fuzzedTargets[_i];
+      _data[_i] = _fuzzedData[_i];
+    }
+
+    mockRequest.finalityModuleData =
+      abi.encode(IMultipleCallbacksModule.RequestParameters({targets: _targets, data: _data}));
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+
+    for (uint256 _i; _i < _targets.length; _i++) {
+      address _target = _targets[_i];
+      bytes memory _calldata = _data[_i];
+
+      // Skip precompiles, VM, console.log addresses, etc
+      _assumeFuzzable(_target);
+      vm.mockCallRevert(
+        _target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _calldata), abi.encode('err')
+      );
+      vm.expectCall(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _calldata));
+
+      // Check: is the event emitted?
+      vm.expectEmit(true, true, true, true, address(multipleCallbacksModule));
+      emit Callback(_requestId, _target, _calldata);
+    }
+
+    // Check: is the event emitted?
+    vm.expectEmit(true, true, true, true, address(multipleCallbacksModule));
+    emit RequestFinalized(_requestId, mockResponse, address(oracle));
+
+    vm.prank(address(oracle));
+    multipleCallbacksModule.finalizeRequest(mockRequest, mockResponse, address(oracle));
+  }
+
   /**
    * @notice Test that the finalizeRequests reverts if caller is not the oracle
    */
