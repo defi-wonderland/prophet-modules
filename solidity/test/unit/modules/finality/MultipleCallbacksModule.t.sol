@@ -17,7 +17,7 @@ import {IProphetCallback} from '../../../../interfaces/IProphetCallback.sol';
 
 contract BaseTest is Test, Helpers {
   // The target contract
-  MultipleCallbacksModule public multipleCallbackModule;
+  MultipleCallbacksModule public multipleCallbacksModule;
   // A mock oracle
   IOracle public oracle;
 
@@ -31,7 +31,7 @@ contract BaseTest is Test, Helpers {
     oracle = IOracle(makeAddr('Oracle'));
     vm.etch(address(oracle), hex'069420');
 
-    multipleCallbackModule = new MultipleCallbacksModule(oracle);
+    multipleCallbacksModule = new MultipleCallbacksModule(oracle);
   }
 
   function targetHasBytecode(address _target) public view returns (bool _hasBytecode) {
@@ -51,7 +51,7 @@ contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
    * @notice Test that the moduleName function returns the correct name
    */
   function test_moduleNameReturnsName() public view {
-    assertEq(multipleCallbackModule.moduleName(), 'MultipleCallbacksModule');
+    assertEq(multipleCallbacksModule.moduleName(), 'MultipleCallbacksModule');
   }
 
   /**
@@ -72,9 +72,9 @@ contract MultipleCallbacksModule_Unit_ModuleData is BaseTest {
     }
 
     if (!_valid) {
-      assertFalse(multipleCallbackModule.validateParameters(abi.encode(_params)));
+      assertFalse(multipleCallbacksModule.validateParameters(abi.encode(_params)));
     } else {
-      assertTrue(multipleCallbackModule.validateParameters(abi.encode(_params)));
+      assertTrue(multipleCallbacksModule.validateParameters(abi.encode(_params)));
     }
   }
 }
@@ -109,16 +109,16 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
       );
 
       // Check: is the event emitted?
-      vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
+      vm.expectEmit(true, true, true, true, address(multipleCallbacksModule));
       emit Callback(_requestId, _target, _calldata);
     }
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(multipleCallbackModule));
+    vm.expectEmit(true, true, true, true, address(multipleCallbacksModule));
     emit RequestFinalized(_requestId, mockResponse, address(oracle));
 
     vm.prank(address(oracle));
-    multipleCallbackModule.finalizeRequest(mockRequest, mockResponse, address(oracle));
+    multipleCallbacksModule.finalizeRequest(mockRequest, mockResponse, address(oracle));
   }
 
   /**
@@ -130,6 +130,6 @@ contract MultipleCallbacksModule_Unit_FinalizeRequests is BaseTest {
     // Check: does it revert if not called by the Oracle?
     vm.expectRevert(IModule.Module_OnlyOracle.selector);
     vm.prank(_caller);
-    multipleCallbackModule.finalizeRequest(_request, mockResponse, address(_caller));
+    multipleCallbacksModule.finalizeRequest(_request, mockResponse, address(_caller));
   }
 }
