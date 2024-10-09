@@ -127,8 +127,11 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
     mockResponse.requestId = _getId(mockRequest);
 
-    // Mock and expect the callback
-    _mockAndExpect(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data), abi.encode(''));
+    // Mock revert and expect the callback
+    vm.mockCallRevert(
+      _target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data), abi.encode('err')
+    );
+    vm.expectCall(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data));
 
     vm.prank(address(oracle));
     callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);
