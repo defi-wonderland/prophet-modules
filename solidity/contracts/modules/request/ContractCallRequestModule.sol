@@ -50,7 +50,7 @@ contract ContractCallRequestModule is Module, IContractCallRequestModule {
     } else {
       _params.accountingExtension.release({
         _bonder: _request.requester,
-        _requestId: _response.requestId,
+        _requestId: _getId(_request),
         _token: _params.paymentToken,
         _amount: _params.paymentAmount
       });
