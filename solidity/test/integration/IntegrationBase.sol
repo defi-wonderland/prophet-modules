@@ -79,12 +79,11 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   string internal _expectedResponse = '{"ethereum":{"usd":1000}}';
   uint256 internal _expectedBondSize = 100 ether;
   uint256 internal _expectedReward = 30 ether;
-  uint256 internal _expectedDeadline;
   uint256 internal _expectedCallbackValue = 42;
-  uint256 internal _baseDisputeWindow = 120 * BLOCK_TIME;
   bytes32 internal _ipfsHash = bytes32('QmR4uiJH654k3Ta2uLLQ8r');
   uint256 internal _blocksDeadline = 600;
-  uint256 internal _timestampDeadline = _blocksDeadline * BLOCK_TIME;
+  uint256 internal _baseDisputeWindow = 6 hours;
+  uint256 internal _expectedDeadline = 10 days;
 
   function setUp() public virtual {
     vm.createSelectFork(vm.rpcUrl('optimism'), FORK_BLOCK);
@@ -134,9 +133,6 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     _mockCallback = new MockCallback();
     _mockArbitrator = new MockArbitrator();
     vm.stopPrank();
-
-    // Set the expected deadline
-    _expectedDeadline = block.timestamp + _timestampDeadline;
 
     // Configure the mock request
     mockRequest.requestModuleData = abi.encode(
