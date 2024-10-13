@@ -23,8 +23,8 @@ contract Integration_BondEscalation is IntegrationBase {
   function setUp() public override {
     super.setUp();
 
-    _expectedDeadline = block.timestamp + 10 days;
-    _bondEscalationDeadline = block.timestamp + 5 days;
+    _expectedDeadline = 10 days;
+    _bondEscalationDeadline = 5 days;
 
     setUpRequest();
     setUpEscalation();
@@ -128,7 +128,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 4: Disputer runs out of capital
     // Step 5: External parties see that Disputer's dispute was wrong so they don't join to escalate
     // Step 6: Proposer response's is deemed correct and final once the bond escalation window is over
-    vm.warp(_expectedDeadline + _tyingBuffer + 1);
+    vm.warp(block.timestamp + _expectedDeadline + _tyingBuffer + 1);
     _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
     IOracle.DisputeStatus _disputeStatus = oracle.disputeStatus(_disputeId);
@@ -152,7 +152,7 @@ contract Integration_BondEscalation is IntegrationBase {
     assertEq(_bondEscalationAccounting.balanceOf(disputer, usdc), 0, 'Mismatch: Disputer balance');
 
     // Step 8: Finalize request and check balances again
-    vm.warp(_expectedDeadline + 1 days);
+    vm.warp(block.timestamp + _expectedDeadline + 1 days);
     oracle.finalize(mockRequest, mockResponse);
 
     // Test: The requester has no balance because he has paid the proposer
@@ -189,7 +189,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // External parties see that Proposer's proposal was wrong so they don't join to escalate
 
     // Step 5: Proposer response's is deemed incorrect. The bond escalation process along with the tying buffer is terminated
-    vm.warp(_bondEscalationDeadline + _tyingBuffer + 1);
+    vm.warp(block.timestamp + _bondEscalationDeadline + _tyingBuffer + 1);
     _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
     IOracle.DisputeStatus _disputeStatus = oracle.disputeStatus(_disputeId);
@@ -248,7 +248,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _responseId = oracle.proposeResponse(mockRequest, _thirdResponse);
 
     // Step 11: It goes undisputed for three days, therefore it's deemed correct and final
-    vm.warp(_expectedDeadline + 1);
+    vm.warp(block.timestamp + _expectedDeadline + 1);
     oracle.finalize(mockRequest, _thirdResponse);
 
     // Test: The requester has paid out the reward
@@ -283,7 +283,7 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 12: Two days after the deadline, the resolution module says that Another proposer's answer was correct
     // So Another proposer gets paid Disputer's bond
-    vm.warp(_expectedDeadline + 2 days);
+    vm.warp(block.timestamp + _expectedDeadline + 2 days);
     _mockArbitrator.setAnswer(IOracle.DisputeStatus.Lost);
     oracle.resolveDispute(mockRequest, _secondResponse, _secondDispute);
 
@@ -340,7 +340,7 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
-    vm.warp(_bondEscalationDeadline + 1);
+    vm.warp(block.timestamp + _bondEscalationDeadline + 1);
 
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
@@ -420,7 +420,7 @@ contract Integration_BondEscalation is IntegrationBase {
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
     // Step 6: Proposer loses in resolution
-    vm.warp(_bondEscalationDeadline + 1);
+    vm.warp(block.timestamp + _bondEscalationDeadline + 1);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
     oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
 
@@ -470,7 +470,7 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
-    vm.warp(_bondEscalationDeadline + 1);
+    vm.warp(block.timestamp + _bondEscalationDeadline + 1);
 
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
@@ -531,7 +531,7 @@ contract Integration_BondEscalation is IntegrationBase {
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
-    vm.warp(_bondEscalationDeadline + 1);
+    vm.warp(block.timestamp + _bondEscalationDeadline + 1);
 
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);

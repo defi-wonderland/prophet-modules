@@ -75,6 +75,10 @@ contract BaseTest is Test, Helpers {
   uint256 public tyingBuffer;
   // Mock dispute window
   uint256 public disputeWindow;
+  // Mock creation timestamps
+  uint256 public requestCreatedAt;
+  uint256 public responseCreatedAt;
+  uint256 public disputeCreatedAt;
 
   // Events
   event PledgedForDispute(bytes32 indexed _disputeId, address indexed _pledger, uint256 indexed _amount);
@@ -104,7 +108,12 @@ contract BaseTest is Test, Helpers {
     disputeWindow = type(uint128).max;
 
     // Avoid starting at 0 for time sensitive tests
-    vm.warp(123_456);
+    vm.warp(123_456_789);
+    requestCreatedAt = block.timestamp;
+    responseCreatedAt = requestCreatedAt + 30 seconds;
+    disputeCreatedAt = requestCreatedAt + 1 minutes;
+
+    bondEscalationDeadline = 3 days;
 
     mockDispute = IOracle.Dispute({
       disputer: disputer,
@@ -208,7 +217,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     assumeFuzzable(address(_params.accountingExtension))
   {
     // Set _bondEscalationDeadline to be the current timestamp to reach the second condition.
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = 3 days;
 
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -218,6 +227,10 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
+    );
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
     );
 
     // Setting this dispute as the one going through the bond escalation process, as the user can only
@@ -250,7 +263,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     // Set a tying buffer to show that this can happen even in the tying buffer if the dispute was settled
     _params.tyingBuffer = 1000;
     // Make the current timestamp be greater than the bond escalation deadline
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
 
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -264,11 +277,17 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     );
 
     _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
+
+    _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
     );
 
     // Set the dispute to be the one that went through the bond escalation process for the given requestId
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
+
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + 1);
 
     // Check: does it revert if the dispute is not escalatable?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
@@ -292,7 +311,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     // Set a tying buffer to make the test more explicit
     _params.tyingBuffer = 1000;
     // Set bond escalation deadline to be the current timestamp. We will warp this.
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
 
     mockRequest.disputeModuleData = abi.encode(_params);
     bytes32 _requestId = _getId(mockRequest);
@@ -305,7 +324,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     uint256 _numAgainstPledgers = 2;
 
     // Warp the current timestamp so we are past the tyingBuffer
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     // Set the bond escalation status of the given requestId to Active
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
@@ -315,6 +334,10 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
 
     // Set the number of pledgers for both sides
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.disputeStatus, (_disputeId)), abi.encode(IOracle.DisputeStatus.Escalated)
@@ -341,7 +364,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     // Set bond escalation deadline to be the current timestamp. We will warp this.
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     // Set a tying buffer
     _params.tyingBuffer = 1000;
     _params.accountingExtension = IBondEscalationAccounting(makeAddr('BondEscalationAccounting'));
@@ -364,7 +387,7 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     uint256 _numAgainstPledgers = 2;
 
     // Warp so we are still in the tying buffer period. This is to show a dispute can be escalated during the buffer if the pledges are tied.
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer);
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer);
 
     // Set the bond escalation status of the given requestId to Active
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
@@ -378,6 +401,10 @@ contract BondEscalationModule_Unit_EscalateDispute is BaseTest {
     // Check: is the event emitted?
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.Escalated);
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
 
     // Mock and expect IOracle.disputeStatus to be called
     _mockAndExpect(
@@ -444,10 +471,14 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     uint256 _timestamp,
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    _timestamp = bound(_timestamp, 1, 365 days);
+    _timestamp = bound(_timestamp, block.timestamp, type(uint128).max);
+
+    // update mock timestamp
+    responseCreatedAt = _timestamp;
+
     //  Set deadline to timestamp so we are still in the bond escalation period
-    _params.bondEscalationDeadline = _timestamp - 1;
-    _params.disputeWindow = _timestamp + 1;
+    _params.bondEscalationDeadline = 3 days;
+    _params.disputeWindow = 5 days;
     mockRequest.disputeModuleData = abi.encode(_params);
 
     bytes32 _requestId = _getId(mockRequest);
@@ -458,7 +489,12 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.requestId = _requestId;
 
     // Mock and expect IOracle.responseCreatedAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(1));
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
+    );
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_getId(mockDispute))), abi.encode(_timestamp)
+    );
 
     // Mock and expect the accounting extension to be called
     _mockAndExpect(
@@ -469,7 +505,7 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
       abi.encode(true)
     );
 
-    vm.warp(_timestamp);
+    vm.warp(_timestamp + _params.bondEscalationDeadline + 1);
 
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
@@ -486,8 +522,8 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
     //  Set deadline to timestamp so we are still in the bond escalation period
-    _params.disputeWindow = block.timestamp;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.disputeWindow = 2 days;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
 
     // Compute proper IDs
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -511,7 +547,13 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     );
 
     // Mock and expect IOracle.responseCreatedAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(1));
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
+    );
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
 
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit ResponseDisputed({
@@ -543,8 +585,8 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     address _proposer,
     IBondEscalationModule.RequestParameters memory _params
   ) public assumeFuzzable(address(_params.accountingExtension)) {
-    _params.disputeWindow = block.timestamp;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.disputeWindow = 2 days;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
 
     // Compute proper IDs
     mockRequest.disputeModuleData = abi.encode(_params);
@@ -559,8 +601,14 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
+    );
+
     // Mock and expect IOracle.responseCreatedAt to be called
-    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(1));
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
 
     // Mock and expect the accounting extension to be called
     _mockAndExpect(
@@ -955,7 +1003,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 1;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -965,7 +1013,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
@@ -981,7 +1029,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 2;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1011,7 +1059,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp + 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     mockRequest.disputeModuleData = abi.encode(_params);
 
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
@@ -1039,7 +1087,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1053,6 +1101,9 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     uint256 _numAgainstPledgers = _numForPledgers;
 
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
+
+    // warp into the tyingBuffer
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + 1);
 
     // Check: does it revert if trying to tie outside of the tying buffer?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
@@ -1068,7 +1119,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   {
     _params.bondSize = 1000;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1139,7 +1190,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 1;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = 1 days;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1149,11 +1200,10 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
-
     bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
   }
 
@@ -1166,7 +1216,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   {
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 2;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1198,7 +1248,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp + 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     mockRequest.disputeModuleData = abi.encode(_params);
 
     (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
@@ -1229,7 +1279,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     // Set mock request parameters
     _params.bondSize = 1;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = 3 days;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1243,6 +1293,8 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     uint256 _numAgainstPledgers = _numForPledgers;
 
     _setBondEscalation(_requestId, _numForPledgers, _numAgainstPledgers);
+
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + 1);
 
     // Check: does it revert if trying to tie outside of the tying buffer?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
@@ -1258,7 +1310,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   {
     _params.bondSize = 1000;
     _params.maxNumberOfEscalations = 3;
-    _params.bondEscalationDeadline = block.timestamp - 1;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1328,10 +1380,14 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     assumeFuzzable(address(_params.accountingExtension))
   {
     _params.tyingBuffer = bound(_params.tyingBuffer, 0, type(uint128).max);
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     mockRequest.disputeModuleData = abi.encode(_params);
 
     (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_getId(_dispute))), abi.encode(disputeCreatedAt)
+    );
 
     // Check: does it revert if the bond escalation is not over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationNotOver.selector);
@@ -1346,14 +1402,18 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     public
     assumeFuzzable(address(_params.accountingExtension))
   {
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
     (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
     bytes32 _requestId = _getId(mockRequest);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_getId(_dispute))), abi.encode(disputeCreatedAt)
+    );
+
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.None);
 
@@ -1370,7 +1430,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     public
     assumeFuzzable(address(_params.accountingExtension))
   {
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = 500;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1378,7 +1438,11 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
+
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -1401,7 +1465,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     assumeFuzzable(address(_params.accountingExtension))
   {
     _params.bondSize = 1000;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
@@ -1409,7 +1473,11 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
+    );
+
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -1445,15 +1513,16 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     assumeFuzzable(address(_params.accountingExtension))
   {
     _params.bondSize = 1000;
-    _params.bondEscalationDeadline = block.timestamp;
+    _params.bondEscalationDeadline = bondEscalationDeadline;
     _params.tyingBuffer = 1000;
     mockRequest.disputeModuleData = abi.encode(_params);
 
-    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (IOracle.Response memory _response, IOracle.Dispute memory _dispute) =
+      _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
-    vm.warp(_params.bondEscalationDeadline + _params.tyingBuffer + 1);
+    vm.warp(disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer + 1);
 
     bondEscalationModule.forTest_setBondEscalationStatus(_requestId, IBondEscalationModule.BondEscalationStatus.Active);
     bondEscalationModule.forTest_setEscalatedDispute(_requestId, _disputeId);
@@ -1470,7 +1539,7 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
     );
 
     // Check: is the event emitted?
-    vm.expectEmit(true, true, true, true, address(bondEscalationModule));
+    vm.expectEmit(address(bondEscalationModule));
     emit BondEscalationStatusUpdated(_requestId, _disputeId, IBondEscalationModule.BondEscalationStatus.DisputerLost);
 
     bondEscalationModule.settleBondEscalation(mockRequest, _response, _dispute);

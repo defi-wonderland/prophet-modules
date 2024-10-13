@@ -20,7 +20,7 @@ The Bonded Response Module is a contract that allows users to propose a response
 - `accountingExtension`: The address holding the bonded tokens. It must implement the [IAccountingExtension.sol](/solidity/interfaces/extensions/IAccountingExtension.sol/interface.IAccountingExtension.md) interface.
 - `bondToken`: The ERC20 token used for bonding.
 - `bondSize`: The amount of tokens the disputer must bond to be able to dispute a response.
-- `deadline`: The timestamp at which the module stops accepting new responses for a request and it becomes finalizable.
+- `deadline`: The number of seconds after request creation at which the module stops accepting new responses for a request and it becomes finalizable.
 
 ## 3. Key Mechanisms & Concepts
 

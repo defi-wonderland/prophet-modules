@@ -435,7 +435,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     );
 
     // We escalate the dispute
-    _mineBlocks(_blocksDeadline + 1);
+    vm.warp(block.timestamp + _expectedDeadline + 1);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // We check that the dispute was escalated

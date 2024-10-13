@@ -57,7 +57,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     // Only the first dispute of a request should go through the bond escalation
     // Consecutive disputes should be handled by the resolution module
     if (_escalation.status == BondEscalationStatus.None) {
-      if (block.timestamp > _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationOver();
+      if (block.timestamp > ORACLE.disputeCreatedAt(_disputeId) + _params.bondEscalationDeadline) {
+        revert BondEscalationModule_BondEscalationOver();
+      }
       _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
@@ -83,7 +85,9 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
         // The dispute has been escalated to the Resolution module
         // Make sure the bond escalation deadline has passed and update the status
-        if (block.timestamp <= _params.bondEscalationDeadline) revert BondEscalationModule_BondEscalationNotOver();
+        if (block.timestamp <= ORACLE.disputeCreatedAt(_disputeId) + _params.bondEscalationDeadline) {
+          revert BondEscalationModule_BondEscalationNotOver();
+        }
 
         if (
           _escalation.status != BondEscalationStatus.Active
@@ -252,7 +256,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (block.timestamp <= _params.bondEscalationDeadline + _params.tyingBuffer) {
+    uint256 _disputeCreatedAt = ORACLE.disputeCreatedAt(_disputeId);
+    if (block.timestamp <= _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
     }
 
@@ -290,6 +295,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     bool _forDispute
   ) internal view returns (RequestParameters memory _params) {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
+
     BondEscalation memory _escalation = _escalations[_dispute.requestId];
 
     if (_disputeId != _escalation.disputeId) {
@@ -298,7 +304,8 @@ contract BondEscalationModule is Module, IBondEscalationModule {
 
     _params = decodeRequestData(_request.disputeModuleData);
 
-    if (block.timestamp > _params.bondEscalationDeadline + _params.tyingBuffer) {
+    uint256 _disputeCreatedAt = ORACLE.disputeCreatedAt(_disputeId);
+    if (block.timestamp > _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationOver();
     }
 
@@ -317,7 +324,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       if (_numPledgersAgainstDispute > _numPledgersForDispute) revert BondEscalationModule_CanOnlySurpassByOnePledge();
     }
 
-    if (block.timestamp > _params.bondEscalationDeadline && _numPledgersForDispute == _numPledgersAgainstDispute) {
+    if (
+      block.timestamp > _disputeCreatedAt + _params.bondEscalationDeadline
+        && _numPledgersForDispute == _numPledgersAgainstDispute
+    ) {
       revert BondEscalationModule_CannotBreakTieDuringTyingBuffer();
     }
   }

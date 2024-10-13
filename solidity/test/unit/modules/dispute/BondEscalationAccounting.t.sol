@@ -71,6 +71,11 @@ contract BaseTest is Test, Helpers {
   address public authorizedCaller = makeAddr('authorizedCaller');
   address public unauthorizedCaller = makeAddr('unauthorizedCaller');
 
+  // Mock timestamps
+  uint256 public requestCreatedAt;
+  uint256 public responseCreatedAt;
+  uint256 public disputeCreatedAt;
+
   // Pledged Event
   event Pledged(
     address indexed _pledger, bytes32 indexed _requestId, bytes32 indexed _disputeId, IERC20 _token, uint256 _amount
@@ -111,6 +116,12 @@ contract BaseTest is Test, Helpers {
     token = IERC20(makeAddr('ERC20'));
     vm.etch(address(token), hex'069420');
 
+    // Avoid starting at 0 for time sensitive tests
+    vm.warp(123_456_789);
+    requestCreatedAt = block.timestamp;
+    responseCreatedAt = requestCreatedAt + 30 seconds;
+    disputeCreatedAt = requestCreatedAt + 1 minutes;
+
     address[] memory _authorizedCallers = new address[](1);
     _authorizedCallers[0] = authorizedCaller;
     bondEscalationAccounting = new ForTest_BondEscalationAccounting(oracle, _authorizedCallers);
@@ -135,7 +146,7 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   }
 
   function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
 
     // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
@@ -179,7 +190,7 @@ contract BondEscalationAccounting_Unit_Pledge is BaseTest {
   }
 
   function test_successfulCall(address _pledger, uint256 _amount) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -234,7 +245,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   }
 
   function test_revertIfDisallowedModule(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
 
     // Mock and expect the call to oracle checking if the module is allowed
@@ -325,7 +336,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
   }
 
   function test_successfulCall(uint256 _numOfWinningPledgers, uint256 _amountPerPledger) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
@@ -333,7 +344,7 @@ contract BondEscalationAccounting_Unit_OnSettleBondEscalation is BaseTest {
     _numOfWinningPledgers = bound(_numOfWinningPledgers, 1, 30);
     _amountPerPledger = bound(_amountPerPledger, 1, type(uint256).max / _numOfWinningPledgers);
 
-    // Mock and expect the call to oracle checking if the module is allowed
+    // // Mock and expect the call to oracle checking if the module is allowed
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, authorizedCaller)), abi.encode(true)
     );
@@ -389,7 +400,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   }
 
   function test_revertIfDisallowedModule(address _pledger, uint256 _amount) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
 
     // Mock and expect the call to oracle checking if the module is allowed
@@ -439,7 +450,7 @@ contract BondEscalationAccounting_Unit_ReleasePledge is BaseTest {
   }
 
   function test_successfulCall(uint256 _amount, address _pledger) public {
-    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle);
+    (, IOracle.Dispute memory _dispute) = _getResponseAndDispute(oracle, disputeCreatedAt);
     bytes32 _requestId = _getId(mockRequest);
     bytes32 _disputeId = _getId(_dispute);
 
