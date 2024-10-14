@@ -68,13 +68,22 @@ contract Helpers is DSTestPlus, TestConstants {
     internal
     returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute)
   {
+    (_response, _dispute) = _getResponseAndDispute(_oracle, block.timestamp + 1 minutes);
+  }
+
+  function _getResponseAndDispute(
+    IOracle _oracle,
+    uint256 _disputeCreatedAt
+  ) internal returns (IOracle.Response memory _response, IOracle.Dispute memory _dispute) {
     // Compute proper IDs
     _response = _getResponse(mockRequest, proposer);
     _dispute = _getDispute(mockRequest, _response);
     bytes32 _disputeId = _getId(_dispute);
 
     // Mock and expect IOracle.disputeCreatedAt to be called
-    _mockAndExpect(address(_oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
+    _mockAndExpect(
+      address(_oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(_disputeCreatedAt)
+    );
   }
 
   /**

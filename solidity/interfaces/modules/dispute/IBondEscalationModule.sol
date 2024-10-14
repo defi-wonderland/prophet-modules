@@ -134,7 +134,8 @@ interface IBondEscalationModule is IDisputeModule {
    * @param bondToken                  Address of the token associated with the given request
    * @param bondSize                   Amount to bond to dispute or propose an answer for the given request
    * @param maxNumberOfEscalations     Maximum allowed escalations or pledges for each side during the bond escalation process
-   * @param bondEscalationDeadline     Timestamp at which bond escalation process finishes when pledges are not tied
+   * @param bondEscalationDeadline     Number of seconds after dispute creation required to
+   *                                       finish the bond escalation process when pledges are not tied.
    * @param tyingBuffer                Number of seconds to extend the bond escalation process to allow the losing
    *                                    party to tie if at the end of the initial deadline the pledges weren't tied.
    * @param disputeWindow              Number of seconds disputers have to challenge the proposed response since its creation.
