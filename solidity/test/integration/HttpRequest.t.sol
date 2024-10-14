@@ -16,12 +16,9 @@ contract Integration_HttpRequest is IntegrationBase {
 
     _deposit(_accountingExtension, requester, usdc, _expectedReward);
     _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
-  }
 
-  function test_createRequest_finalizeEmptyResponse() public {
     vm.prank(requester);
     _accountingExtension.approveModule(address(_requestModule));
-
     mockRequest.requestModuleData = abi.encode(
       IHttpRequestModule.RequestParameters({
         url: _url,
@@ -32,7 +29,9 @@ contract Integration_HttpRequest is IntegrationBase {
         paymentAmount: _expectedReward
       })
     );
+  }
 
+  function test_createRequest_finalizeEmptyResponse() public {
     vm.prank(requester);
     oracle.createRequest(mockRequest, _ipfsHash);
 
@@ -48,28 +47,14 @@ contract Integration_HttpRequest is IntegrationBase {
 
   function test_createRequest_finalizeValidResponse() public {
     vm.prank(requester);
-    _accountingExtension.approveModule(address(_requestModule));
-
-    mockRequest.requestModuleData = abi.encode(
-      IHttpRequestModule.RequestParameters({
-        url: _url,
-        method: METHOD,
-        body: _body,
-        accountingExtension: _accountingExtension,
-        paymentToken: usdc,
-        paymentAmount: _expectedReward
-      })
-    );
-
-    vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
     mockResponse = IOracle.Response({proposer: proposer, requestId: _requestId, response: bytes('good-answer')});
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
-    vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
+    vm.stopPrank();
 
     vm.warp(block.timestamp + _expectedDeadline);
 

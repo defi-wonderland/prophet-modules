@@ -9,12 +9,16 @@ import {MockCallee} from '../mocks/MockCallee.sol';
 import './IntegrationBase.sol';
 
 contract Integration_ContractCallRequest is IntegrationBase {
+  ContractCallRequestModule public contractCallRequestModule;
+
   address internal _finalizer = makeAddr('finalizer');
   string internal _url = 'an-url';
   string internal _body = 'a-body';
 
+  bytes4 internal _selector = bytes4(0xBaadF00d);
+  bytes internal _calldata = bytes('well-formed-calldata');
+
   MockCallee internal _target;
-  ContractCallRequestModule internal _contractCallRequestModule;
 
   function setUp() public override {
     super.setUp();
@@ -22,27 +26,25 @@ contract Integration_ContractCallRequest is IntegrationBase {
     _deposit(_accountingExtension, requester, usdc, _expectedReward);
     _deposit(_accountingExtension, proposer, usdc, _expectedBondSize);
 
-    _contractCallRequestModule = new ContractCallRequestModule(oracle);
+    contractCallRequestModule = new ContractCallRequestModule(oracle);
     _target = new MockCallee();
-  }
 
-  function test_createRequest_finalizeEmptyResponse(bytes4 _selector, bytes calldata _data) public {
-    mockRequest.requestModule = address(_contractCallRequestModule);
-
-    vm.prank(requester);
-    _accountingExtension.approveModule(address(mockRequest.requestModule));
-
+    mockRequest.requestModule = address(contractCallRequestModule);
     mockRequest.requestModuleData = abi.encode(
       IContractCallRequestModule.RequestParameters({
         target: address(_target),
         functionSelector: _selector,
-        data: _data,
+        data: _calldata,
         accountingExtension: _accountingExtension,
         paymentToken: usdc,
         paymentAmount: _expectedReward
       })
     );
+    vm.prank(requester);
+    _accountingExtension.approveModule(address(mockRequest.requestModule));
+  }
 
+  function test_createRequest_finalizeEmptyResponse() public {
     vm.prank(requester);
     oracle.createRequest(mockRequest, _ipfsHash);
 
@@ -51,37 +53,20 @@ contract Integration_ContractCallRequest is IntegrationBase {
       IOracle.Response({proposer: makeAddr('not-the-proposer'), requestId: bytes32(0), response: bytes('')});
 
     vm.warp(block.timestamp + 2 days);
-
     vm.prank(_finalizer);
     oracle.finalize(mockRequest, mockResponse);
   }
 
-  function test_createRequest_finalizeValidResponse(bytes4 _selector, bytes calldata _data) public {
-    mockRequest.requestModule = address(_contractCallRequestModule);
-
-    vm.prank(requester);
-    _accountingExtension.approveModule(address(mockRequest.requestModule));
-
-    mockRequest.requestModuleData = abi.encode(
-      IContractCallRequestModule.RequestParameters({
-        target: address(_target),
-        functionSelector: _selector,
-        data: _data,
-        accountingExtension: _accountingExtension,
-        paymentToken: usdc,
-        paymentAmount: _expectedReward
-      })
-    );
-
+  function test_createRequest_finalizeValidResponse() public {
     vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
     mockResponse = IOracle.Response({proposer: proposer, requestId: _requestId, response: bytes('good-answer')});
 
-    vm.prank(proposer);
+    vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
-    vm.prank(proposer);
     oracle.proposeResponse(mockRequest, mockResponse);
+    vm.stopPrank();
 
     vm.warp(block.timestamp + _expectedDeadline);
 
