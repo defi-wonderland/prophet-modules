@@ -33,11 +33,17 @@ contract Integration_HttpRequest is IntegrationBase {
 
   function test_createRequest_finalizeEmptyResponse() public {
     vm.prank(requester);
-    oracle.createRequest(mockRequest, _ipfsHash);
+    bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
 
     // mock an empty response
     mockResponse =
       IOracle.Response({proposer: makeAddr('not-the-proposer'), requestId: bytes32(0), response: bytes('')});
+
+    // expect call to accounting to release requester's funds
+    vm.expectCall(
+      address(_accountingExtension),
+      abi.encodeCall(IAccountingExtension.release, (mockRequest.requester, _requestId, usdc, _expectedReward))
+    );
 
     vm.warp(block.timestamp + _expectedDeadline);
 
@@ -55,6 +61,15 @@ contract Integration_HttpRequest is IntegrationBase {
     _accountingExtension.approveModule(address(_responseModule));
     oracle.proposeResponse(mockRequest, mockResponse);
     vm.stopPrank();
+
+    // expect call to accounting to pay the proposer
+    vm.expectCall(
+      address(_accountingExtension),
+      abi.encodeCall(
+        IAccountingExtension.pay,
+        (mockResponse.requestId, mockRequest.requester, mockResponse.proposer, usdc, _expectedReward)
+      )
+    );
 
     vm.warp(block.timestamp + _expectedDeadline);
 
