@@ -71,7 +71,8 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     _voters[_disputeId].add(msg.sender);
     escalations[_disputeId].totalVotes += _numberOfVotes;
 
-    _params.accountingExtension.bond(msg.sender, _dispute.requestId, _params.votingToken, _numberOfVotes);
+    _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
+
     emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
   }
 
@@ -120,7 +121,7 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     // Transfer the tokens back to the voter
     uint256 _amount = votes[_disputeId][msg.sender];
-    _params.accountingExtension.release(msg.sender, _dispute.requestId, _params.votingToken, _amount);
+    _params.votingToken.safeTransfer(msg.sender, _amount);
 
     emit VoteClaimed(msg.sender, _disputeId, _amount);
   }
