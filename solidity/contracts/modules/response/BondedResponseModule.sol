@@ -28,7 +28,8 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
     // Cannot propose after the deadline
-    if (block.timestamp >= _params.deadline) revert BondedResponseModule_TooLateToPropose();
+    uint256 _requestCreatedAt = ORACLE.requestCreatedAt(_response.requestId);
+    if (block.timestamp >= _requestCreatedAt + _params.deadline) revert BondedResponseModule_TooLateToPropose();
 
     // Cannot propose to a request with a response, unless the response is being disputed
     bytes32[] memory _responseIds = ORACLE.getResponseIds(_response.requestId);
@@ -75,12 +76,11 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
     bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
 
-    if (!_isModule && block.timestamp < _params.deadline) {
+    if (!_isModule && block.timestamp < ORACLE.requestCreatedAt(_response.requestId) + _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
     uint256 _responseCreatedAt = ORACLE.responseCreatedAt(_getId(_response));
-
     if (_responseCreatedAt != 0) {
       if (!_isModule && block.timestamp < _responseCreatedAt + _params.disputeWindow) {
         revert BondedResponseModule_TooEarlyToFinalize();
