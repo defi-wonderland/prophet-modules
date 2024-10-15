@@ -119,6 +119,24 @@ contract CallbackModule_Unit_FinalizeRequest is BaseTest {
     callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);
   }
 
+  function test_finalizationSucceedsWhenCallbackReverts(
+    address _proposer,
+    address _target,
+    bytes calldata _data
+  ) public assumeFuzzable(_target) {
+    mockRequest.finalityModuleData = abi.encode(ICallbackModule.RequestParameters({target: _target, data: _data}));
+    mockResponse.requestId = _getId(mockRequest);
+
+    // Mock revert and expect the callback
+    vm.mockCallRevert(
+      _target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data), abi.encode('err')
+    );
+    vm.expectCall(_target, abi.encodeWithSelector(IProphetCallback.prophetCallback.selector, _data));
+
+    vm.prank(address(oracle));
+    callbackModule.finalizeRequest(mockRequest, mockResponse, _proposer);
+  }
+
   /**
    * @notice Test that the finalizeRequest reverts if caller is not the oracle
    */

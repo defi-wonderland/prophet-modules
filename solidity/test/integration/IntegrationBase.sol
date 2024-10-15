@@ -28,6 +28,11 @@ import {
   IRootVerificationModule, RootVerificationModule
 } from '../../contracts/modules/dispute/RootVerificationModule.sol';
 import {CallbackModule, ICallbackModule} from '../../contracts/modules/finality/CallbackModule.sol';
+import {
+  IMultipleCallbacksModule,
+  MultipleCallbacksModule
+} from '../../contracts/modules/finality/MultipleCallbacksModule.sol';
+
 import {HttpRequestModule, IHttpRequestModule} from '../../contracts/modules/request/HttpRequestModule.sol';
 import {
   ISparseMerkleTreeRequestModule,
@@ -36,6 +41,9 @@ import {
 import {ArbitratorModule, IArbitratorModule} from '../../contracts/modules/resolution/ArbitratorModule.sol';
 import {BondedResponseModule, IBondedResponseModule} from '../../contracts/modules/response/BondedResponseModule.sol';
 import {SparseMerkleTreeL32Verifier} from '../../contracts/periphery/SparseMerkleTreeL32Verifier.sol';
+
+import {IProphetVerifier} from '../../interfaces/IProphetVerifier.sol';
+import {MockCallback, MockFailCallback} from '../mocks/MockCallback.sol';
 
 import {IArbitrator} from '../../interfaces/IArbitrator.sol';
 import {IProphetCallback} from '../../interfaces/IProphetCallback.sol';

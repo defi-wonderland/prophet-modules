@@ -28,7 +28,9 @@ contract CallbackModule is Module, ICallbackModule {
   ) external override(Module, ICallbackModule) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.finalityModuleData);
 
-    IProphetCallback(_params.target).prophetCallback(_params.data);
+    // purposely skips the return data, so we don't care if the call succeeds or fails
+    _params.target.call(abi.encodeCall(IProphetCallback.prophetCallback, (_params.data)));
+
     emit Callback(_response.requestId, _params.target, _params.data);
     emit RequestFinalized(_response.requestId, _response, _finalizer);
   }
