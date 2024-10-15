@@ -50,7 +50,7 @@ contract HttpRequestModule is Module, IHttpRequestModule {
     } else {
       _params.accountingExtension.release({
         _bonder: _request.requester,
-        _requestId: _response.requestId,
+        _requestId: _getId(_request),
         _token: _params.paymentToken,
         _amount: _params.paymentAmount
       });
