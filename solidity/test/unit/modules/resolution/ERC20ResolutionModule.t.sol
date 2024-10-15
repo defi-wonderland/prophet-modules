@@ -178,13 +178,9 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     // Store mock escalation data with startTime 100_000
     module.forTest_setStartTime(_disputeId, 100_000);
 
-    // Mock and expect the bond to be placed
+    // Mock and expect the token transferFrom
     _mockAndExpect(
-      address(accountingExtension),
-      abi.encodeWithSignature(
-        'bond(address,bytes32,address,uint256)', _voter, _dispute.requestId, token, _amountOfVotes
-      ),
-      abi.encode()
+      address(token), abi.encodeCall(IERC20.transferFrom, (_voter, address(module), _amountOfVotes)), abi.encode(true)
     );
 
     _mockAndExpect(
@@ -472,11 +468,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     // Expect the bond to be released
-    _mockAndExpect(
-      address(accountingExtension),
-      abi.encodeCall(accountingExtension.release, (_voter, _dispute.requestId, token, _amount)),
-      abi.encode()
-    );
+    _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (_voter, _amount)), abi.encode(true));
 
     vm.warp(block.timestamp + 1000);
 
