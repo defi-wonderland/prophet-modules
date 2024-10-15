@@ -467,7 +467,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     // Mock and expect IOracle.disputeCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
-    // Expect the bond to be released
+    // Mock and expect voting token transfer
     _mockAndExpect(address(token), abi.encodeCall(IERC20.transfer, (_voter, _amount)), abi.encode(true));
 
     vm.warp(block.timestamp + 1000);
