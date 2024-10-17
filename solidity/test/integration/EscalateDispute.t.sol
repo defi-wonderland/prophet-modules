@@ -71,6 +71,9 @@ contract Integration_EscalateDispute is IntegrationBase {
     _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
     vm.stopPrank();
 
+    // Simulate the time passing
+    vm.roll(1 days);
+
     _disputeCreatedAt = oracle.disputeCreatedAt(_disputeId);
   }
 
@@ -123,7 +126,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
-    // Roll back the blocks because we need to simulate the custom error "break tie during tying buffer" and "bond escalation over"
+    // Roll back the timestamp because we need to simulate the custom error "break tie during tying buffer" and "bond escalation over"
     vm.warp(block.timestamp - _tyingBuffer - 1);
 
     // Pledge second time for dispute
@@ -306,7 +309,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
-    // Roll back the blocks because we need to simulate the custom error "not escalatable"
+    // Roll back the timestamp because we need to simulate the custom error "not escalatable"
     vm.warp(block.timestamp - (_disputeCreatedAt + _blocksDeadline + 1));
 
     // Pledge against dispute
