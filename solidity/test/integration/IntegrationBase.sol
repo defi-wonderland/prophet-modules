@@ -6,6 +6,7 @@ pragma solidity ^0.8.19;
 import {console} from 'forge-std/console.sol';
 
 import {IOracle, Oracle} from '@defi-wonderland/prophet-core/solidity/contracts/Oracle.sol';
+import {IValidator} from '@defi-wonderland/prophet-core/solidity/interfaces/IValidator.sol';
 import {IDisputeModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/dispute/IDisputeModule.sol';
 import {IFinalityModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/finality/IFinalityModule.sol';
 import {IRequestModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/request/IRequestModule.sol';

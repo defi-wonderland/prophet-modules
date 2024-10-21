@@ -138,6 +138,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     }
 
     address _voter;
+    // review: should we allow an alternative to this gas consuming approach?
+    // we could add a configurable param to skip the forced token mass-transfer, and let users do it manually.
     uint256 _votersLength = _voters[_disputeId].length();
     for (uint256 _i; _i < _votersLength;) {
       _voter = _voters[_disputeId].at(_i);
