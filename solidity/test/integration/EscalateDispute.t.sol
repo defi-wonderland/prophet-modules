@@ -8,6 +8,7 @@ contract Integration_EscalateDispute is IntegrationBase {
   bytes32 internal _disputeId;
   uint256 internal _pledgeSize = _expectedBondSize;
   uint256 internal _tyingBuffer = 1 days;
+  uint256 internal _expectedResponseDeadline = _expectedDeadline * 2;
   uint256 internal _disputeCreatedAt;
 
   function setUp() public override {
@@ -32,7 +33,7 @@ contract Integration_EscalateDispute is IntegrationBase {
         accountingExtension: _bondEscalationAccounting,
         bondToken: usdc,
         bondSize: _expectedBondSize,
-        deadline: _expectedDeadline * 2,
+        deadline: _expectedResponseDeadline,
         disputeWindow: _baseDisputeWindow
       })
     );
@@ -70,9 +71,6 @@ contract Integration_EscalateDispute is IntegrationBase {
     _bondEscalationAccounting.approveModule(address(_bondEscalationModule));
     _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
     vm.stopPrank();
-
-    // Simulate the time passing
-    vm.roll(1 days);
 
     _disputeCreatedAt = oracle.disputeCreatedAt(_disputeId);
   }
@@ -122,12 +120,12 @@ contract Integration_EscalateDispute is IntegrationBase {
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
     // Pledege revert if bond escalation is over
-    vm.warp(block.timestamp + _tyingBuffer);
+    vm.warp(_disputeCreatedAt + _expectedDeadline + _tyingBuffer + 1);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
     // Roll back the timestamp because we need to simulate the custom error "break tie during tying buffer" and "bond escalation over"
-    vm.warp(block.timestamp - _tyingBuffer - 1);
+    vm.warp(_disputeCreatedAt);
 
     // Pledge second time for dispute
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
@@ -152,7 +150,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
     // Warp to pass the escalation deadline
-    vm.warp(block.timestamp + _expectedDeadline);
+    vm.warp(_disputeCreatedAt + _expectedDeadline + _tyingBuffer + 1);
 
     // The bond escalation accounting should have been called to settle the bond escalation
     vm.expectCall(
@@ -245,7 +243,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     _bondEscalationModule.settleBondEscalation(mockRequest, mockResponse, mockDispute);
 
     // Warp to pass the escalation deadline
-    vm.warp(block.timestamp + _disputeCreatedAt + _expectedDeadline + 1);
+    vm.warp(_disputeCreatedAt + _expectedResponseDeadline + 1);
 
     // The bond escalation accounting should have been called to settle the bond escalation
     vm.expectCall(
@@ -302,22 +300,23 @@ contract Integration_EscalateDispute is IntegrationBase {
     vm.prank(disputer);
     _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
 
-    // Mine blocks to pass the escalation deadline
-    vm.warp(block.timestamp + _disputeCreatedAt + _blocksDeadline + 1);
+    // Warp blocks to pass the escalation deadline
+    vm.warp(_disputeCreatedAt + _expectedResponseDeadline + 1);
 
     // Escalate dispute reverts if dispute is not escalatable
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_NotEscalatable.selector);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // Roll back the timestamp because we need to simulate the custom error "not escalatable"
-    vm.warp(block.timestamp - (_disputeCreatedAt + _blocksDeadline + 1));
+    vm.warp(_disputeCreatedAt);
 
     // Pledge against dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
     _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
 
-    vm.warp(block.timestamp + _expectedDeadline + _tyingBuffer + 1);
+    // Warp blocks to pass the escalation deadline
+    vm.warp(_disputeCreatedAt + _expectedDeadline + _tyingBuffer + 1);
 
     // Settle bond escalation reverts if dispute is not escalated
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_ShouldBeEscalated.selector);
@@ -442,7 +441,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     );
 
     // We escalate the dispute
-    vm.warp(block.timestamp + _disputeCreatedAt + _expectedDeadline + 1);
+    vm.warp(_disputeCreatedAt + _expectedDeadline + 1);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // We check that the dispute was escalated
@@ -501,7 +500,7 @@ contract Integration_EscalateDispute is IntegrationBase {
     );
 
     // We escalate the dispute
-    vm.warp(block.timestamp + _disputeCreatedAt + _blocksDeadline + 1);
+    vm.warp(_disputeCreatedAt + _expectedDeadline + 1);
     oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
 
     // We check that the dispute was escalated

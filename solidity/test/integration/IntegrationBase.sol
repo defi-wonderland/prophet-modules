@@ -188,6 +188,9 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
     mockRequest.nonce = uint96(oracle.totalRequestCount());
 
     _resetMockIds();
+
+    // Simulate the time passing
+    vm.warp(1 days);
   }
 
   function _mineBlock() internal {
