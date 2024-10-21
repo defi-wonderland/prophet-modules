@@ -57,9 +57,6 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     // Only the first dispute of a request should go through the bond escalation
     // Consecutive disputes should be handled by the resolution module
     if (_escalation.status == BondEscalationStatus.None) {
-      if (block.timestamp > ORACLE.disputeCreatedAt(_disputeId) + _params.bondEscalationDeadline) {
-        revert BondEscalationModule_BondEscalationOver();
-      }
       _escalation.status = BondEscalationStatus.Active;
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);

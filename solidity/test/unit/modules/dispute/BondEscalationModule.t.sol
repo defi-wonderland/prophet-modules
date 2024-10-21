@@ -465,55 +465,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
   }
 
   /**
-   * @notice Tests that disputeResponse succeeds if someone dispute after the bond escalation deadline is over
-   */
-  function test_succeedIfDisputeAfterBondingEscalationDeadline(
-    uint256 _timestamp,
-    IBondEscalationModule.RequestParameters memory _params
-  ) public assumeFuzzable(address(_params.accountingExtension)) {
-    _timestamp = bound(_timestamp, block.timestamp, type(uint128).max);
-
-    // update mock timestamp
-    responseCreatedAt = _timestamp;
-
-    //  Set deadline to timestamp so we are still in the bond escalation period
-    _params.bondEscalationDeadline = 3 days;
-    _params.disputeWindow = 5 days;
-    mockRequest.disputeModuleData = abi.encode(_params);
-
-    bytes32 _requestId = _getId(mockRequest);
-    mockResponse.requestId = _requestId;
-
-    bytes32 _responseId = _getId(mockResponse);
-    mockDispute.responseId = _responseId;
-    mockDispute.requestId = _requestId;
-
-    // Mock and expect IOracle.responseCreatedAt to be called
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
-    );
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_getId(mockDispute))), abi.encode(_timestamp)
-    );
-
-    // Mock and expect the accounting extension to be called
-    _mockAndExpect(
-      address(_params.accountingExtension),
-      abi.encodeWithSignature(
-        'bond(address,bytes32,address,uint256)', mockDispute.disputer, _requestId, _params.bondToken, _params.bondSize
-      ),
-      abi.encode(true)
-    );
-
-    vm.warp(_timestamp + _params.bondEscalationDeadline + 1);
-
-    // Check: does it revert if the bond escalation is over?
-    vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
-    vm.prank(address(oracle));
-    bondEscalationModule.disputeResponse(mockRequest, mockResponse, mockDispute);
-  }
-
-  /**
    * @notice Tests that disputeResponse succeeds in starting the bond escalation mechanism when someone disputes
    *         the first propose before the bond escalation deadline is over.
    */
@@ -549,10 +500,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect IOracle.responseCreatedAt to be called
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
-    );
-
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
     );
 
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
@@ -603,11 +550,6 @@ contract BondEscalationModule_Unit_DisputeResponse is BaseTest {
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(responseCreatedAt)
-    );
-
-    // Mock and expect IOracle.responseCreatedAt to be called
-    _mockAndExpect(
-      address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(disputeCreatedAt)
     );
 
     // Mock and expect the accounting extension to be called
