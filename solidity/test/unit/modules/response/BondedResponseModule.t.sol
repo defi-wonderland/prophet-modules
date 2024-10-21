@@ -464,6 +464,47 @@ contract BondedResponseModule_Unit_FinalizeRequest is BaseTest {
     vm.prank(address(oracle));
     bondedResponseModule.finalizeRequest(mockRequest, mockResponse, _finalizer);
   }
+
+  function test_finalizeWithoutResponse(
+    IERC20 _token,
+    uint256 _bondSize,
+    uint256 _disputeWindow,
+    address _proposer,
+    uint256 _deadline
+  ) public {
+    _disputeWindow = bound(_disputeWindow, 61, 365 days);
+
+    // Check correct calls are made if deadline has passed
+    _deadline = bound(_deadline, 1, type(uint248).max);
+    mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _disputeWindow);
+    bytes32 _requestId = _getId(mockRequest);
+    mockResponse.requestId = _requestId;
+    mockResponse.proposer = _proposer;
+
+    // Mock and expect IOracle.allowedModule to be called
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.allowedModule, (_requestId, address(this))), abi.encode(false)
+    );
+
+    _mockAndExpect(
+      address(oracle), abi.encodeCall(IOracle.requestCreatedAt, (_getId(mockRequest))), abi.encode(requestCreatedAt)
+    );
+
+    // Empty response
+    mockResponse = IOracle.Response({proposer: address(0), requestId: bytes32(0), response: bytes('')});
+
+    // Response does not exist
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_getId(mockResponse))), abi.encode(0));
+
+    // Check: is event emitted?
+    vm.expectEmit(true, true, true, true, address(bondedResponseModule));
+    emit RequestFinalized({_requestId: _getId(mockRequest), _response: mockResponse, _finalizer: address(this)});
+
+    vm.warp(requestCreatedAt + _deadline + _disputeWindow);
+
+    vm.prank(address(oracle));
+    bondedResponseModule.finalizeRequest(mockRequest, mockResponse, address(this));
+  }
 }
 
 contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
