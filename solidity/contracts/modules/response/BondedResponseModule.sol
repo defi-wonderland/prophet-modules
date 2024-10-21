@@ -74,9 +74,11 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   ) external override(IBondedResponseModule, Module) onlyOracle {
     RequestParameters memory _params = decodeRequestData(_request.responseModuleData);
 
-    bool _isModule = ORACLE.allowedModule(_response.requestId, _finalizer);
+    bytes32 _requestId = _getId(_request);
 
-    if (!_isModule && block.timestamp < ORACLE.requestCreatedAt(_response.requestId) + _params.deadline) {
+    bool _isModule = ORACLE.allowedModule(_requestId, _finalizer);
+
+    if (!_isModule && block.timestamp < ORACLE.requestCreatedAt(_requestId) + _params.deadline) {
       revert BondedResponseModule_TooEarlyToFinalize();
     }
 
@@ -88,13 +90,13 @@ contract BondedResponseModule is Module, IBondedResponseModule {
 
       _params.accountingExtension.release({
         _bonder: _response.proposer,
-        _requestId: _response.requestId,
+        _requestId: _requestId,
         _token: _params.bondToken,
         _amount: _params.bondSize
       });
     }
 
-    emit RequestFinalized(_response.requestId, _response, _finalizer);
+    emit RequestFinalized(_requestId, _response, _finalizer);
   }
 
   /// @inheritdoc IBondedResponseModule

@@ -47,10 +47,12 @@ contract Integration_ContractCallRequest is IntegrationBase {
   function test_createRequest_finalizeEmptyResponse() public {
     vm.prank(requester);
     bytes32 _requestId = oracle.createRequest(mockRequest, _ipfsHash);
+    uint256 _requestCreatedAt = oracle.requestCreatedAt(_requestId);
 
     // mock an empty response
-    mockResponse =
-      IOracle.Response({proposer: makeAddr('not-the-proposer'), requestId: bytes32(0), response: bytes('')});
+    mockResponse = IOracle.Response({proposer: address(0), requestId: bytes32(0), response: bytes('')});
+
+    assertEq(oracle.responseCreatedAt(_getId(mockResponse)), 0);
 
     // expect call to accounting to release requester's funds
     vm.expectCall(
@@ -58,7 +60,7 @@ contract Integration_ContractCallRequest is IntegrationBase {
       abi.encodeCall(IAccountingExtension.release, (mockRequest.requester, _requestId, usdc, _expectedReward))
     );
 
-    vm.warp(block.timestamp + 2 days);
+    vm.warp(_requestCreatedAt + _expectedDeadline);
     vm.prank(_finalizer);
     oracle.finalize(mockRequest, mockResponse);
   }
