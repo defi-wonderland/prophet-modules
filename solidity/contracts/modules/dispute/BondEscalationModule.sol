@@ -36,7 +36,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
-    if (block.timestamp > ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
+    if (block.timestamp >= ORACLE.responseCreatedAt(_dispute.responseId) + _params.disputeWindow) {
       revert BondEscalationModule_DisputeWindowOver();
     }
 
@@ -82,7 +82,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       if (_disputeStatus == IOracle.DisputeStatus.Escalated) {
         // The dispute has been escalated to the Resolution module
         // Make sure the bond escalation deadline has passed and update the status
-        if (block.timestamp <= ORACLE.disputeCreatedAt(_disputeId) + _params.bondEscalationDeadline) {
+        if (block.timestamp < ORACLE.disputeCreatedAt(_disputeId) + _params.bondEscalationDeadline) {
           revert BondEscalationModule_BondEscalationNotOver();
         }
 
@@ -254,7 +254,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
 
     uint256 _disputeCreatedAt = ORACLE.disputeCreatedAt(_disputeId);
-    if (block.timestamp <= _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
+    if (block.timestamp < _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationNotOver();
     }
 
@@ -302,7 +302,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     _params = decodeRequestData(_request.disputeModuleData);
 
     uint256 _disputeCreatedAt = ORACLE.disputeCreatedAt(_disputeId);
-    if (block.timestamp > _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
+    if (block.timestamp >= _disputeCreatedAt + _params.bondEscalationDeadline + _params.tyingBuffer) {
       revert BondEscalationModule_BondEscalationOver();
     }
 
@@ -322,7 +322,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     }
 
     if (
-      block.timestamp > _disputeCreatedAt + _params.bondEscalationDeadline
+      block.timestamp >= _disputeCreatedAt + _params.bondEscalationDeadline
         && _numPledgersForDispute == _numPledgersAgainstDispute
     ) {
       revert BondEscalationModule_CannotBreakTieDuringTyingBuffer();
