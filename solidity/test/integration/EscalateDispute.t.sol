@@ -59,21 +59,23 @@ contract Integration_EscalateDispute is IntegrationBase {
     _deposit(_bondEscalationAccounting, proposer, usdc, _expectedBondSize);
     vm.startPrank(proposer);
     _bondEscalationAccounting.approveModule(address(_responseModule));
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl(proposer));
     vm.stopPrank();
 
     _deposit(_bondEscalationAccounting, disputer, usdc, _expectedBondSize);
     vm.startPrank(disputer);
     _bondEscalationAccounting.approveModule(address(_bondEscalationModule));
-    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
     vm.stopPrank();
   }
 
   function test_escalateDispute() public {
+    address _escalator = makeAddr('escalator');
     // Escalate dispute reverts if dispute does not exist
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    vm.prank(_escalator);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_escalator));
 
     mockDispute.requestId = _requestId;
 
@@ -91,12 +93,17 @@ contract Integration_EscalateDispute is IntegrationBase {
 
     // The arbitrator module should call the arbitrator
     vm.expectCall(
-      address(_mockArbitrator), abi.encodeCall(MockArbitrator.resolve, (mockRequest, mockResponse, mockDispute))
+      address(_mockArbitrator),
+      abi.encodeCall(
+        MockArbitrator.resolve,
+        (mockRequest, mockResponse, mockDispute, _createAccessControl(address(_arbitratorModule)))
+      )
     );
 
     // We escalate the dispute
     vm.warp(block.timestamp + _expectedDeadline + 1);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    vm.prank(_escalator);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_escalator));
 
     // We check that the dispute was escalated
     IOracle.DisputeStatus _disputeStatus = oracle.disputeStatus(_disputeId);
@@ -111,6 +118,7 @@ contract Integration_EscalateDispute is IntegrationBase {
 
     // Escalate dispute reverts if dispute is not active
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_CannotEscalate.selector, _disputeId));
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    vm.prank(_escalator);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_escalator));
   }
 }

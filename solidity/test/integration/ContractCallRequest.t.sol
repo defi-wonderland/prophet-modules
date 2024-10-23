@@ -71,7 +71,7 @@ contract Integration_ContractCallRequest is IntegrationBase {
 
     vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl());
     vm.stopPrank();
 
     // expect call to accounting to pay the proposer

@@ -27,7 +27,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     _deposit(_accountingExtension, disputer, usdc, _expectedBondSize);
 
     vm.prank(disputer);
-    bytes32 _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    bytes32 _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: the disputer is a participant now?
     assertTrue(oracle.isParticipant(_getId(mockRequest), disputer));
@@ -52,7 +52,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 
   /**
@@ -66,7 +66,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 
   /**
@@ -76,7 +76,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 
   /**
@@ -89,7 +89,7 @@ contract Integration_ResponseDispute is IntegrationBase {
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_AlreadyFinalized.selector, _getId(mockRequest)));
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 
   /**
@@ -99,10 +99,10 @@ contract Integration_ResponseDispute is IntegrationBase {
     _deposit(_accountingExtension, disputer, usdc, _expectedBondSize);
 
     vm.prank(disputer);
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     vm.prank(disputer);
     vm.expectRevert(abi.encodeWithSelector(IOracle.Oracle_ResponseAlreadyDisputed.selector, _getId(mockResponse)));
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 }

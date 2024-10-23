@@ -104,7 +104,7 @@ contract Integration_RootVerification is IntegrationBase {
     mockResponse.response = abi.encode(_correctRoot);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     vm.warp(block.timestamp + _expectedDeadline + _baseDisputeWindow);
 
@@ -119,13 +119,13 @@ contract Integration_RootVerification is IntegrationBase {
     mockResponse.response = abi.encode(_invalidRoot);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl(proposer));
     _resetMockIds();
 
     vm.startPrank(disputer);
     _accountingExtension.approveModule(address(_responseModule));
     _accountingExtension.approveModule(address(mockRequest.disputeModule));
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
     vm.stopPrank();
 
     uint256 _requesterBondedBalance = _accountingExtension.bondedAmountOf(requester, usdc, _requestId);
@@ -150,12 +150,12 @@ contract Integration_RootVerification is IntegrationBase {
     mockResponse.response = abi.encode(_correctRoot);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl(proposer));
     _resetMockIds();
 
     vm.startPrank(disputer);
     _accountingExtension.approveModule(address(_responseModule));
-    oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
     vm.stopPrank();
 
     assertEq(_accountingExtension.bondedAmountOf(requester, usdc, _requestId), 0);

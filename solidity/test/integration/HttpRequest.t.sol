@@ -59,7 +59,7 @@ contract Integration_HttpRequest is IntegrationBase {
 
     vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
     vm.stopPrank();
 
     // expect call to accounting to pay the proposer
