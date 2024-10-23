@@ -42,7 +42,7 @@ contract Integration_EscalateDispute is IntegrationBase {
         maxNumberOfEscalations: 1,
         bondEscalationDeadline: _expectedDeadline,
         tyingBuffer: 0,
-        disputeWindow: 0
+        disputeWindow: _baseDisputeWindow
       })
     );
 

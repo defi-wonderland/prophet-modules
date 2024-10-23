@@ -85,8 +85,8 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
       _escalation.startTime + _params.committingTimeWindow,
       _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow
     );
-    if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
-    if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
+    if (block.timestamp < _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
+    if (block.timestamp >= _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
 
     VoterData storage _voterData = _votersData[_disputeId][msg.sender];
 
@@ -123,7 +123,7 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     if (block.timestamp < _escalation.startTime + _params.committingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
     }
-    if (block.timestamp <= _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
+    if (block.timestamp < _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
       revert PrivateERC20ResolutionModule_OnGoingRevealingPhase();
     }
 

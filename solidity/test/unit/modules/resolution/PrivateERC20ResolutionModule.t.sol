@@ -51,6 +51,10 @@ contract BaseTest is Test, Helpers {
   // A mock token
   IERC20 public token;
 
+  uint256 public constant REVEALING_TIME_WINDOW = 40_000;
+  uint256 public constant START_TIME = 100_000;
+  uint256 public constant END_TIME = START_TIME + REVEALING_TIME_WINDOW;
+
   // Events
   event CommittingPhaseStarted(uint256 _startTime, bytes32 _disputeId);
   event VoteCommitted(address _voter, bytes32 _disputeId, bytes32 _commitment);
@@ -95,7 +99,7 @@ contract BaseTest is Test, Helpers {
       );
       module.commitVote(_request, _dispute, _commitment);
 
-      vm.warp(140_001);
+      vm.warp(END_TIME + 1);
 
       vm.mockCall(
         address(token),
@@ -173,7 +177,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
         votingToken: token,
         minVotesForQuorum: 1,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -183,7 +187,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // Store mock escalation data with startTime 100_000
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     // Set timestamp for valid committingTimeWindow
     vm.warp(123_456);
@@ -365,7 +369,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
    * @notice Test that `commitVote` reverts if called outside of the committing time window.
    */
   function test_revertIfCommittingPhaseOver(uint256 _timestamp, bytes32 _commitment) public {
-    _timestamp = bound(_timestamp, 140_000, type(uint96).max);
+    _timestamp = bound(_timestamp, END_TIME, type(uint96).max);
 
     // Set mock request data
     mockRequest.resolutionModuleData = abi.encode(
@@ -374,7 +378,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
         votingToken: token,
         minVotesForQuorum: 1,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -384,7 +388,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     bytes32 _disputeId = _getId(mockDispute);
 
     // Store mock escalation data with startTime 100_000
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     // Warp to invalid timestamp for commitment
     vm.warp(_timestamp);
@@ -414,7 +418,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         votingToken: token,
         minVotesForQuorum: 1,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -427,7 +431,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
     // Store mock escalation data with startTime 100_000
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     // Store commitment
     vm.prank(_voter);
@@ -491,7 +495,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
    * @notice Test that `revealVote` reverts if called outside the revealing time window.
    */
   function test_revertIfInvalidPhase(uint256 _numberOfVotes, bytes32 _salt, uint256 _timestamp) public {
-    vm.assume(_timestamp >= 100_000 && (_timestamp <= 140_000 || _timestamp > 180_000));
+    vm.assume(_timestamp >= 100_000 && (_timestamp < END_TIME || _timestamp > 180_000));
 
     // Set mock request data
     mockRequest.resolutionModuleData = abi.encode(
@@ -500,7 +504,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         votingToken: token,
         minVotesForQuorum: 1,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -511,12 +515,12 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
 
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, _disputeId), abi.encode(1));
 
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     // Jump to timestamp
     vm.warp(_timestamp);
 
-    if (_timestamp <= 140_000) {
+    if (_timestamp < END_TIME) {
       // Check: does it revert if trying to reveal during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
       module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt);
@@ -550,7 +554,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         votingToken: token,
         minVotesForQuorum: 1,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -562,7 +566,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     // Mock and expect IOracle.disputeCreatedAt to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeCreatedAt, (_disputeId)), abi.encode(1));
 
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     vm.warp(150_000);
 
@@ -601,7 +605,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
         committingTimeWindow: 40_000,
-        revealingTimeWindow: 40_000
+        revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
 
@@ -613,7 +617,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     mockDispute.responseId = _responseId;
     bytes32 _disputeId = _getId(mockDispute);
 
-    module.forTest_setStartTime(_disputeId, 100_000);
+    module.forTest_setStartTime(_disputeId, START_TIME);
 
     // Store escalation data with startTime 100_000 and votes 0
     uint256 _votersAmount = 5;
@@ -701,7 +705,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Jump to timestamp
     vm.warp(_timestamp);
 
-    if (_timestamp <= 500_000) {
+    if (_timestamp < 500_000) {
       // Check: does it revert if trying to resolve during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
       vm.prank(address(oracle));
