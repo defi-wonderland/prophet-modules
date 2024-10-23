@@ -705,7 +705,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Jump to timestamp
     vm.warp(_timestamp);
 
-    if (_timestamp < 500_000) {
+    if (_timestamp <= 500_000) {
       // Check: does it revert if trying to resolve during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
       vm.prank(address(oracle));
