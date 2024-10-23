@@ -6,12 +6,14 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import {_COMMIT_VOTE_TYPEHASH, _REVEAL_VOTE_TYPEHASH} from '../../utils/Typehash.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 
-contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
+contract PrivateERC20ResolutionModule is AccessController, Module, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -50,7 +52,15 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
   }
 
   /// @inheritdoc IPrivateERC20ResolutionModule
-  function commitVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute, bytes32 _commitment) public {
+  function commitVote(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    bytes32 _commitment,
+    AccessControl calldata _accessControl
+  )
+    external
+    hasAccess(_request.accessControlModule, _COMMIT_VOTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+  {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
       revert PrivateERC20ResolutionModule_AlreadyResolved();
@@ -74,34 +84,38 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
     uint256 _numberOfVotes,
-    bytes32 _salt
-  ) public {
+    bytes32 _salt,
+    AccessControl calldata _accessControl
+  )
+    public // review: why not external?
+    hasAccess(_request.accessControlModule, _REVEAL_VOTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+  {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert PrivateERC20ResolutionModule_DisputeNotEscalated();
 
     RequestParameters memory _params = decodeRequestData(_request.resolutionModuleData);
-    (uint256 _revealStartTime, uint256 _revealEndTime) = (
-      _escalation.startTime + _params.committingTimeWindow,
-      _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow
-    );
-    if (block.timestamp <= _revealStartTime) revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
-    if (block.timestamp > _revealEndTime) revert PrivateERC20ResolutionModule_RevealingPhaseOver();
+    if (block.timestamp <= _escalation.startTime + _params.committingTimeWindow) {
+      revert PrivateERC20ResolutionModule_OnGoingCommittingPhase();
+    }
+    if (block.timestamp > _escalation.startTime + _params.committingTimeWindow + _params.revealingTimeWindow) {
+      revert PrivateERC20ResolutionModule_RevealingPhaseOver();
+    }
 
-    VoterData storage _voterData = _votersData[_disputeId][msg.sender];
+    VoterData storage _voterData = _votersData[_disputeId][_accessControl.user];
 
-    if (_voterData.commitment != keccak256(abi.encode(msg.sender, _disputeId, _numberOfVotes, _salt))) {
+    if (_voterData.commitment != keccak256(abi.encode(_accessControl.user, _disputeId, _numberOfVotes, _salt))) {
       revert PrivateERC20ResolutionModule_WrongRevealData();
     }
 
     _voterData.numOfVotes = _numberOfVotes;
     _voterData.commitment = bytes32('');
-    _voters[_disputeId].add(msg.sender);
+    _voters[_disputeId].add(_accessControl.user);
     escalations[_disputeId].totalVotes += _numberOfVotes;
 
-    _params.votingToken.safeTransferFrom(msg.sender, address(this), _numberOfVotes);
+    _params.votingToken.safeTransferFrom(_accessControl.user, address(this), _numberOfVotes);
 
-    emit VoteRevealed(msg.sender, _disputeId, _numberOfVotes);
+    emit VoteRevealed(_accessControl.user, _disputeId, _numberOfVotes);
   }
 
   /// @inheritdoc IPrivateERC20ResolutionModule
@@ -130,10 +144,10 @@ contract PrivateERC20ResolutionModule is Module, IPrivateERC20ResolutionModule {
     uint256 _quorumReached = _escalation.totalVotes >= _params.minVotesForQuorum ? 1 : 0;
 
     if (_quorumReached == 1) {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
+      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won, _defaultAccessControl());
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost);
+      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost, _defaultAccessControl());
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
 

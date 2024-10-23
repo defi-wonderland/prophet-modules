@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
+import {
+  AccessController, IAccessController
+} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
-contract BondEscalationModule is Module, IBondEscalationModule {
+import '../../utils/Typehash.sol';
+
+contract BondEscalationModule is AccessController, Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesForDispute;
 
@@ -31,7 +37,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external onlyOracle {
+  )
+    // review: access control? no
+    external
+    onlyOracle
+  {
     bytes32 _disputeId = _getId(_dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
@@ -61,7 +71,7 @@ contract BondEscalationModule is Module, IBondEscalationModule {
       _escalation.disputeId = _disputeId;
       emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, BondEscalationStatus.Active);
     } else if (_disputeId != _escalation.disputeId) {
-      ORACLE.escalateDispute(_request, _response, _dispute);
+      ORACLE.escalateDispute(_request, _response, _dispute, _defaultAccessControl());
     }
   }
 
@@ -208,39 +218,58 @@ contract BondEscalationModule is Module, IBondEscalationModule {
   ////////////////////////////////////////////////////////////////////
 
   /// @inheritdoc IBondEscalationModule
-  function pledgeForDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
+  function pledgeForDispute(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IAccessController.AccessControl calldata _accessControl
+  )
+    external
+    hasAccess(_request.accessControlModule, _PLEDGE_FOR_DISPUTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+  {
     bytes32 _disputeId = _getId(_dispute);
     RequestParameters memory _params = _pledgeChecks(_request, _dispute, true);
 
     _escalations[_dispute.requestId].amountOfPledgesForDispute += 1;
-    pledgesForDispute[_dispute.requestId][msg.sender] += 1;
+    pledgesForDispute[_dispute.requestId][_accessControl.user] += 1;
     _params.accountingExtension.pledge({
-      _pledger: msg.sender,
+      _pledger: _accessControl.user,
       _request: _request,
       _dispute: _dispute,
       _token: _params.bondToken,
       _amount: _params.bondSize
     });
 
-    emit PledgedForDispute(_disputeId, msg.sender, _params.bondSize);
+    emit PledgedForDispute(_disputeId, _accessControl.user, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
-  function pledgeAgainstDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
+  function pledgeAgainstDispute(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    AccessControl calldata _accessControl
+  )
+    external
+    hasAccess(
+      _request.accessControlModule,
+      _PLEDGE_AGAINST_DISPUTE_TYPEHASH,
+      abi.encode(_request, _dispute),
+      _accessControl
+    )
+  {
     bytes32 _disputeId = _getId(_dispute);
     RequestParameters memory _params = _pledgeChecks(_request, _dispute, false);
 
     _escalations[_dispute.requestId].amountOfPledgesAgainstDispute += 1;
-    pledgesAgainstDispute[_dispute.requestId][msg.sender] += 1;
+    pledgesAgainstDispute[_dispute.requestId][_accessControl.user] += 1;
     _params.accountingExtension.pledge({
-      _pledger: msg.sender,
+      _pledger: _accessControl.user,
       _request: _request,
       _dispute: _dispute,
       _token: _params.bondToken,
       _amount: _params.bondSize
     });
 
-    emit PledgedAgainstDispute(_disputeId, msg.sender, _params.bondSize);
+    emit PledgedAgainstDispute(_disputeId, _accessControl.user, _params.bondSize);
   }
 
   /// @inheritdoc IBondEscalationModule
@@ -248,7 +277,10 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     IOracle.Request calldata _request,
     IOracle.Response calldata _response,
     IOracle.Dispute calldata _dispute
-  ) external {
+  )
+    // review: access control?
+    external
+  {
     (, bytes32 _disputeId) = _validateResponseAndDispute(_request, _response, _dispute);
     RequestParameters memory _params = decodeRequestData(_request.disputeModuleData);
     BondEscalation storage _escalation = _escalations[_dispute.requestId];
@@ -275,7 +307,11 @@ contract BondEscalationModule is Module, IBondEscalationModule {
     emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _escalation.status);
 
     ORACLE.updateDisputeStatus(
-      _request, _response, _dispute, _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost
+      _request,
+      _response,
+      _dispute,
+      _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
+      _defaultAccessControl()
     );
   }
 

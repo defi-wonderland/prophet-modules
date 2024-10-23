@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {TestConstants} from './TestConstants.sol';
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {DSTestPlus} from '@defi-wonderland/solidity-utils/solidity/test/DSTestPlus.sol';
 
@@ -12,6 +13,7 @@ contract Helpers is DSTestPlus, TestConstants {
 
   // Mock objects
   IOracle.Request public mockRequest = IOracle.Request({
+    accessControlModule: address(0),
     requestModule: address(0),
     responseModule: address(0),
     disputeModule: address(0),
@@ -25,6 +27,10 @@ contract Helpers is DSTestPlus, TestConstants {
     requester: address(this),
     nonce: 1
   });
+
+  IAccessController.AccessControl public mockAccessControl =
+    IAccessController.AccessControl({user: address(0), data: bytes('')});
+
   bytes32 internal _mockRequestId = keccak256(abi.encode(mockRequest));
 
   IOracle.Response public mockResponse =
@@ -157,5 +163,13 @@ contract Helpers is DSTestPlus, TestConstants {
    */
   function _expectEmit(address _contract) internal {
     vm.expectEmit(true, true, true, true, _contract);
+  }
+
+  function _createAccessControl() internal returns (IAccessController.AccessControl memory _accessControl) {
+    _accessControl = _createAccessControl(msg.sender);
+  }
+
+  function _createAccessControl(address _user) internal returns (IAccessController.AccessControl memory _accessControl) {
+    _accessControl = IAccessController.AccessControl({user: _user, data: bytes('')});
   }
 }

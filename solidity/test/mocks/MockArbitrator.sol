@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
+
 import {IArbitrator, IOracle} from '../../interfaces/IArbitrator.sol';
 
 contract MockArbitrator is IArbitrator {
@@ -13,7 +15,8 @@ contract MockArbitrator is IArbitrator {
   function resolve(
     IOracle.Request memory,
     IOracle.Response memory,
-    IOracle.Dispute memory
+    IOracle.Dispute memory,
+    IAccessController.AccessControl memory AccessControl
   ) external pure returns (bytes memory _result) {
     _result = new bytes(0);
   }

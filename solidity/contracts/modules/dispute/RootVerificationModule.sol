@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IRootVerificationModule} from '../../../interfaces/modules/dispute/IRootVerificationModule.sol';
 import {MerkleLib} from '../../libraries/MerkleLib.sol';
 
-contract RootVerificationModule is Module, IRootVerificationModule {
+contract RootVerificationModule is AccessController, Module, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;
 
   /**
@@ -54,7 +55,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
 
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Won});
 
-      ORACLE.proposeResponse(_request, _newResponse);
+      ORACLE.proposeResponse(_request, _newResponse, _defaultAccessControl());
       ORACLE.finalize(_request, _newResponse);
     } else {
       emit DisputeStatusChanged({_disputeId: _disputeId, _dispute: _dispute, _status: IOracle.DisputeStatus.Lost});
@@ -86,7 +87,7 @@ contract RootVerificationModule is Module, IRootVerificationModule {
       _dispute: _dispute
     });
 
-    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
+    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status, _defaultAccessControl());
   }
 
   /// @inheritdoc IModule

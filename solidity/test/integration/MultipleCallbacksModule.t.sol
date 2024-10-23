@@ -66,7 +66,7 @@ contract Integration_MultipleCallbackModule is IntegrationBase {
     vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
     mockResponse.response = abi.encode(proposer, _requestId, bytes(''));
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
     vm.stopPrank();
   }
 

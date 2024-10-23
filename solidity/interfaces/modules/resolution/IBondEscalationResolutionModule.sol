@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IResolutionModule} from
   '@defi-wonderland/prophet-core/solidity/interfaces/modules/resolution/IResolutionModule.sol';
@@ -280,7 +281,8 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   function pledgeForDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    uint256 _pledgeAmount
+    uint256 _pledgeAmount,
+    IAccessController.AccessControl calldata _accessControl
   ) external;
 
   /**
@@ -294,7 +296,8 @@ interface IBondEscalationResolutionModule is IResolutionModule {
   function pledgeAgainstDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    uint256 _pledgeAmount
+    uint256 _pledgeAmount,
+    IAccessController.AccessControl calldata _accessControl
   ) external;
 
   /**
@@ -306,5 +309,9 @@ interface IBondEscalationResolutionModule is IResolutionModule {
    * @dev Winning pledgers will claim their pledges along with their reward. In case of no resolution, users can
    *      claim their pledges back. Losing pledgers will go to the rewards of the winning pledgers.
    */
-  function claimPledge(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external;
+  function claimPledge(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IAccessController.AccessControl calldata _accessControl
+  ) external;
 }

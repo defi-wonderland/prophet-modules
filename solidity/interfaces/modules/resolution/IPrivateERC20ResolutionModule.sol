@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {IAccountingExtension} from '../../extensions/IAccountingExtension.sol';
+
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IResolutionModule} from
   '@defi-wonderland/prophet-core/solidity/interfaces/modules/resolution/IResolutionModule.sol';
@@ -166,7 +168,8 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
   function commitVote(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    bytes32 _commitment
+    bytes32 _commitment,
+    IAccessController.AccessControl calldata _accessControl
   ) external;
 
   /**
@@ -181,7 +184,8 @@ interface IPrivateERC20ResolutionModule is IResolutionModule {
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
     uint256 _numberOfVotes,
-    bytes32 _salt
+    bytes32 _salt,
+    IAccessController.AccessControl calldata _accessControl
   ) external;
 
   /**

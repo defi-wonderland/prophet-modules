@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
-
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
-contract BondedResponseModule is Module, IBondedResponseModule {
+import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
+import {_PLEDGE_FOR_DISPUTE_TYPEHASH, _RELEASE_UNUTILIZED_RESPONSE_TYPEHASH} from '../../utils/Typehash.sol';
+
+contract BondedResponseModule is AccessController, Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}
 
   /// @inheritdoc IModule
@@ -100,7 +102,19 @@ contract BondedResponseModule is Module, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
+  function releaseUnutilizedResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    AccessControl calldata _accessControl
+  )
+    external
+    hasAccess(
+      _request.accessControlModule,
+      _RELEASE_UNUTILIZED_RESPONSE_TYPEHASH,
+      abi.encode(_request, _response),
+      _accessControl
+    )
+  {
     bytes32 _responseId = _validateResponse(_request, _response);
     bytes32 _disputeId = ORACLE.disputeOf(_responseId);
 

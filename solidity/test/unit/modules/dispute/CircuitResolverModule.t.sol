@@ -159,9 +159,19 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Won,
+          _createAccessControl(address(circuitResolverModule))
+        )
       ),
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector,
+      // ),
       abi.encode(true)
     );
 
@@ -201,8 +211,18 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      // ),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Won,
+          _createAccessControl(address(circuitResolverModule))
+        )
       ),
       abi.encode(true)
     );
@@ -254,9 +274,19 @@ contract CircuitResolverModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Lost,
+          _createAccessControl(address(circuitResolverModule))
+        )
       ),
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost
+      // ),
       abi.encode(true)
     );
 
@@ -377,7 +407,9 @@ contract CircuitResolverModule_Unit_OnDisputeStatusChange is BaseTest {
     // Mock and expect the call to the oracle, proposing the correct response
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.proposeResponse, (mockRequest, _newResponse)),
+      abi.encodeCall(
+        IOracle.proposeResponse, (mockRequest, _newResponse, _createAccessControl(address(circuitResolverModule)))
+      ),
       abi.encode(_getId(_newResponse))
     );
 

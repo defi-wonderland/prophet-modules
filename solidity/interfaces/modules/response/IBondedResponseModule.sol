@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IResponseModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/response/IResponseModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -117,5 +118,9 @@ interface IBondedResponseModule is IResponseModule {
    * @param _request The finalized request
    * @param _response The unutilized response
    */
-  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external;
+  function releaseUnutilizedResponse(
+    IOracle.Request calldata _request,
+    IOracle.Response calldata _response,
+    IAccessController.AccessControl calldata _accessControl
+  ) external;
 }

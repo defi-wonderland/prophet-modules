@@ -101,29 +101,29 @@ contract Integration_BondEscalation is IntegrationBase {
     // Proposer proposes a response
     _deposit(_bondEscalationAccounting, proposer, usdc, _expectedBondSize);
     vm.prank(proposer);
-    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl(proposer));
 
     // Disputer disputes the response
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
   }
 
   function test_proposerWins() public {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(disputer));
 
     // Step 3: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 4: Disputer runs out of capital
     // Step 5: External parties see that Disputer's dispute was wrong so they don't join to escalate
@@ -173,17 +173,17 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(disputer));
 
     // Step 3: Another party joins the dispute
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
     vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_secondDisputer));
 
     // Step 4: Proposer runs out of capital and doesn't pledge anymore
     // External parties see that Proposer's proposal was wrong so they don't join to escalate
@@ -225,27 +225,27 @@ contract Integration_BondEscalation is IntegrationBase {
       IOracle.Response({proposer: _secondProposer, requestId: _requestId, response: abi.encode('second response')});
     _deposit(_bondEscalationAccounting, _secondProposer, usdc, _pledgeSize);
     vm.prank(_secondProposer);
-    _responseId = oracle.proposeResponse(mockRequest, _secondResponse);
+    _responseId = oracle.proposeResponse(mockRequest, _secondResponse, _createAccessControl(_secondProposer));
 
     // Step 8: Disputer disputes Another proposer's answer
     // _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     IOracle.Dispute memory _secondDispute =
       IOracle.Dispute({disputer: disputer, responseId: _responseId, requestId: _requestId, proposer: _secondProposer});
     vm.prank(disputer);
-    _disputeId = oracle.disputeResponse(mockRequest, _secondResponse, _secondDispute);
+    _disputeId = oracle.disputeResponse(mockRequest, _secondResponse, _secondDispute, _createAccessControl(disputer));
 
     // Step 9: Shouldn't be able to pledge for or against the dispute due to the bond escalation deadline being over
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, _secondDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, _secondDispute, _createAccessControl(disputer));
 
     // Step 10: Because Another proposer's answer is disputed, a third party can propose a new answer
     IOracle.Response memory _thirdResponse =
       IOracle.Response({proposer: _thirdProposer, requestId: _requestId, response: abi.encode('third response')});
     _deposit(_bondEscalationAccounting, _thirdProposer, usdc, _expectedBondSize);
     vm.prank(_thirdProposer);
-    _responseId = oracle.proposeResponse(mockRequest, _thirdResponse);
+    _responseId = oracle.proposeResponse(mockRequest, _thirdResponse, _createAccessControl(_thirdProposer));
 
     // Step 11: It goes undisputed for three days, therefore it's deemed correct and final
     vm.warp(block.timestamp + _expectedDeadline + 1);
@@ -285,7 +285,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // So Another proposer gets paid Disputer's bond
     vm.warp(block.timestamp + _expectedDeadline + 2 days);
     _mockArbitrator.setAnswer(IOracle.DisputeStatus.Lost);
-    oracle.resolveDispute(mockRequest, _secondResponse, _secondDispute);
+    oracle.resolveDispute(mockRequest, _secondResponse, _secondDispute, mockAccessControl);
 
     // Test: The requester still has nothing
     assertEq(_bondEscalationAccounting.balanceOf(requester, usdc), 0, 'Mismatch: Requester balance');
@@ -326,17 +326,17 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(disputer));
 
     // Step 3: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
@@ -345,21 +345,24 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
     vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_secondDisputer));
 
     // Step 7: They go into the dispute resolution module
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    // review: we could use a global address `_anyone`
+    address _escalator = makeAddr('escalator');
+    vm.prank(_escalator);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_escalator));
 
     // Step 8: At this point, new answers can be proposed
     IOracle.Response memory _secondResponse =
       IOracle.Response({proposer: _secondProposer, requestId: _requestId, response: abi.encode('second response')});
     _deposit(_bondEscalationAccounting, _secondProposer, usdc, _expectedBondSize);
     vm.prank(_secondProposer);
-    _responseId = oracle.proposeResponse(mockRequest, _secondResponse);
+    _responseId = oracle.proposeResponse(mockRequest, _secondResponse, _createAccessControl(_secondProposer));
 
     // Step 9: After some time, the resolution module deems Disputer's dispute as correct
     _mineBlocks(100);
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, mockAccessControl);
     IOracle.DisputeStatus _disputeStatus = oracle.disputeStatus(_disputeId);
     assertEq(uint256(_disputeStatus), uint256(IOracle.DisputeStatus.Won), 'Mismatch: Dispute status');
 
@@ -400,29 +403,35 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doesn't have money
     // Step 3: External actor sees that Proposer's answer was incorrect so they pledge in favor of the dispute
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
     vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_secondDisputer));
 
     // Step 4: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 5: External actor sees that Proposer's answer was incorrect so they pledge in favor of the dispute, tying the bond escalation
     address _thirdDisputer = makeAddr('thirdDisputer');
     _deposit(_bondEscalationAccounting, _thirdDisputer, usdc, _pledgeSize);
     vm.prank(_thirdDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_thirdDisputer));
 
     // Step 6: Proposer loses in resolution
+    address _escalator = makeAddr('escalator');
+    address _resolver = makeAddr('resolver');
+
     vm.warp(block.timestamp + _bondEscalationDeadline + 1);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
+
+    vm.prank(_escalator);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_escalator));
+    vm.prank(_resolver);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(_resolver));
 
     IOracle.DisputeStatus _disputeStatus = oracle.disputeStatus(_disputeId);
     assertEq(uint256(_disputeStatus), uint256(IOracle.DisputeStatus.Won), 'Mismatch: Dispute status');
@@ -456,17 +465,17 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(disputer));
 
     // Step 3: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
@@ -475,7 +484,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
     vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_secondDisputer));
 
     ////////////////// NEW MALICIOUS REQUEST ////////////////////////
 
@@ -517,17 +526,17 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 1: Proposer pledges against the dispute
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 2: Disputer doubles down
     _deposit(_bondEscalationAccounting, disputer, usdc, _pledgeSize);
     vm.prank(disputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(disputer));
 
     // Step 3: Proposer doubles down
     _deposit(_bondEscalationAccounting, proposer, usdc, _pledgeSize);
     vm.prank(proposer);
-    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(proposer));
 
     // Step 4: Disputer runs out of capital
     // Step 5: The tying buffer kicks in
@@ -536,7 +545,7 @@ contract Integration_BondEscalation is IntegrationBase {
     // Step 6: An external party sees that Proposer's response is incorrect, so they bond the required WETH
     _deposit(_bondEscalationAccounting, _secondDisputer, usdc, _pledgeSize);
     vm.prank(_secondDisputer);
-    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    _bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(_secondDisputer));
 
     ////////////////// NEW MALICIOUS REQUEST ////////////////////////
 

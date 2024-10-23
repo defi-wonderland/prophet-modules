@@ -54,7 +54,7 @@ contract Integration_CallbackModule is IntegrationBase {
     vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
     mockResponse.response = abi.encode(proposer, _requestId, bytes(''));
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl());
     vm.stopPrank();
   }
 }

@@ -25,14 +25,14 @@ contract Integration_Arbitration is IntegrationBase {
 
     // First step: escalating the dispute
     vm.prank(disputer);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status active after starting the resolution?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
 
     // Second step: resolving the dispute
     vm.prank(disputer);
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status resolved after calling resolve?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
@@ -58,7 +58,7 @@ contract Integration_Arbitration is IntegrationBase {
 
     // First step: escalating the dispute
     vm.prank(disputer);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status resolved after calling resolve?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
@@ -83,7 +83,7 @@ contract Integration_Arbitration is IntegrationBase {
 
     // First step: escalating the dispute
     vm.prank(disputer);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status active after starting the resolution?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Active));
@@ -97,7 +97,7 @@ contract Integration_Arbitration is IntegrationBase {
 
     // Second step: resolving the dispute
     vm.prank(disputer);
-    oracle.resolveDispute(mockRequest, mockResponse, mockDispute);
+    oracle.resolveDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status resolved after calling resolve?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));
@@ -130,7 +130,7 @@ contract Integration_Arbitration is IntegrationBase {
 
     // First step: escalating and resolving the dispute
     vm.prank(disputer);
-    oracle.escalateDispute(mockRequest, mockResponse, mockDispute);
+    oracle.escalateDispute(mockRequest, mockResponse, mockDispute, _createAccessControl(disputer));
 
     // Check: is the dispute status resolved after calling escalate?
     assertEq(uint256(_arbitratorModule.getStatus(_disputeId)), uint256(IArbitratorModule.ArbitrationStatus.Resolved));

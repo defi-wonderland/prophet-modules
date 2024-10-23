@@ -199,7 +199,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     emit VoteCast(_voter, _disputeId, _amountOfVotes);
 
     vm.prank(_voter);
-    module.castVote(mockRequest, _dispute, _amountOfVotes);
+    module.castVote(mockRequest, _dispute, _amountOfVotes, _createAccessControl(_voter));
 
     (, uint256 _totalVotes) = module.escalations(_disputeId);
     // Check: totalVotes is updated?
@@ -216,7 +216,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.castVote(mockRequest, mockDispute, _numberOfVotes);
+    module.castVote(mockRequest, mockDispute, _numberOfVotes, _createAccessControl(address(this)));
   }
 
   /**
@@ -233,7 +233,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
 
     // Check: reverts if called with `_disputeId` of a non-escalated dispute?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_DisputeNotEscalated.selector);
-    module.castVote(mockRequest, _dispute, _numberOfVotes);
+    module.castVote(mockRequest, _dispute, _numberOfVotes, _createAccessControl(address(this)));
   }
 
   /**
@@ -265,7 +265,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
 
     // Check: reverts if dispute is already resolved?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_AlreadyResolved.selector);
-    module.castVote(mockRequest, _dispute, _amountOfVotes);
+    module.castVote(mockRequest, _dispute, _amountOfVotes, _createAccessControl(address(this)));
   }
 
   /**
@@ -303,7 +303,7 @@ contract ERC20ResolutionModule_Unit_CastVote is BaseTest {
 
     // Check: reverts if trying to cast vote after voting phase?
     vm.expectRevert(IERC20ResolutionModule.ERC20ResolutionModule_VotingPhaseOver.selector);
-    module.castVote(mockRequest, _dispute, _numberOfVotes);
+    module.castVote(mockRequest, _dispute, _numberOfVotes, _createAccessControl(address(this)));
   }
 }
 
@@ -358,7 +358,10 @@ contract ERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _newStatus)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, _newStatus, _createAccessControl(address(module)))
+      ),
       abi.encode()
     );
 
@@ -417,7 +420,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.claimVote(mockRequest, mockDispute);
+    module.claimVote(mockRequest, mockDispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -447,7 +450,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
 
     // Claim the refund
     vm.prank(_voter);
-    module.claimVote(mockRequest, _dispute);
+    module.claimVote(mockRequest, _dispute, _createAccessControl(address(_voter)));
   }
 
   /**
@@ -488,7 +491,7 @@ contract ERC20ResolutionModule_Unit_ClaimVote is BaseTest {
 
     // Claim the refund
     vm.prank(_voter);
-    module.claimVote(mockRequest, _dispute);
+    module.claimVote(mockRequest, _dispute, _createAccessControl(address(_voter)));
   }
 }
 

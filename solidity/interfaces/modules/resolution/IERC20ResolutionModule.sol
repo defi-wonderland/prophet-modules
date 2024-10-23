@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IResolutionModule} from
   '@defi-wonderland/prophet-core/solidity/interfaces/modules/resolution/IResolutionModule.sol';
@@ -156,7 +157,8 @@ interface IERC20ResolutionModule is IResolutionModule {
   function castVote(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    uint256 _numberOfVotes
+    uint256 _numberOfVotes,
+    IAccessController.AccessControl calldata _accessControl
   ) external;
 
   /**
@@ -180,7 +182,11 @@ interface IERC20ResolutionModule is IResolutionModule {
    * @param _request  The request for which the dispute was created
    * @param _dispute  The resolved dispute
    */
-  function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external;
+  function claimVote(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IAccessController.AccessControl calldata _accessControl
+  ) external;
 
   /**
    * @notice Gets the voters of a dispute

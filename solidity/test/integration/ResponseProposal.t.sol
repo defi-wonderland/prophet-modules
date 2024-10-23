@@ -31,7 +31,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     mockResponse.response = _responseBytes;
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     // Check: the proposer is a participant now?
     assertTrue(oracle.isParticipant(_requestId, proposer));
@@ -59,7 +59,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_TooLateToPropose.selector);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -70,7 +70,7 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     // First response
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
 
     mockResponse.response = abi.encode('second response');
 
@@ -79,7 +79,7 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     // Second response
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -95,7 +95,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidResponseBody.selector);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -128,7 +128,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     vm.expectRevert(IAccountingExtension.AccountingExtension_InsufficientFunds.selector);
 
     vm.prank(proposer);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 
   /**
@@ -171,7 +171,7 @@ contract Integration_ResponseProposal is IntegrationBase {
     mockResponse.proposer = proposer;
     mockResponse.requestId = _requestIdApprovedDisputeModule;
 
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
     vm.stopPrank();
 
     uint256 _newProposerBalance = _accountingExtension.balanceOf(proposer, usdc);
@@ -212,6 +212,6 @@ contract Integration_ResponseProposal is IntegrationBase {
 
     // Should revert as the dispute module is not approved
     vm.expectRevert(IAccountingExtension.AccountingExtension_NotAllowed.selector);
-    oracle.proposeResponse(mockRequest, mockResponse);
+    oracle.proposeResponse(mockRequest, mockResponse, mockAccessControl);
   }
 }

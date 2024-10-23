@@ -5,6 +5,9 @@ pragma solidity ^0.8.19;
 // solhint-disable-next-line no-console
 import {console} from 'forge-std/console.sol';
 
+import {
+  AccessController, IAccessController
+} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IOracle, Oracle} from '@defi-wonderland/prophet-core/solidity/contracts/Oracle.sol';
 import {IDisputeModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/dispute/IDisputeModule.sol';
 import {IFinalityModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/finality/IFinalityModule.sol';
@@ -229,7 +232,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   function _proposeResponse() internal returns (bytes32 _responseId) {
     vm.startPrank(proposer);
     _accountingExtension.approveModule(address(_responseModule));
-    _responseId = oracle.proposeResponse(mockRequest, mockResponse);
+    _responseId = oracle.proposeResponse(mockRequest, mockResponse, _createAccessControl());
     vm.stopPrank();
   }
 
@@ -240,7 +243,7 @@ contract IntegrationBase is DSTestPlus, TestConstants, Helpers {
   function _disputeResponse() internal returns (bytes32 _disputeId) {
     vm.startPrank(disputer);
     _accountingExtension.approveModule(address(_bondedDisputeModule));
-    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute);
+    _disputeId = oracle.disputeResponse(mockRequest, mockResponse, mockDispute, _createAccessControl());
     vm.stopPrank();
   }
 
