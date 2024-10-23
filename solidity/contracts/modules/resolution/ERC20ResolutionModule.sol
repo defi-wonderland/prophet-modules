@@ -6,12 +6,15 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IERC20ResolutionModule} from '../../../interfaces/modules/resolution/IERC20ResolutionModule.sol';
 
-contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
+import {_CAST_VOTE_TYPEHASH, _CLAIM_VOTE_TYPEHASH} from '../../utils/Typehash.sol';
+
+contract ERC20ResolutionModule is AccessController, Module, IERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -53,8 +56,17 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
   function castVote(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    uint256 _numberOfVotes
-  ) public {
+    uint256 _numberOfVotes,
+    AccessControl calldata _accessControl
+  )
+    public // review: why not external?
+    hasAccess(
+      _request.accessControlModule,
+      _CAST_VOTE_TYPEHASH,
+      abi.encode(_request, _dispute, _numberOfVotes),
+      _accessControl
+    )
+  {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];
     if (_escalation.startTime == 0) revert ERC20ResolutionModule_DisputeNotEscalated();
@@ -66,13 +78,13 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     uint256 _deadline = _escalation.startTime + _params.timeUntilDeadline;
     if (block.timestamp >= _deadline) revert ERC20ResolutionModule_VotingPhaseOver();
 
-    votes[_disputeId][msg.sender] += _numberOfVotes;
+    votes[_disputeId][_accessControl.user] += _numberOfVotes;
 
-    _voters[_disputeId].add(msg.sender);
+    _voters[_disputeId].add(_accessControl.user);
     escalations[_disputeId].totalVotes += _numberOfVotes;
 
-    _params.accountingExtension.bond(msg.sender, _dispute.requestId, _params.votingToken, _numberOfVotes);
-    emit VoteCast(msg.sender, _disputeId, _numberOfVotes);
+    _params.accountingExtension.bond(_accessControl.user, _dispute.requestId, _params.votingToken, _numberOfVotes);
+    emit VoteCast(_accessControl.user, _disputeId, _numberOfVotes);
   }
 
   /// @inheritdoc IERC20ResolutionModule
@@ -100,16 +112,23 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
 
     // Update status
     if (_quorumReached == 1) {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won);
+      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won, _defaultAccessControl());
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost);
+      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost, _defaultAccessControl());
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
   }
 
   /// @inheritdoc IERC20ResolutionModule
-  function claimVote(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external {
+  function claimVote(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    AccessControl calldata _accessControl
+  )
+    external
+    hasAccess(_request.accessControlModule, _CLAIM_VOTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+  {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];
 
@@ -119,10 +138,10 @@ contract ERC20ResolutionModule is Module, IERC20ResolutionModule {
     if (block.timestamp < _deadline) revert ERC20ResolutionModule_OnGoingVotingPhase();
 
     // Transfer the tokens back to the voter
-    uint256 _amount = votes[_disputeId][msg.sender];
-    _params.accountingExtension.release(msg.sender, _dispute.requestId, _params.votingToken, _amount);
+    uint256 _amount = votes[_disputeId][_accessControl.user];
+    _params.accountingExtension.release(_accessControl.user, _dispute.requestId, _params.votingToken, _amount);
 
-    emit VoteClaimed(msg.sender, _disputeId, _amount);
+    emit VoteClaimed(_accessControl.user, _disputeId, _amount);
   }
 
   /// @inheritdoc IERC20ResolutionModule

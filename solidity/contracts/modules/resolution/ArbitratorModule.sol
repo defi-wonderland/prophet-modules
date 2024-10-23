@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
 import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
 
-contract ArbitratorModule is Module, IArbitratorModule {
+contract ArbitratorModule is AccessController, Module, IArbitratorModule {
   /**
    * @notice The status of all disputes
    */
@@ -41,7 +42,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
     if (_params.arbitrator == address(0)) revert ArbitratorModule_InvalidArbitrator();
 
     _disputeData[_disputeId] = ArbitrationStatus.Active;
-    IArbitrator(_params.arbitrator).resolve(_request, _response, _dispute);
+    IArbitrator(_params.arbitrator).resolve(_request, _response, _dispute, _defaultAccessControl());
 
     emit ResolutionStarted(_dispute.requestId, _disputeId);
   }
@@ -61,7 +62,7 @@ contract ArbitratorModule is Module, IArbitratorModule {
     if (_status <= IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidResolutionStatus();
     _disputeData[_disputeId] = ArbitrationStatus.Resolved;
 
-    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status);
+    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status, _defaultAccessControl());
 
     emit DisputeResolved(_dispute.requestId, _disputeId, _status);
   }
