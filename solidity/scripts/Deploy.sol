@@ -10,7 +10,6 @@ import {IResolutionModule} from
 import {BondEscalationModule} from '../contracts/modules/dispute/BondEscalationModule.sol';
 import {BondedDisputeModule} from '../contracts/modules/dispute/BondedDisputeModule.sol';
 
-import {CircuitResolverModule} from '../contracts/modules/dispute/CircuitResolverModule.sol';
 import {RootVerificationModule} from '../contracts/modules/dispute/RootVerificationModule.sol';
 import {CallbackModule} from '../contracts/modules/finality/CallbackModule.sol';
 import {MultipleCallbacksModule} from '../contracts/modules/finality/MultipleCallbacksModule.sol';
@@ -44,7 +43,6 @@ contract Deploy is Script {
   BondedDisputeModule bondedDisputeModule;
   BondEscalationModule bondEscalationModule;
   RootVerificationModule rootVerificationModule;
-  CircuitResolverModule circuitResolverModule;
 
   // Resolution modules
   ArbitratorModule arbitratorModule;
@@ -129,9 +127,5 @@ contract Deploy is Script {
     authorizedCallers[0] = address(bondEscalationModule);
     bondEscalationAccounting = new BondEscalationAccounting(oracle, authorizedCallers);
     console.log('BOND_ESCALATION_ACCOUNTING_EXTENSION:', address(bondEscalationAccounting));
-
-    // Deploy circuit resolver module
-    circuitResolverModule = new CircuitResolverModule(oracle);
-    console.log('CIRCUIT_RESOLVER_MODULE:', address(circuitResolverModule));
   }
 }

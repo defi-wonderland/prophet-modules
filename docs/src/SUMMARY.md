@@ -26,7 +26,6 @@
 
     - [BondedDisputeModule](content/modules/dispute/bonded_dispute_module.md)
     - [BondEscalationModule](content/modules/dispute/bond_escalation_module.md)
-    - [CircuitResolverModule](content/modules/dispute/circuit_resolver_module.md)
     - [RootVerificationModule](content/modules/dispute/root_verification_module.md)
 
   - [Resolution](content/modules/resolution.md)
@@ -75,7 +74,6 @@
       - [❱ dispute](solidity/interfaces/modules/dispute/README.md)
         - [IBondEscalationModule](solidity/interfaces/modules/dispute/IBondEscalationModule.sol/interface.IBondEscalationModule.md)
         - [IBondedDisputeModule](solidity/interfaces/modules/dispute/IBondedDisputeModule.sol/interface.IBondedDisputeModule.md)
-        - [ICircuitResolverModule](solidity/interfaces/modules/dispute/ICircuitResolverModule.sol/interface.ICircuitResolverModule.md)
         - [IRootVerificationModule](solidity/interfaces/modules/dispute/IRootVerificationModule.sol/interface.IRootVerificationModule.md)
       - [❱ finality](solidity/interfaces/modules/finality/README.md)
         - [ICallbackModule](solidity/interfaces/modules/finality/ICallbackModule.sol/interface.ICallbackModule.md)
