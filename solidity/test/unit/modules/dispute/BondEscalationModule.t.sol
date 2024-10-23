@@ -980,7 +980,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
   function test_revertIfInvalidDisputeBody() public {
     // Check: does it revert if the dispute body is invalid?
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, mockDispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, mockDispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -991,7 +991,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if the dispute is not escalated yet?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1017,7 +1017,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1046,7 +1046,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if the maximum number of escalations is reached?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1074,7 +1074,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if trying to pledge in a dispute that is already surpassed?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1107,7 +1107,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if trying to tie outside of the tying buffer?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1148,7 +1148,7 @@ contract BondEscalationModule_Unit_PledgeForDispute is BaseTest {
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit PledgedForDispute(_disputeId, address(this), _params.bondSize);
 
-    bondEscalationModule.pledgeForDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeForDispute(mockRequest, _dispute, _createAccessControl(address(this)));
 
     uint256 _pledgesForDispute = bondEscalationModule.getEscalation(_requestId).amountOfPledgesForDispute;
     // Check: is the number of pledges for the dispute properly updated?
@@ -1167,7 +1167,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
   function test_revertIfInvalidDisputeBody() public {
     // Check: does it revert if the dispute body is invalid?
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, mockDispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1178,7 +1178,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if the dispute is not escalated yet?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_InvalidDispute.selector);
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1204,7 +1204,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if the bond escalation is over?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_BondEscalationOver.selector);
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1234,7 +1234,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     // Check: does it revert if the maximum number of escalations is reached?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_MaxNumberOfEscalationsReached.selector);
 
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1265,7 +1265,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     // Check: does it revert if trying to pledge in a dispute that is already surpassed?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CanOnlySurpassByOnePledge.selector);
 
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1298,7 +1298,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if trying to tie outside of the tying buffer?
     vm.expectRevert(IBondEscalationModule.BondEscalationModule_CannotBreakTieDuringTyingBuffer.selector);
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
   }
 
   /**
@@ -1337,7 +1337,7 @@ contract BondEscalationModule_Unit_PledgeAgainstDispute is BaseTest {
     vm.expectEmit(true, true, true, true, address(bondEscalationModule));
     emit PledgedAgainstDispute(_disputeId, address(this), _params.bondSize);
 
-    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute);
+    bondEscalationModule.pledgeAgainstDispute(mockRequest, _dispute, _createAccessControl(address(this)));
 
     uint256 _pledgesForDispute = bondEscalationModule.getEscalation(_requestId).amountOfPledgesAgainstDispute;
     // Check: is the number of pledges for the dispute properly updated?
@@ -1489,7 +1489,16 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
 
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, _response, _dispute, IOracle.DisputeStatus.Won)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          _response,
+          _dispute,
+          IOracle.DisputeStatus.Won,
+          _createAccessControl(address(bondEscalationModule))
+        )
+      ),
       abi.encode(true)
     );
 
@@ -1534,7 +1543,16 @@ contract BondEscalationModule_Unit_SettleBondEscalation is BaseTest {
 
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, _response, _dispute, IOracle.DisputeStatus.Lost)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          _response,
+          _dispute,
+          IOracle.DisputeStatus.Lost,
+          _createAccessControl(address(bondEscalationModule))
+        )
+      ),
       abi.encode(true)
     );
 

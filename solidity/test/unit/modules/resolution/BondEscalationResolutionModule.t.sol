@@ -272,7 +272,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    vm.prank(pledgerFor);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     // 1. BondEscalationResolutionModule_NotEscalated
     (_requestId,, _disputeId) = _setResolutionModuleData(_params);
@@ -282,7 +283,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    vm.prank(pledgerFor);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     // 2. BondEscalationResolutionModule_PledgingPhaseOver
     _params.timeUntilDeadline = block.timestamp - 1;
@@ -293,7 +295,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if the pledging phase is over?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    vm.prank(pledgerFor);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     // 3. BondEscalationResolutionModule_MustBeResolved
     _params.timeUntilDeadline = 10_000;
@@ -313,7 +316,8 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
 
     // Check: does it revert if inequality timer has passed?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    vm.prank(pledgerFor);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     // 4. BondEscalationResolutionModule_AgainstTurnToEqualize
     vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
@@ -331,7 +335,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_AgainstTurnToEqualize.selector);
     vm.prank(pledgerFor);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
   }
 
   function test_earlyReturnIfThresholdNotSurpassed(
@@ -373,7 +377,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerFor);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
@@ -421,7 +425,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerFor);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -472,7 +476,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     vm.prank(pledgerFor);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -520,7 +524,7 @@ contract BondEscalationResolutionModule_Unit_PledgeForDispute is BaseTest {
     emit PledgedForDispute(pledgerFor, _requestId, _disputeId, _pledgeAmount);
 
     vm.prank(pledgerFor);
-    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeForDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerFor));
 
     (,, uint256 _realPledgesFor,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -558,7 +562,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(address(this)));
 
     // 1. BondEscalationResolutionModule_NotEscalated
     (_requestId,, _disputeId) = _setResolutionModuleData(_params);
@@ -568,7 +572,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotEscalated.selector);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(address(this)));
 
     // 2. BondEscalationResolutionModule_PledgingPhaseOver
     _params.timeUntilDeadline = block.timestamp - 1;
@@ -578,7 +582,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if the pledging phase is over?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_PledgingPhaseOver.selector);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(address(this)));
 
     // 3. BondEscalationResolutionModule_MustBeResolved
     _params.timeUntilDeadline = 10_000;
@@ -599,7 +603,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
 
     // Check: does it revert if inequality timer has passed?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_MustBeResolved.selector);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(address(this)));
 
     // 4. BondEscalationResolutionModule_AgainstTurnToEqualize
     vm.warp(block.timestamp - _params.timeToBreakInequality - 1); // Not past the deadline anymore
@@ -617,7 +621,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     // Check: does it revert if status == AgainstTurnToEqualize?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_ForTurnToEqualize.selector);
     vm.prank(pledgerAgainst);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerAgainst));
   }
 
   function test_earlyReturnIfThresholdNotSurpassed(uint256 _pledgeAmount) public {
@@ -658,7 +662,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerAgainst);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerAgainst));
 
     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status,) = module.inequalityData(_disputeId);
@@ -706,7 +710,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     vm.startPrank(pledgerAgainst);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerAgainst));
 
     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -757,7 +761,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     vm.prank(pledgerAgainst);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerAgainst));
 
     (,,, uint256 _realPledgesAgainst) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -805,7 +809,7 @@ contract BondEscalationResolutionModule_Unit_PledgeAgainstDispute is BaseTest {
     emit PledgedAgainstDispute(pledgerAgainst, _requestId, _disputeId, _pledgeAmount);
 
     vm.prank(pledgerAgainst);
-    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount);
+    module.pledgeAgainstDispute(mockRequest, mockDispute, _pledgeAmount, _createAccessControl(pledgerAgainst));
 
     (,, uint256 _realPledgesAgainst,) = module.escalations(_disputeId);
     (IBondEscalationResolutionModule.InequalityStatus _status, uint256 _timer) = module.inequalityData(_disputeId);
@@ -895,7 +899,14 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     _mockAndExpect(
       address(oracle),
       abi.encodeCall(
-        IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.NoResolution,
+          _createAccessControl(address(module))
+        )
       ),
       abi.encode()
     );
@@ -925,7 +936,14 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     _mockAndExpect(
       address(oracle),
       abi.encodeCall(
-        IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.NoResolution)
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.NoResolution,
+          _createAccessControl(address(module))
+        )
       ),
       abi.encode()
     );
@@ -966,7 +984,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won, _createAccessControl(address(module)))
+      ),
       abi.encode()
     );
 
@@ -1002,7 +1023,10 @@ contract BondEscalationResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost, _createAccessControl(address(module)))
+      ),
       abi.encode()
     );
 
@@ -1032,7 +1056,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.claimPledge(mockRequest, mockDispute);
+    module.claimPledge(mockRequest, mockDispute, _createAccessControl(address(this)));
 
     (,, bytes32 _disputeId) = _setResolutionModuleData(_params);
 
@@ -1046,7 +1070,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
 
     // Check: does it revert if trying to claim a pledge of a not resolved escalation?
     vm.expectRevert(IBondEscalationResolutionModule.BondEscalationResolutionModule_NotResolved.selector);
-    module.claimPledge(mockRequest, mockDispute);
+    module.claimPledge(mockRequest, mockDispute, _createAccessControl(address(this)));
   }
 
   function test_disputerWon(
@@ -1097,7 +1121,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(mockRequest, mockDispute);
+    module.claimPledge(mockRequest, mockDispute, _createAccessControl(_randomPledger));
 
     // Check: are the pledges for dispute for the dispute and pledger set to 0?
     assertEq(module.pledgesForDispute(_disputeId, _randomPledger), 0);
@@ -1151,7 +1175,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(mockRequest, mockDispute);
+    module.claimPledge(mockRequest, mockDispute, _createAccessControl(_randomPledger));
 
     // Check: is the pledges against dispute for this dispute and pledger set to 0?
     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);
@@ -1217,7 +1241,7 @@ contract BondEscalationResolutionModule_Unit_ClaimPledge is BaseTest {
     );
 
     vm.prank(_randomPledger);
-    module.claimPledge(mockRequest, mockDispute);
+    module.claimPledge(mockRequest, mockDispute, _createAccessControl(address(_randomPledger)));
 
     // Check: is the pledges against dispute for this dispute and pledger set to 0?
     assertEq(module.pledgesAgainstDispute(_disputeId, _randomPledger), 0);

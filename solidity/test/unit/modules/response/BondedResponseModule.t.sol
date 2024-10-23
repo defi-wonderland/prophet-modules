@@ -513,7 +513,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     emit UnutilizedResponseReleased(_requestId, _responseId);
 
     // Test: does it release the bond?
-    bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse);
+    bondedResponseModule.releaseUnutilizedResponse(mockRequest, mockResponse, _createAccessControl(address(this)));
   }
 
   /**
@@ -546,7 +546,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     // Check: reverts?
     vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidReleaseParameters.selector);
 
-    bondedResponseModule.releaseUnutilizedResponse(mockRequest, _response);
+    bondedResponseModule.releaseUnutilizedResponse(mockRequest, _response, _createAccessControl(address(this)));
   }
 
   /**
@@ -605,7 +605,10 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
         vm.expectRevert(IBondedResponseModule.BondedResponseModule_InvalidReleaseParameters.selector);
       }
 
-      bondedResponseModule.releaseUnutilizedResponse(mockRequest, _response);
+      // todo: use `_anyone`
+      address _notTheProposer = makeAddr('not-the-proposer');
+      vm.prank(_notTheProposer);
+      bondedResponseModule.releaseUnutilizedResponse(mockRequest, _response, _createAccessControl(_notTheProposer));
     }
   }
 }

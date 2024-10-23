@@ -116,7 +116,13 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
 
     // Mock and expect the callback to the arbitrator
     _mockAndExpect(
-      _arbitrator, abi.encodeCall(arbitrator.resolve, (mockRequest, mockResponse, mockDispute)), abi.encode(bytes(''))
+      _arbitrator,
+      abi.encodeCall(
+        arbitrator.resolve,
+        // review
+        (mockRequest, mockResponse, mockDispute, _createAccessControl(address(arbitratorModule)))
+      ),
+      abi.encode(bytes(''))
     );
 
     vm.prank(address(oracle));
@@ -135,7 +141,13 @@ contract ArbitratorModule_Unit_StartResolution is BaseTest {
 
     // Mock and expect the callback to the arbitrator
     _mockAndExpect(
-      _arbitrator, abi.encodeCall(arbitrator.resolve, (mockRequest, mockResponse, mockDispute)), abi.encode(bytes(''))
+      _arbitrator,
+      abi.encodeCall(
+        arbitrator.resolve,
+        // review
+        (mockRequest, mockResponse, mockDispute, _createAccessControl(address(arbitratorModule)))
+      ),
+      abi.encode(bytes(''))
     );
 
     // Check: is the event emitted?
@@ -196,7 +208,10 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(oracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _arbitratorStatus)),
+      abi.encodeCall(
+        oracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, _arbitratorStatus, _createAccessControl(address(arbitratorModule)))
+      ),
       abi.encode()
     );
 
@@ -251,7 +266,10 @@ contract ArbitratorModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(oracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _arbitratorStatus)),
+      abi.encodeCall(
+        oracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, _arbitratorStatus, _createAccessControl(address(arbitratorModule)))
+      ),
       abi.encode()
     );
 

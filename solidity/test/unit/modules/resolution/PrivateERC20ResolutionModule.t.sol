@@ -93,7 +93,7 @@ contract BaseTest is Test, Helpers {
         abi.encodeCall(IOracle.disputeStatus, (_disputeId)),
         abi.encode(IOracle.DisputeStatus.Escalated)
       );
-      module.commitVote(_request, _dispute, _commitment);
+      module.commitVote(_request, _dispute, _commitment, _createAccessControl());
 
       vm.warp(140_001);
 
@@ -102,7 +102,7 @@ contract BaseTest is Test, Helpers {
         abi.encodeCall(IERC20.transferFrom, (vm.addr(_i), address(module), _amountOfVotes)),
         abi.encode()
       );
-      module.revealVote(_request, _dispute, _amountOfVotes, bytes32(_i));
+      module.revealVote(_request, _dispute, _amountOfVotes, bytes32(_i), _createAccessControl());
       vm.stopPrank();
       _totalVotesCast += _amountOfVotes;
       unchecked {
@@ -205,21 +205,21 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if no commitment is given?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_EmptyCommitment.selector);
-    module.commitVote(mockRequest, mockDispute, bytes32(''));
+    module.commitVote(mockRequest, mockDispute, bytes32(''), _createAccessControl());
 
     // Compute and store commitment
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl());
 
     // Check: reverts if empty commitment is given?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_EmptyCommitment.selector);
-    module.commitVote(mockRequest, mockDispute, bytes32(''));
+    module.commitVote(mockRequest, mockDispute, bytes32(''), _createAccessControl());
 
     // Check: is the commitment stored?
     IPrivateERC20ResolutionModule.VoterData memory _voterData = module.forTest_getVoterData(_disputeId, _voter);
     assertEq(_voterData.commitment, _commitment);
 
     bytes32 _newCommitment = module.computeCommitment(_disputeId, uint256(_salt), bytes32(_amountOfVotes));
-    module.commitVote(mockRequest, mockDispute, _newCommitment);
+    module.commitVote(mockRequest, mockDispute, _newCommitment, _createAccessControl());
     vm.stopPrank();
 
     // Check: is voters data updated with new commitment?
@@ -234,7 +234,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -251,7 +251,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if no dispute exists?
     vm.expectRevert(IValidator.Validator_InvalidDispute.selector);
-    module.commitVote(mockRequest, _dispute, _commitment);
+    module.commitVote(mockRequest, _dispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -272,7 +272,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if the dispute is already resolved?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -295,7 +295,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if the dispute is already resolved?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -316,7 +316,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if the dispute is already resolved?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -337,7 +337,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if the dispute is already resolved?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_AlreadyResolved.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -358,7 +358,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: reverts if dispute is not escalated? == no escalation data
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_DisputeNotEscalated.selector);
-    module.commitVote(mockRequest, _dispute, _commitment);
+    module.commitVote(mockRequest, _dispute, _commitment, _createAccessControl(address(this)));
   }
 
   /**
@@ -398,7 +398,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
 
     // Check: does it revert if the committing phase is over?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_CommittingPhaseOver.selector);
-    module.commitVote(mockRequest, mockDispute, _commitment);
+    module.commitVote(mockRequest, mockDispute, _commitment, _createAccessControl(address(this)));
   }
 }
 
@@ -449,7 +449,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     emit VoteRevealed(_voter, _disputeId, _amountOfVotes);
 
     vm.prank(_voter);
-    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt, _createAccessControl(address(_voter)));
 
     (, uint256 _totalVotes) = module.escalations(_disputeId);
     // Check: is totalVotes updated?
@@ -467,7 +467,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     // Check: does it revert if the dispute body is invalid?
     mockDispute.requestId = bytes32(0);
     vm.expectRevert(ValidatorLib.ValidatorLib_InvalidDisputeBody.selector);
-    module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
+    module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt, _createAccessControl(address(this)));
   }
 
   /**
@@ -484,7 +484,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
 
     // Check: does it revert if the dispute is not escalated?
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_DisputeNotEscalated.selector);
-    module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt);
+    module.revealVote(mockRequest, mockDispute, _numberOfVotes, _salt, _createAccessControl(address(this)));
   }
 
   /**
@@ -519,11 +519,11 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
     if (_timestamp <= 140_000) {
       // Check: does it revert if trying to reveal during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);
-      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt);
+      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt, _createAccessControl(address(this)));
     } else {
       // Check: does it revert if trying to reveal after the revealing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_RevealingPhaseOver.selector);
-      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt);
+      module.revealVote(mockRequest, _dispute, _numberOfVotes, _salt, _createAccessControl(address(this)));
     }
   }
 
@@ -574,18 +574,18 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
 
     // Check: does it revert if the commitment is not valid? (wrong salt)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
-    module.revealVote(mockRequest, _dispute, _amountOfVotes, _wrongSalt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _wrongSalt, _createAccessControl());
 
     // Check: does it revert if the commitment is not valid? (wrong amount of votes)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
-    module.revealVote(mockRequest, _dispute, _wrongAmountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _wrongAmountOfVotes, _salt, _createAccessControl());
 
     vm.stopPrank();
 
     // Check: does it revert if the commitment is not valid? (wrong voter)
     vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_WrongRevealData.selector);
     vm.prank(_wrongVoter);
-    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt);
+    module.revealVote(mockRequest, _dispute, _amountOfVotes, _salt, _createAccessControl(_wrongVoter));
   }
 }
 
@@ -648,7 +648,10 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Mock and expect IOracle.updateDisputeStatus to be called
     _mockAndExpect(
       address(oracle),
-      abi.encodeCall(IOracle.updateDisputeStatus, (mockRequest, mockResponse, mockDispute, _newStatus)),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (mockRequest, mockResponse, mockDispute, _newStatus, _createAccessControl(address(module)))
+      ),
       abi.encode()
     );
 
@@ -701,6 +704,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
     // Jump to timestamp
     vm.warp(_timestamp);
 
+    // fixme : refactor this test
     if (_timestamp <= 500_000) {
       // Check: does it revert if trying to resolve during the committing phase?
       vm.expectRevert(IPrivateERC20ResolutionModule.PrivateERC20ResolutionModule_OnGoingCommittingPhase.selector);

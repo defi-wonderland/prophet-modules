@@ -207,8 +207,18 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      // ),
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Won,
+          _createAccessControl(address(rootVerificationModule))
+        )
       ),
       abi.encode(true)
     );
@@ -250,9 +260,19 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Won,
+          _createAccessControl(address(rootVerificationModule))
+        )
       ),
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Won
+      // ),
       abi.encode(true)
     );
 
@@ -305,9 +325,19 @@ contract RootVerificationModule_Unit_DisputeResponse is BaseTest {
     // Mock and expect the call the oracle, updating the dispute's status
     _mockAndExpect(
       address(oracle),
-      abi.encodeWithSelector(
-        oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost
+      abi.encodeCall(
+        IOracle.updateDisputeStatus,
+        (
+          mockRequest,
+          mockResponse,
+          mockDispute,
+          IOracle.DisputeStatus.Lost,
+          _createAccessControl(address(rootVerificationModule))
+        )
       ),
+      // abi.encodeWithSelector(
+      //   oracle.updateDisputeStatus.selector, mockRequest, mockResponse, mockDispute, IOracle.DisputeStatus.Lost
+      // ),
       abi.encode(true)
     );
 
