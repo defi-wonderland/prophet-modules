@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 interface IArbitrator {
@@ -21,6 +22,7 @@ interface IArbitrator {
   function resolve(
     IOracle.Request memory _request,
     IOracle.Response memory _response,
-    IOracle.Dispute memory _dispute
+    IOracle.Dispute memory _dispute,
+    IAccessController.AccessControl memory _accessControl
   ) external returns (bytes memory _data);
 }

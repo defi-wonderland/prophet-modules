@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IAccessController} from '@defi-wonderland/prophet-core/solidity/interfaces/IAccessController.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {IDisputeModule} from '@defi-wonderland/prophet-core/solidity/interfaces/modules/dispute/IDisputeModule.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -246,7 +247,11 @@ interface IBondEscalationModule is IDisputeModule {
    *      During the tying buffer, the losing party can only tie, and once the escalation is tied
    *      no further funds can be pledged.
    */
-  function pledgeForDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external;
+  function pledgeForDispute(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IAccessController.AccessControl calldata _accessControl
+  ) external;
 
   /**
    * @notice Pledges funds against a given disputeId during its bond escalation process.
@@ -260,7 +265,11 @@ interface IBondEscalationModule is IDisputeModule {
    *      During the tying buffer, the losing party can only tie, and once the escalation is tied
    *      no further funds can be pledged.
    */
-  function pledgeAgainstDispute(IOracle.Request calldata _request, IOracle.Dispute calldata _dispute) external;
+  function pledgeAgainstDispute(
+    IOracle.Request calldata _request,
+    IOracle.Dispute calldata _dispute,
+    IAccessController.AccessControl calldata _accessControl
+  ) external;
 
   /**
    * @notice Settles the bond escalation process of a given requestId.
