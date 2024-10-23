@@ -515,7 +515,8 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     IERC20 _token,
     uint256 _bondSize,
     uint256 _deadline,
-    bytes32 _finalizedResponseId
+    bytes32 _finalizedResponseId,
+    uint256 _finalizedAt
   ) public {
     // Setting the response module data
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
@@ -529,6 +530,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     // Can't claim back the bond of the response that was finalized
     vm.assume(_finalizedResponseId > 0);
     vm.assume(_finalizedResponseId != _responseId);
+    vm.assume(_finalizedAt > 0);
 
     // Mock and expect IOracle.disputeOf to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeOf, (_responseId)), abi.encode(bytes32(0)));
@@ -537,6 +539,8 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
     );
+
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedAt, (_requestId)), abi.encode(_finalizedAt));
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp)
@@ -580,6 +584,8 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     // Mock and expect IOracle.finalizedResponseId to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(0));
 
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedAt, (_requestId)), abi.encode(0));
+
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp)
     );
@@ -599,7 +605,8 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     uint256 _deadline,
     address _proposer,
     bytes32 _finalizedResponseId,
-    bytes32 _disputeId
+    bytes32 _disputeId,
+    uint256 _finalizedAt
   ) public {
     // Setting the response module data
     mockRequest.responseModuleData = abi.encode(accounting, _token, _bondSize, _deadline, _baseDisputeWindow);
@@ -615,6 +622,7 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     // Can't claim back the bond of the response that was finalized
     vm.assume(_finalizedResponseId > 0);
     vm.assume(_finalizedResponseId != _responseId);
+    vm.assume(_finalizedAt > 0);
 
     // Mock and expect IOracle.disputeOf to be called
     _mockAndExpect(address(oracle), abi.encodeCall(IOracle.disputeOf, (_responseId)), abi.encode(_disputeId));
@@ -623,6 +631,8 @@ contract BondedResponseModule_Unit_ReleaseUnutilizedResponse is BaseTest {
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.finalizedResponseId, (_requestId)), abi.encode(_finalizedResponseId)
     );
+
+    _mockAndExpect(address(oracle), abi.encodeCall(IOracle.finalizedAt, (_requestId)), abi.encode(_finalizedAt));
 
     _mockAndExpect(
       address(oracle), abi.encodeCall(IOracle.responseCreatedAt, (_responseId)), abi.encode(block.timestamp)
