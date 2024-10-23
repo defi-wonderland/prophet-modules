@@ -52,6 +52,7 @@ contract BaseTest is Test, Helpers {
   IERC20 public token;
 
   uint256 public constant REVEALING_TIME_WINDOW = 40_000;
+  uint256 public constant COMMITING_TIME_WINDOW = 40_000;
   uint256 public constant START_TIME = 100_000;
   uint256 public constant END_TIME = START_TIME + REVEALING_TIME_WINDOW;
 
@@ -176,7 +177,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: 1,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
@@ -377,7 +378,7 @@ contract PrivateERC20ResolutionModule_Unit_CommitVote is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: 1,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
@@ -417,7 +418,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: 1,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
@@ -503,7 +504,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: 1,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
@@ -553,7 +554,7 @@ contract PrivateERC20ResolutionModule_Unit_RevealVote is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: 1,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
@@ -604,7 +605,7 @@ contract PrivateERC20ResolutionModule_Unit_ResolveDispute is BaseTest {
         accountingExtension: IAccountingExtension(makeAddr('AccountingExtension')),
         votingToken: token,
         minVotesForQuorum: _minVotesForQuorum,
-        committingTimeWindow: 40_000,
+        committingTimeWindow: COMMITING_TIME_WINDOW,
         revealingTimeWindow: REVEALING_TIME_WINDOW
       })
     );
