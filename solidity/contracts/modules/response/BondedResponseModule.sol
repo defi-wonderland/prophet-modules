@@ -101,19 +101,7 @@ contract BondedResponseModule is AccessControllerModule, IBondedResponseModule {
   }
 
   /// @inheritdoc IBondedResponseModule
-  function releaseUnutilizedResponse(
-    IOracle.Request calldata _request,
-    IOracle.Response calldata _response,
-    AccessControl calldata _accessControl
-  )
-    external
-    hasAccess(
-      _request.accessControlModule,
-      _RELEASE_UNUTILIZED_RESPONSE_TYPEHASH,
-      abi.encode(_request, _response),
-      _accessControl
-    )
-  {
+  function releaseUnutilizedResponse(IOracle.Request calldata _request, IOracle.Response calldata _response) external {
     bytes32 _responseId = _validateResponse(_request, _response);
     bytes32 _disputeId = ORACLE.disputeOf(_responseId);
 
