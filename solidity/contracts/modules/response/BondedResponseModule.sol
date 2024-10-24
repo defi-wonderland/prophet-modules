@@ -112,7 +112,7 @@ contract BondedResponseModule is Module, IBondedResponseModule {
     }
 
     bytes32 _finalizedResponseId = ORACLE.finalizedResponseId(_response.requestId);
-    if (_finalizedResponseId == _responseId || _finalizedResponseId == bytes32(0)) {
+    if (_finalizedResponseId == _responseId || ORACLE.finalizedAt(_response.requestId) == 0) {
       revert BondedResponseModule_InvalidReleaseParameters();
     }
 
