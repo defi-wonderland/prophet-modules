@@ -141,7 +141,13 @@ contract BondEscalationResolutionModule is AccessController, Module, IBondEscala
       _disputeStatus = IOracle.DisputeStatus.Lost;
     }
 
-    ORACLE.updateDisputeStatus(_request, _response, _dispute, _disputeStatus, _defaultAccessControl());
+    ORACLE.updateDisputeStatus({
+      _request: _request,
+      _response: _response,
+      _dispute: _dispute,
+      _status: _disputeStatus,
+      _accessControl: _defaultAccessControl()
+    });
     emit DisputeResolved(_dispute.requestId, _disputeId, _disputeStatus);
   }
 
@@ -198,9 +204,9 @@ contract BondEscalationResolutionModule is AccessController, Module, IBondEscala
 
     if (_escalation.resolution == Resolution.NoResolution) {
       {
-        uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][msg.sender];
+        uint256 _pledgerBalanceFor = pledgesForDispute[_disputeId][_accessControl.user];
         if (_pledgerBalanceFor > 0) {
-          pledgesForDispute[_disputeId][msg.sender] -= _pledgerBalanceFor;
+          pledgesForDispute[_disputeId][_accessControl.user] -= _pledgerBalanceFor;
           _claimPledge({
             _request: _request,
             _dispute: _dispute,
@@ -211,9 +217,9 @@ contract BondEscalationResolutionModule is AccessController, Module, IBondEscala
         }
       }
       {
-        uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][msg.sender];
+        uint256 _pledgerBalanceAgainst = pledgesAgainstDispute[_disputeId][_accessControl.user];
         if (_pledgerBalanceAgainst > 0) {
-          pledgesAgainstDispute[_disputeId][msg.sender] -= _pledgerBalanceAgainst;
+          pledgesAgainstDispute[_disputeId][_accessControl.user] -= _pledgerBalanceAgainst;
           _claimPledge({
             _request: _request,
             _dispute: _dispute,

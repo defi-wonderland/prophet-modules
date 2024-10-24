@@ -16,7 +16,7 @@ contract MockArbitrator is IArbitrator {
     IOracle.Request memory,
     IOracle.Response memory,
     IOracle.Dispute memory,
-    IAccessController.AccessControl memory AccessControl
+    IAccessController.AccessControl memory
   ) external pure returns (bytes memory _result) {
     _result = new bytes(0);
   }

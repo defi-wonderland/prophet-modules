@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
-import {
-  AccessController, IAccessController
-} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
+import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
-import '../../utils/Typehash.sol';
+import {_PLEDGE_AGAINST_DISPUTE_TYPEHASH, _PLEDGE_FOR_DISPUTE_TYPEHASH} from '../../utils/Typehash.sol';
 
 contract BondEscalationModule is AccessController, Module, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
@@ -224,7 +221,7 @@ contract BondEscalationModule is AccessController, Module, IBondEscalationModule
   function pledgeForDispute(
     IOracle.Request calldata _request,
     IOracle.Dispute calldata _dispute,
-    IAccessController.AccessControl calldata _accessControl
+    AccessControl calldata _accessControl
   )
     external
     hasAccess(_request.accessControlModule, _PLEDGE_FOR_DISPUTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
@@ -309,13 +306,13 @@ contract BondEscalationModule is AccessController, Module, IBondEscalationModule
 
     emit BondEscalationStatusUpdated(_dispute.requestId, _disputeId, _escalation.status);
 
-    ORACLE.updateDisputeStatus(
-      _request,
-      _response,
-      _dispute,
-      _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
-      _defaultAccessControl()
-    );
+    ORACLE.updateDisputeStatus({
+      _request: _request,
+      _response: _response,
+      _dispute: _dispute,
+      _status: _disputersWon ? IOracle.DisputeStatus.Won : IOracle.DisputeStatus.Lost,
+      _accessControl: _defaultAccessControl()
+    });
   }
 
   /**

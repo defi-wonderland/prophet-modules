@@ -73,7 +73,7 @@ contract Integration_MultipleCallbackModule is IntegrationBase {
   function _createCallbacksData(
     address _target,
     uint256 _length
-  ) internal returns (address[] memory _targets, bytes[] memory _datas) {
+  ) internal pure returns (address[] memory _targets, bytes[] memory _datas) {
     _targets = new address[](_length);
     _datas = new bytes[](_length);
     for (uint256 _i; _i < _length; _i++) {

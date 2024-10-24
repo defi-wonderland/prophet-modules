@@ -62,7 +62,13 @@ contract ArbitratorModule is AccessController, Module, IArbitratorModule {
     if (_status <= IOracle.DisputeStatus.Escalated) revert ArbitratorModule_InvalidResolutionStatus();
     _disputeData[_disputeId] = ArbitrationStatus.Resolved;
 
-    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status, _defaultAccessControl());
+    ORACLE.updateDisputeStatus({
+      _request: _request,
+      _response: _response,
+      _dispute: _dispute,
+      _status: _status,
+      _accessControl: _defaultAccessControl()
+    });
 
     emit DisputeResolved(_dispute.requestId, _disputeId, _status);
   }

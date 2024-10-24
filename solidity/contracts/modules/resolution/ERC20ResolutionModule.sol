@@ -112,10 +112,22 @@ contract ERC20ResolutionModule is AccessController, Module, IERC20ResolutionModu
 
     // Update status
     if (_quorumReached == 1) {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Won, _defaultAccessControl());
+      ORACLE.updateDisputeStatus({
+        _request: _request,
+        _response: _response,
+        _dispute: _dispute,
+        _status: IOracle.DisputeStatus.Won,
+        _accessControl: _defaultAccessControl()
+      });
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Won);
     } else {
-      ORACLE.updateDisputeStatus(_request, _response, _dispute, IOracle.DisputeStatus.Lost, _defaultAccessControl());
+      ORACLE.updateDisputeStatus({
+        _request: _request,
+        _response: _response,
+        _dispute: _dispute,
+        _status: IOracle.DisputeStatus.Lost,
+        _accessControl: _defaultAccessControl()
+      });
       emit DisputeResolved(_dispute.requestId, _disputeId, IOracle.DisputeStatus.Lost);
     }
   }

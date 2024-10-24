@@ -169,7 +169,11 @@ contract Helpers is DSTestPlus, TestConstants {
     _accessControl = _createAccessControl(msg.sender);
   }
 
-  function _createAccessControl(address _user) internal returns (IAccessController.AccessControl memory _accessControl) {
+  function _createAccessControl(address _user)
+    internal
+    pure
+    returns (IAccessController.AccessControl memory _accessControl)
+  {
     _accessControl = IAccessController.AccessControl({user: _user, data: bytes('')});
   }
 }

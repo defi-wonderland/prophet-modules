@@ -6,7 +6,7 @@ import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
-import {_PLEDGE_FOR_DISPUTE_TYPEHASH, _RELEASE_UNUTILIZED_RESPONSE_TYPEHASH} from '../../utils/Typehash.sol';
+import {_RELEASE_UNUTILIZED_RESPONSE_TYPEHASH} from '../../utils/Typehash.sol';
 
 contract BondedResponseModule is AccessController, Module, IBondedResponseModule {
   constructor(IOracle _oracle) Module(_oracle) {}

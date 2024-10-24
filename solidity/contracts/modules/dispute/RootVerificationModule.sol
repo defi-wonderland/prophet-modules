@@ -87,7 +87,13 @@ contract RootVerificationModule is AccessController, Module, IRootVerificationMo
       _dispute: _dispute
     });
 
-    ORACLE.updateDisputeStatus(_request, _response, _dispute, _status, _defaultAccessControl());
+    ORACLE.updateDisputeStatus({
+      _request: _request,
+      _response: _response,
+      _dispute: _dispute,
+      _status: _status,
+      _accessControl: _defaultAccessControl()
+    });
   }
 
   /// @inheritdoc IModule
