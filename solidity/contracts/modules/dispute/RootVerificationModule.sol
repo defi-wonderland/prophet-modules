@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IRootVerificationModule} from '../../../interfaces/modules/dispute/IRootVerificationModule.sol';
 import {MerkleLib} from '../../libraries/MerkleLib.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
-contract RootVerificationModule is AccessController, Module, IRootVerificationModule {
+contract RootVerificationModule is AccessControllerModule, IRootVerificationModule {
   using MerkleLib for MerkleLib.Tree;
 
   /**
@@ -16,7 +16,7 @@ contract RootVerificationModule is AccessController, Module, IRootVerificationMo
    */
   mapping(bytes32 _requestId => bytes32 _correctRoot) internal _correctRoots;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

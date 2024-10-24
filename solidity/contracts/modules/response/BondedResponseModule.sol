@@ -7,9 +7,10 @@ import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle
 
 import {IBondedResponseModule} from '../../../interfaces/modules/response/IBondedResponseModule.sol';
 import {_RELEASE_UNUTILIZED_RESPONSE_TYPEHASH} from '../../utils/Typehash.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
-contract BondedResponseModule is AccessController, Module, IBondedResponseModule {
-  constructor(IOracle _oracle) Module(_oracle) {}
+contract BondedResponseModule is AccessControllerModule, IBondedResponseModule {
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() public pure returns (string memory _moduleName) {

@@ -6,15 +6,15 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IERC20ResolutionModule} from '../../../interfaces/modules/resolution/IERC20ResolutionModule.sol';
 
 import {_CAST_VOTE_TYPEHASH, _CLAIM_VOTE_TYPEHASH} from '../../utils/Typehash.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
-contract ERC20ResolutionModule is AccessController, Module, IERC20ResolutionModule {
+contract ERC20ResolutionModule is AccessControllerModule, IERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -29,7 +29,7 @@ contract ERC20ResolutionModule is AccessController, Module, IERC20ResolutionModu
    */
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

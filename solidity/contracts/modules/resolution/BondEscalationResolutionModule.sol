@@ -7,7 +7,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
@@ -17,6 +16,7 @@ import {IResolutionModule} from
 
 import {IBondEscalationResolutionModule} from
   '../../../interfaces/modules/resolution/IBondEscalationResolutionModule.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
 import {
   _CLAIM_PLEDGE_TYPEHASH,
@@ -24,7 +24,7 @@ import {
   _PLEDGE_FOR_DISPUTE_TYPEHASH
 } from '../../utils/Typehash.sol';
 
-contract BondEscalationResolutionModule is AccessController, Module, IBondEscalationResolutionModule {
+contract BondEscalationResolutionModule is AccessControllerModule, IBondEscalationResolutionModule {
   using SafeERC20 for IERC20;
 
   /// @inheritdoc IBondEscalationResolutionModule
@@ -42,7 +42,7 @@ contract BondEscalationResolutionModule is AccessController, Module, IBondEscala
   /// @inheritdoc IBondEscalationResolutionModule
   mapping(bytes32 _disputeId => mapping(address _pledger => uint256 pledges)) public pledgesAgainstDispute;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

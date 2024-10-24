@@ -11,9 +11,9 @@ import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IPrivateERC20ResolutionModule} from '../../../interfaces/modules/resolution/IPrivateERC20ResolutionModule.sol';
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
-contract PrivateERC20ResolutionModule is AccessController, Module, IPrivateERC20ResolutionModule {
+contract PrivateERC20ResolutionModule is AccessControllerModule, IPrivateERC20ResolutionModule {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -28,7 +28,7 @@ contract PrivateERC20ResolutionModule is AccessController, Module, IPrivateERC20
    */
   mapping(bytes32 _disputeId => EnumerableSet.AddressSet _votersSet) internal _voters;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

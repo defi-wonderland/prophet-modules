@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
@@ -9,8 +8,9 @@ import {FixedPointMathLib} from 'solmate/src/utils/FixedPointMathLib.sol';
 import {IBondEscalationModule} from '../../../interfaces/modules/dispute/IBondEscalationModule.sol';
 
 import {_PLEDGE_AGAINST_DISPUTE_TYPEHASH, _PLEDGE_FOR_DISPUTE_TYPEHASH} from '../../utils/Typehash.sol';
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
 
-contract BondEscalationModule is AccessController, Module, IBondEscalationModule {
+contract BondEscalationModule is AccessControllerModule, IBondEscalationModule {
   /// @inheritdoc IBondEscalationModule
   mapping(bytes32 _requestId => mapping(address _pledger => uint256 pledges)) public pledgesForDispute;
 
@@ -22,7 +22,7 @@ contract BondEscalationModule is AccessController, Module, IBondEscalationModule
    */
   mapping(bytes32 _requestId => BondEscalation) internal _escalations;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {

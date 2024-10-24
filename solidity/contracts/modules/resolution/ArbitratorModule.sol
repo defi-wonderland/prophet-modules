@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccessController} from '@defi-wonderland/prophet-core/solidity/contracts/AccessController.sol';
 import {IModule, Module} from '@defi-wonderland/prophet-core/solidity/contracts/Module.sol';
 import {IOracle} from '@defi-wonderland/prophet-core/solidity/interfaces/IOracle.sol';
 
 import {IArbitrator} from '../../../interfaces/IArbitrator.sol';
 import {IArbitratorModule} from '../../../interfaces/modules/resolution/IArbitratorModule.sol';
 
-contract ArbitratorModule is AccessController, Module, IArbitratorModule {
+import {AccessControllerModule} from '../accessControl/AccessControllerModule.sol';
+
+contract ArbitratorModule is AccessControllerModule, IArbitratorModule {
   /**
    * @notice The status of all disputes
    */
   mapping(bytes32 _disputeId => ArbitrationStatus _status) internal _disputeData;
 
-  constructor(IOracle _oracle) Module(_oracle) {}
+  constructor(IOracle _oracle) AccessControllerModule(_oracle) {}
 
   /// @inheritdoc IModule
   function moduleName() external pure returns (string memory _moduleName) {
