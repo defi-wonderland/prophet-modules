@@ -59,7 +59,12 @@ contract PrivateERC20ResolutionModule is AccessControllerModule, IPrivateERC20Re
     AccessControl calldata _accessControl
   )
     external
-    hasAccess(_request.accessControlModule, _COMMIT_VOTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+    hasAccess(
+      _request.accessControlModule,
+      _COMMIT_VOTE_TYPEHASH,
+      abi.encode(_request, _dispute, _commitment),
+      _accessControl
+    )
   {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     if (ORACLE.disputeStatus(_disputeId) != IOracle.DisputeStatus.Escalated) {
@@ -88,7 +93,12 @@ contract PrivateERC20ResolutionModule is AccessControllerModule, IPrivateERC20Re
     AccessControl calldata _accessControl
   )
     public // review: why not external?
-    hasAccess(_request.accessControlModule, _REVEAL_VOTE_TYPEHASH, abi.encode(_request, _dispute), _accessControl)
+    hasAccess(
+      _request.accessControlModule,
+      _REVEAL_VOTE_TYPEHASH,
+      abi.encode(_request, _dispute, _numberOfVotes, _salt),
+      _accessControl
+    )
   {
     bytes32 _disputeId = _validateDispute(_request, _dispute);
     Escalation memory _escalation = escalations[_disputeId];

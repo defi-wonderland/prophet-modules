@@ -59,11 +59,11 @@ contract ERC20ResolutionModule is AccessControllerModule, IERC20ResolutionModule
     uint256 _numberOfVotes,
     AccessControl calldata _accessControl
   )
-    public // review: why not external?
+    external
     hasAccess(
       _request.accessControlModule,
       _CAST_VOTE_TYPEHASH,
-      abi.encode(_request, _dispute, _numberOfVotes),
+      abi.encode(_request, _dispute, _numberOfVotes, _numberOfVotes),
       _accessControl
     )
   {
